@@ -6,3 +6,4 @@ _Nexium_ is a virtual, decentralized, encryption-based money system.
 **Target OS:** Linux
 
 **Project manager :** jean.herail
+
