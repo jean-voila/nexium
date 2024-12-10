@@ -42,3 +42,19 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+
+# These lines are for the unnecessary LaTex-compilation created files
+# Ignorer tous les fichiers auxiliaires de LaTeX dans docs/ et ses sous-dossiers
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.toc
+docs/**/*.out
+docs/**/*.synctex.gz
+docs/**/*.bbl
+docs/**/*.blg
+docs/**/*.nav
+docs/**/*.snm
+docs/**/*.fdb_latexmk
+docs/**/*.fls
+
