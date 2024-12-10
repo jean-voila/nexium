@@ -1,0 +1,66 @@
+\documentclass[a4paper,10pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc} % UTF-8 encoding
+\usepackage[T1]{fontenc} % Font encoding
+\usepackage{lmodern} % Latin Modern font
+\usepackage[margin=2.5cm]{geometry} % Page margins
+\usepackage{graphicx} % Insert images
+\usepackage{amsmath,amsfonts,amssymb} % Math symbols
+\usepackage{hyperref} % Hyperlinks
+\usepackage{xcolor} % Colors
+\setcounter{secnumdepth}{2}
+
+% Custom settings
+\setlength{\parindent}{0pt} % No indentation
+\setlength{\parskip}{0.5em} % Space between paragraphs
+\renewcommand{\baselinestretch}{1.3} % Line spacing
+
+% Title and Author
+\title{\textbf{Nexium}}
+\author{
+    Jean HERAIL \\ \texttt{jean.herail@epita.fr} 
+    \and 
+    Milo DELBOS \\ \texttt{milo.delbos@epita.fr} 
+    \and 
+    Antonin BESSIÈRES \\ \texttt{antonin.bessieres@epita.fr}
+    \and
+    William VALENDUC \\ \texttt{william.valenduc@epita.fr}
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% Table of contents with name "Sommaire"
+\renewcommand{\contentsname}{Sommaire}
+\tableofcontents
+
+
+
+\section{Introduction}
+Nexium serait une économie virtuelle décentralisée conçue pour les étudiants d'Épita. Chaque participant disposerait d'une paire de clés cryptographiques (privée et publique) associée à son adresse \texttt{@epita.fr}, permettant d'authentifier et de sécuriser les transactions de crédits entre utilisateurs. Grâce à une architecture distribuée, Nexium garantierait la transparence et l'intégrité des virements tout en offrant une expérience simple et accessible.
+\section{Description du Projet}
+\subsection{Fonctionnalités}
+\begin{itemize}
+    \item \textbf{Création de Comptes} : Les étudiants d'Épita pourraient créer un compte Nexium en fournissant leur adresse d'étudiant. Après avoir généré une paire de clés, ils auront à copier la clé publique renvoiée par le programme sur l'interface du \href{https://gitlab.cri.epita.fr}{Gitlab} de l'école, dans le champ des clés GPG . Il s'agira d'une \hyperref[def:cle-rsa]{\textbf{clé RSA}} de 2048 bits. \
+    \item \textbf{Virements} : Les utilisateurs pourraient effectuer des virements de crédits entre eux en utilisant leur adresse, les transaction étant signées par la clé privée de l'émetteur et vérifiées par la clé publique correspondante. Les soldes seraient ensuite mis à jour en temps réel et stockés dans une base de données distribuée. Les utilisateurs pourront associer, à chaque transaction, un descriptif optionnel d'une longueur maximale de 140 caractères. \
+    \item \textbf{Historique des Transactions} : Les utilisateurs pourraient consulter l'historique de leurs transactions, incluant les montants, les dates et les adresses des émetteurs et des récepteurs. Cette transparence est le prix à payer pour une décentralisation de la monnaie. \
+    \item \textbf{Sécurité} : Le stockage des clés privées se ferait en priorité via des solutions locales matérielles si disponibles, comme un module TPM ou une carte à puce. Cette implémentation nécessitera la communication avec une API système pour accéder à ces dispositifs. En l'absence de telles solutions, les clés privées pourront être chiffrées et stockées localement sur le disque dur de l'utilisateur. Un mot de passe sera alors demandé à chaque transaction pour déchiffrer la clé privée. Ce mot de passe sera initialisé lors de la création du compte et pourra être modifié par la suite. \
+    \item \textbf{Interface Graphique} : Une interface graphique simple et intuitive permettrait aux utilisateurs de consulter leur solde, d'effectuer des virements et de consulter l'historique de leurs transactions. Elle serait développée avec GTK via Glade. \ 
+    \item \textit{\textit{(Facultatif)}} \textbf{Synchronisation avec les serveurs Forge} : Les soldes et transactions pourraient être certifiés par les serveurs Forge d'Épita, garantissant ainsi l'intégrité des données et la \hyperref[def:non-repudiation]{\textbf{non-répudiation}} des transactions. Ces noeuds de confiance pourraient être utilisés pour vérifier les soldes et les transactions des utilisateurs, en cas de litige ou de perte de données. \
+\end{itemize}
+
+
+\newpage
+\section{Annexe}
+
+\subsection{Définitions}
+\begin{description}
+    \item[Clé RSA] \label{def:cle-rsa} : Clé cryptographique utilisée pour chiffrer et déchiffrer des données. Elle est composée d'une paire de clés, une publique et une privée, qui sont générées simultanément. La clé publique est utilisée pour chiffrer les données tandis que la clé privée est utilisée pour les déchiffrer. \
+
+    \item[Non-répudiation] \label{def:non-repudiation} : Obligation de ne pas pouvoir nier un acte ou une transaction. En cryptographie, la non-répudiation est la propriété qui permet de prouver qu'une transaction a bien été effectuée par une entité donnée.
+    
+\end{description}
+\end{document}
