@@ -58,3 +58,8 @@ docs/**/*.snm
 docs/**/*.fdb_latexmk
 docs/**/*.fls
 
+
+
+# Added by cargo
+
+/target
