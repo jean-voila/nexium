@@ -1,10 +1,10 @@
 use std::env;
+const USAGE: &str = "Usage: nexium <first_name> <last_name> [crypt]";
+
 mod rsa;
 mod accounts;
 mod random;
-
-const USAGE: &str = "Usage: nexium <first_name> <last_name> [crypt]";
-
+mod maths;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
