@@ -81,13 +81,14 @@ impl Account {
 
 impl fmt::Display for Account {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (pbk, prk) = self.key_pair.to_strings();
         write!(f, "Account: {} {} ({})\nMail: {}\nPUB: {}\nPRIV: {}\n",
         _colored(200, 200, 100, &self.first_name),
         _colored(155, 200, 200, &self.last_name),
         _colored(100, 200, 100, &self.get_login()),
         _colored(255, 200, 255, &self.get_email()),
-        _colored(255, 230, 200, &self.key_pair.get_keys_str().0),
-        _colored(100, 255, 255, &self.key_pair.get_keys_str().1)
+        _colored(255, 230, 200, &pbk),
+        _colored(100, 255, 255, &prk)
     )
     }
 }

@@ -3,107 +3,68 @@
 // #![allow(unused_variables)]
 
 // use std::path::Path;
-use std::io::stdin;
+// use std::io::stdin;
 use std::io::{self, Write};
 use crate::maths::{_gen_prime, _gcd, _mod_inverse};
 
 
 // CONSTANTS DECLARATION
 const _KP_FOLDER: &str = "keypair/";
-const _PUB_EXT: &str = "pub";
-const _PRIV_EXT: &str = "priv";
-const _SEED: u128 = 2;
 
 
 
-// constants list for the SHA256 algorithm
-const _K: [u32; 64] = [
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
-    0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
-    0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
-    0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
-    0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
-    0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
-    0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
-    0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
-    0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
-    0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-];
+struct PubRSAKey {
+    n: u128,
+    e: u128,
+}
 
-const _A: u32 = 0x6a09e667;
-const _B: u32 = 0xbb67ae85;
-const _C: u32 = 0x3c6ef372;
-const _D: u32 = 0xa54ff53a;
-const _E: u32 = 0x510e527f;
-const _F: u32 = 0x9b05688c;
-const _G: u32 = 0x1f83d9ab;
-const _H: u32 = 0x5be0cd19;
-
-// A SHA256 Hash has always a size of 64 characters, according
-// to the SHA256 algorithm.
-type MyHash = [char; 64];
-
-// Error type for the KeyPair struct.
-pub enum KeyErr {
-    _KeyPairsFolderNotFound,
-    _KeyFileNotFound,
-    _InvalidKeyFile,
-    KeyAlreadyExists,
-    _FileCreationError,
-    _PrimeGenerationError,
+struct PrivRSAKey {
+    n: u128,
+    d: u128,
 }
 
 
-struct RSAKey {
-    pub key: String,
-    _is_encrypted: bool,
-}
 pub struct KeyPair {
-    private_key: RSAKey,
-    public_key: RSAKey,
+    private_key: PrivRSAKey,
+    public_key: PubRSAKey,
 }
+
+// Temporary debug function
+// Don't forget to remove it when we've implemented
+// the crypting functions.
+impl KeyPair {
+    pub fn to_strings(&self) -> (String, String) {
+        return (
+            format!("{}:{}", self.public_key.n, self.public_key.e),
+            format!("{}:{}", self.private_key.n, self.private_key.d),
+        );
+    }
+}
+
 impl KeyPair {
     pub fn new() -> KeyPair {
-        let pub_key = RSAKey {
-            key: String::new(),
-            _is_encrypted: false,
-        };
-        let priv_key = RSAKey {
-            key: String::new(),
-            _is_encrypted: false,
-        };
-        
+        let (pbk, prk) = gen_rsa_keys().unwrap();
+
         return KeyPair {
-            private_key: priv_key,
-            public_key: pub_key,
+            private_key: prk,
+            public_key: pbk,
         };
     }
 
-    // Generates a pair of RSA keys for the KeyPair.
-    pub fn generate_keys(&mut self, crypt: bool) -> Result<(), KeyErr> {
+    fn _to_file(&self) -> Option<()> {
+        // We'll use the PEM format to store the keys.
+        // https://stackoverflow.com/questions/27568570/
+        // how-to-convert-raw-modulus-exponent-to-rsa-public-key-pem-format
 
+        // Docs about the PEM format:
+        // https://docs.fileformat.com/fr/web/pem/
+        // #:~:text=R%C3%A9f%C3%A9rences-,
+        // Qu'est%2Dce%20qu'un%20fichier%20PEM%20%3F,
+        // une%20combinaison%20d'autres%20certificats.
 
-        if !self.public_key.key.is_empty() || !self.private_key.key.is_empty() {
-            return Err(KeyErr::KeyAlreadyExists);
-        }
+        todo!();
 
-        let (pbk, pvk) = gen_rsa_keys(crypt)?;
-        self.public_key = pbk;
-        self.private_key = pvk;
-        
-        return Ok(());
     }
-
-    // Returns the public and private keys as strings
-    // (doesn't handle encryption for now)
-    pub fn get_keys_str(&self) -> (String, String) {
-        return (self.public_key.key.clone(), self.private_key.key.clone());
-    }
-
-    // fn save_to_file(&self) -> Result<(), KeyErr>
     // fn from_file(path_p: &Path) -> Result<Self, KeyErr>
     // fn wipe_keys(&mut self) -> Result<(), KeyErr>
 
@@ -126,27 +87,10 @@ impl KeyPair {
 // Generates a pair of RSA keys.
 // crypt: If true, the keys will be encrypted.
 // Returns a tuple containing the public and private keys.
-fn gen_rsa_keys(crypt: bool) -> Result<(RSAKey, RSAKey), KeyErr> {
-    let _hash: Option<MyHash> = match crypt {
-        false => None,
-        // Asking for password etc
-        true => {
-            let mut pwd = String::new();
-
-            print!("Enter the password for the key: ");
-            io::stdout().flush().unwrap();
-
-            // If we could use the rpassword crate we would,
-            // but I think it's forbidden to use external crates..
-            // Anyway, check this: https://crates.io/crates/rpassword
-
-            stdin().read_line(&mut pwd).unwrap();
-            Some(_str_to_hash(&pwd))
-
-        }
-    };
+fn gen_rsa_keys() -> Option<(PubRSAKey, PrivRSAKey)> {
 
     let timer_start = std::time::Instant::now();
+
     print!("Generating RSA keys.. ");
     io::stdout().flush().unwrap();
 
@@ -155,26 +99,15 @@ fn gen_rsa_keys(crypt: bool) -> Result<(RSAKey, RSAKey), KeyErr> {
 
     let (n, d, e) = _rsa_nde(p, q);
 
-
-    let pub_key = RSAKey {
-        key: format!("{}:{}", n, e),
-        _is_encrypted: crypt,
-    };
-
-    let priv_key = RSAKey {
-        key: format!("{}:{}", n, d),
-        _is_encrypted: crypt,
-    };
-
     let elapsed = timer_start.elapsed();
     println!("Done. ({}s)", elapsed.as_secs_f64());
     
-    return Ok((pub_key, priv_key));
+    return Some((
+        PubRSAKey { n, e },
+        PrivRSAKey { n, d },
+    ));
 
 }
-
-
-
 
 
 // I feel the AFIT nostalgia coming back to me
@@ -198,21 +131,3 @@ fn _rsa_nde(p: u128, q: u128) -> (u128, u128, u128) {
 
     return (n, d, e);
 }
-
-
-
-
-
-// You will find simple explanations about the SHA256 Hashing algorithm here: 
-// https://www.simplilearn.com/tutorials/cyber-security-tutorial/
-// sha-256-algorithm 
-// Or even the Wikipedia Pseudo code:
-// https://en.wikipedia.org/wiki/SHA-2#Pseudocode
-// N.B: A SHA256 Hash has always a size of 64 characters,
-// so we use a fixed size array of 64 characters to store it.
-
-// Takes a string and returns its SHA256 hash.
-fn _str_to_hash(_src: &str) -> MyHash {
-    todo!();
-}
-

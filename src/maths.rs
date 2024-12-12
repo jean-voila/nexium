@@ -5,6 +5,7 @@ use crate::random::randint;
 // beginning with 5 digits prime numbers at most.
 const EASY_CALC: bool = true;
 
+
 // Returns a random, large prime number.
 pub fn _gen_prime() -> u128 {
     let max_prime = match EASY_CALC {
