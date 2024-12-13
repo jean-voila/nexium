@@ -7,7 +7,6 @@
 use std::io::{self, Write};
 use crate::maths::{_gen_prime, _gcd, _mod_inverse};
 
-
 // CONSTANTS DECLARATION
 const _KP_FOLDER: &str = "keypair/";
 
@@ -97,6 +96,7 @@ fn gen_rsa_keys() -> Option<(PubRSAKey, PrivRSAKey)> {
     let p = _gen_prime();
     let q = _gen_prime();
 
+
     let (n, d, e) = _rsa_nde(p, q);
 
     let elapsed = timer_start.elapsed();
@@ -113,19 +113,22 @@ fn gen_rsa_keys() -> Option<(PubRSAKey, PrivRSAKey)> {
 // I feel the AFIT nostalgia coming back to me
 // According to the RSA algorithm up there, i think we need to
 // find the n, d and e values from the p and q values.
+
 fn _rsa_nde(p: u128, q: u128) -> (u128, u128, u128) {
 
-    let n: u128 = p as u128 * q as u128;
+    let n: u128 = p * q;
     let z: u128 = (p - 1) * (q - 1);
 
     // choose a random e such that e is coprime with z
-    // if a number is prime, it is coprime with all other numbers.
-    // so we can choose a random prime number for e
-    let mut e: u128 = _gen_prime();
-    
-    while _gcd(e, z) != 1 {
-        e = _gen_prime();
+    let mut e: u128 = 2;
+    while e < z {
+        if _gcd(e, z) == 1 {
+            break;
+        }
+        e += 1;
     }
+
+
     
     let d: u128 = _mod_inverse(e, z).unwrap();
 

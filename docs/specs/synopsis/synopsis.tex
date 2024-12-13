@@ -4,20 +4,25 @@
 \usepackage[utf8]{inputenc} % UTF-8 encoding
 \usepackage[T1]{fontenc} % Font encoding
 \usepackage{lmodern} % Latin Modern font
-\usepackage[margin=2.5cm]{geometry} % Page margins
+\usepackage[margin=2cm]{geometry} % Page margins
 \usepackage{graphicx} % Insert images
 \usepackage{amsmath,amsfonts,amssymb} % Math symbols
 \usepackage{hyperref} % Hyperlinks
 \usepackage{xcolor} % Colors
 \setcounter{secnumdepth}{2}
+\usepackage{listings, ./listings-rust}
 
 % Custom settings
 \setlength{\parindent}{0pt} % No indentation
 \setlength{\parskip}{0.5em} % Space between paragraphs
-\renewcommand{\baselinestretch}{1.3} % Line spacing
+\renewcommand{\baselinestretch}{1.2} % Line spacing
 
 % Title and Author
-\title{\textbf{Nexium}}
+\title{
+  \textbf{Nexium} \\
+  \large Un système économique décentralisé pour étudiants \\
+    basé sur la blockchain et la cryptographie}
+
 \author{
     Jean HERAIL \\ \texttt{jean.herail@epita.fr} 
     \and 
@@ -33,37 +38,152 @@
 
 \maketitle
 
-% Table of contents with name "Sommaire"
 \renewcommand{\contentsname}{Sommaire}
 \tableofcontents
+\newpage
 
 
+\section{Principe fondamental de Nexium}
+Nexium serait une monnaie virtuelle décentralisée conçue pour les étudiants d'Épita. Chaque participant disposera d'une paire de clés cryptographiques (privée et publique) de type RSA associée à son adresse \texttt{@epita.fr}, permettant d'authentifier et de sécuriser les transactions de crédits entre utilisateurs. Grâce à une architecture distribuée, Nexium garantira la transparence et l'intégrité des virements, tout en offrant une expérience simple et accessible via une interface graphique. La monnaie du réseau Nexium, le \texttt{NXM}, sera utilisée pour effectuer des transactions entre les utilisateurs, qui pourront consulter leur solde et leur historique de transactions de manière publique.
 
-\section{Introduction}
-Nexium serait une économie virtuelle décentralisée conçue pour les étudiants d'Épita. Chaque participant disposerait d'une paire de clés cryptographiques (privée et publique) associée à son adresse \texttt{@epita.fr}, permettant d'authentifier et de sécuriser les transactions de crédits entre utilisateurs. Grâce à une architecture distribuée, Nexium garantierait la transparence et l'intégrité des virements tout en offrant une expérience simple et accessible. La monnaie du réseau Nexium, le \texttt{NXM}, serait utilisée pour effectuer des transactions entre les utilisateurs, qui pourraient consulter leur solde et leur historique de transactions via une interface graphique intuitive.
+Le réseau Nexium s'articule donc comme une blockchain privée, où chaque utilisateur est un noeud du réseau.
 
-Le réseau Nexium s'articule donc comme une blockchain privée, où chaque utilisateur est un noeud du réseau. Chaque bloc, contenant un type d'information unique (création de compte, virement, etc.), sera signé par l'émetteur de la transaction et validé par les autres utilisateurs du réseau. Les soldes des utilisateurs seraient stockés dans une base de données distribuée, garantissant ainsi la cohérence des données et la résilience du système. Les transactions seraient signées par les clés privées des émetteurs et vérifiées par les clés publiques correspondantes, assurant ainsi la sécurité et l'intégrité des échanges.
-
-\section{Description du Projet}
-\subsection{Fonctionnalités}
+Notre projet s'articulera donc en ces trois axes inter-dépendants :
 \begin{itemize}
-    \item \textbf{Création de Comptes} : Les étudiants d'Épita pourront créer un compte Nexium en fournissant leur adresse d'étudiant. Après avoir généré une paire de clés, ils auront à copier la clé publique renvoyée par le programme sur l'interface du \href{https://gitlab.cri.epita.fr}{Gitlab} de l'école, dans le champ des clés GPG . Il s'agira d'une \hyperref[def:cle-rsa]{\textbf{clé RSA}} de 2048 bits. Lors de la création du compte, un solde initial de \texttt{1000 NXM} sera attribué à 'utilisateur. \
-    \item \textbf{Virements} : Les utilisateurs pourront effectuer des virements de crédits entre eux en utilisant leur adresse, les transactions étant signées par la clé privée de l'émetteur et vérifiées par la clé publique correspondante. Les soldes seraient ensuite mis à jour en temps réel et stockés dans une base de données distribuée. Les utilisateurs pourront associer, à chaque transaction, un descriptif optionnel d'une longueur maximale de 140 caractères. \
-    \item \textbf{Historique des Transactions} : Les utilisateurs pourraient consulter l'historique de leurs transactions, incluant les montants, les dates et les adresses des émetteurs et des récepteurs. Cette transparence est le prix à payer pour une décentralisation de la monnaie. \
-    \item \textbf{Sécurité} : Le stockage des clés privées se ferait en priorité via des solutions locales matérielles si disponibles, comme un module TPM ou une carte à puce. Cette implémentation nécessitera la communication avec une API système pour accéder à ces dispositifs. En l'absence de telles solutions, les clés privées pourront être chiffrées et stockées localement sur le disque dur de l'utilisateur. Un mot de passe sera alors demandé à chaque transaction pour déchiffrer la clé privée. Ce mot de passe sera initialisé lors de la création du compte et pourra être modifié par la suite. \
-    \item \textbf{Interface Graphique} : Une interface graphique simple et intuitive permettrait aux utilisateurs de consulter leur solde, d'effectuer des virements et de consulter l'historique de leurs transactions. Elle serait développée avec GTK via Glade. \ 
-    \item \textit{\textit{(Facultatif)}} \textbf{Synchronisation avec les serveurs Forge} : Les soldes et transactions pourraient être certifiés par les serveurs Forge d'Épita, garantissant ainsi l'intégrité des données et la \hyperref[def:non-repudiation]{\textbf{non-répudiation}} des transactions. Ces noeuds de confiance pourraient être utilisés pour vérifier les soldes et les transactions des utilisateurs, en cas de litige ou de perte de données. \
+    \item \textbf{La blockchain Nexium (le réseau) :} les fonctionnalités de communication, vérifications et synchronisation des blocs.
+    \item \textbf{L'interface utilisateur :} les fonctionnalités graphiques, de gestion de compte, de virements, et de consultation de blocs.
+    \item \textbf{Les implémentations cryptographiques :} les fonctionnalités de chiffrement, déchiffrement, signature et vérification de données. Nous utiliserons le standard RSA pour la cryptographie asymétrique, et le standard SHA-256 pour les fonctions de hachage. Pour répondre à la consigne de ce projet, nous implémenterons toutes les fonctions liées à cette partie nous-même, sans utiliser de bibliothèques externes (y compris pour les fonctions arithmétiques, le RSA étant basé sur la primeur de grands nombres).
+    
 \end{itemize}
 
+\section{Organisation théorique du réseau}
 
-\newpage
-\section{Annexe}
+Chaque bloc, contenant un type d'information unique, sera horodaté, signé par l'émetteur du message et validé par les autres utilisateurs du réseau. Afin de faciliter le calcul des soldes disponibles de chaque utilisateurs, ils seront calculés de manière périodique et intégrés en tant que blocs. Si un membre du réseau détecte un message dont la signature est invalide, il peut le signaler aux autres membres du réseau, qui pourront alors le rejeter et marquer le bloc comme invalide.
 
-\subsection{Définitions}
-\begin{description}
-    \item[Clé RSA] \label{def:cle-rsa} : Clé cryptographique utilisée pour chiffrer et déchiffrer des données. Elle est composée d'une paire de clés, une publique et une privée, qui sont générées simultanément. La clé publique est utilisée pour chiffrer les données tandis que la clé privée est utilisée pour les déchiffrer. \
+Bien que ce prototype est enclin à évoluer au fur et à mesure du développement de Nexium, nous avons pour l'instant défini les types de blocs suivants, que nous avons choisi de représenter en Rust :
 
-    \item[Non-répudiation] \label{def:non-repudiation} : Obligation de ne pas pouvoir nier un acte ou une transaction. En cryptographie, la non-répudiation est la propriété qui permet de prouver qu'une transaction a bien été effectuée par une entité donnée.
+
+\begin{lstlisting}[language=Rust,xleftmargin=.4\textwidth]
+enum BlockType {
+    AccountCreation,
+    Transaction,
+    Checkpoint,
+    Validation,
+}
+\end{lstlisting}
+
+Définissons également les types suivants : 
+\begin{itemize}
+    \item \texttt{Login}: une chaîne de caractères représentant le login Epita de l'utilisateur (prenom.nom).
+    \item \texttt{Hash}: une chaîne de caractères représentant un hash.
+\end{itemize}
+
+Tout bloc contiendra toujours au moins ces quatre champs :
+\begin{itemize}
+    \item \texttt{type} indiquant le type de bloc (type: \texttt{BlockType}).
+    \item \texttt{emitter} indiquant le login de l'émetteur du bloc. (type: \texttt{Login})
+    \item \texttt{timestamp} indiquant la date et l'heure de création du bloc. (type: \texttt{DateTime})
+    \item \texttt{id\_hash} un hash du bloc, permettant de l'identifier de manière unique. (type: \texttt{Hash})
+    \item \texttt{control} une trame permettant de vérifier l'intégrité et l'authenticité du bloc. (type: \texttt{Hash})
+
+\end{itemize}
+
+La trame de controle \texttt{control} sera la signature du id\_hash du bloc, avec la clé privée de l'émetteur.
+
+\subsection{AccountCreation}
+Ce type de bloc ne sera théoriquement envoyé qu'une fois par login Epita. Il ne contiendra pas de champs supplémentaires à ceux par défaut.
+
+Lors de la création d'un compte, un certain solde fixe de \texttt{NXM} sera crédité sur le compte de l'utilisateur. Nous définirons ultérieurement le montant de ce solde initial dans les spécifications détaillées du réseau.
+
+\subsection{Transaction}
+
+Ce type de bloc sera utilisé pour effectuer des transactions entre utilisateurs. Il contiendra les champs additionnels suivants :
+\begin{itemize}
+    \item \texttt{amount} indiquant le montant de la transaction en \texttt{NXM}. (type: \texttt{u64})
+    \item \texttt{receiver} indiquant le login du destinataire de la transaction. (type: \texttt{Login})
+    \item \texttt{comment} indiquant un commentaire facultatif, chiffré avec la clé publique du destinataire. (type: \texttt{String})
     
-\end{description}
+\end{itemize}
+
+\subsection{Checkpoint}
+
+Ce type de bloc sera utilisé pour stocker les soldes de chaque utilisateur. Il contiendra le champ additionnel \texttt{balances} (type: \texttt{HashMap<Login, u64>}) indiquant le solde de chaque utilisateur sous forme d'un tableau associatif.
+
+Étant donné l'importance de ce bloc, il devra obligatoirement être validé par une certaine proportion majoritaire des utilisateurs du réseau (que nous définirons ultérieurement) avant de pouvoir être pris en compte.
+
+L'utilisation d'un tel bloc permet de limiter le nombre de transactions à vérifier pour calculer le solde d'un utilisateur, et donc de réduire la complexité de l'algorithme de vérification des transactions.
+
+\subsection{Validation}
+
+Ce type de bloc sera utilisé pour valider ou invalider un bloc. Il contiendra les champs additionnels suivants :
+\begin{itemize}
+    \item \texttt{verif\_id} indiquant l'id du bloc validé ou invalidé (type: \texttt{Hash})
+    \item \texttt{validation} indiquant si le bloc est validé ou invalide. (type: \texttt{bool})
+    \item \texttt{reason} indiquant la raison de l'invalidation du bloc. (type: \texttt{String})
+\end{itemize}
+
+Afin de ne pas voir le réseau saturé par des blocs invalidés, une suppression périodique de tous les blocs marqués comme invalides sera effectuée à chaque checkpoint.
+
+
+\section{Fonctionnalités du programme}
+\subsection{Initialisation du compte}
+
+
+Lors du lancement de l'interface, le programme cherche, à un emplacement prédéfini, une paire de clés RSA associée à l'utilisateur. Si une paire de clé est trouvée, le programme demande à l'utilisateur de saisir son mot de passe pour déchiffrer sa clé privée.
+
+Le programme vérifie ensuite l'existence d'un compte associé à l'utilisateur sur le réseau Nexium. Si le compte n'existe pas, un bloc de type \texttt{AccountCreation} est créé et ajouté à la blockchain, avec confirmation de l'utilisateur.
+
+\subsection{Opérations}
+L'utilisateur peut effectuer des transactions sortantes vers d'autres utilisateurs du réseau Nexium. Il doit saisir le montant de la transaction, le destinataire (son adresse \texttt{@epita.fr}) et un commentaire facultatif. Le commentaire est chiffré avec la clé publique du destinataire et ajouté à la transaction, de telle manière que seul le destinataire puisse le lire. Le programme demande ensuite à l'utilisateur de saisir son mot de passe pour déchiffrer sa clé privée et signer la transaction. Une fois la transaction signée, elle est ajoutée à la blockchain et diffusée à l'ensemble du réseau.
+
+\subsection{Historique des transactions}
+
+L'utilisateur peut consulter l'historique de ses transactions entrantes et sortantes associées à son compte. L'historique est récupéré depuis la blockchain et affiché sous forme d'un tableau, avec les colonnes \texttt{Date}, \texttt{Montant}, {Commentaire} et \texttt{Entrant/Sortant}.
+
+\subsection{Interface graphique}
+
+L'interface graphique du programme sera sûrement basée sur le framework \href{https://slint.dev/}{Slint} s'il nous est permis de l'utiliser. Elle devra être simple et intuitive, permettant à l'utilisateur de naviguer facilement entre les différentes fonctionnalités du programme.
+
+L'utilisation d'un tel framework nous permettra de gagner du temps sur le développement de l'interface graphique, et de nous concentrer sur les fonctionnalités fondamentales du programme.
+
+\section{Contraintes techniques et solutions envisagées}
+\subsection{Gestion du RSA}
+
+Le traitement mathématique des clés RSA sera effectué en Rust, sans l'utilisation de bibliothèques externes. La \href{https://fr.wikipedia.org/wiki/Chiffrement_RSA}{page Wikipédia} de l'algorithme RSA nous donne une idée des opérations à effectuer pour générer une paire de clés, chiffrer et déchiffrer des données, et signer et vérifier des messages.
+
+Or, nos recherches sur la gestion des types abstraits liés à ce type de cryptographie nous ont montré une limitation intrinsèque à Rust. En effet, le RSA est basé sur la primeur de grands nombres, et le standard de sécurité que nous avons observé lors de nos recherches nécessite de calculer deux nombres premiers (p et q) codés sur 512 bits minimum. Mais les types primaires de Rust ne permettent pas de gérer des nombres de cette taille, le maximum étant \texttt{u128} (128 bits).
+
+Il existe bien entendu le type \texttt{BigInt} de la bibliothèque \texttt{num-bigint}, mais nous ne savons actuellement pas si nous serons autorisés à l'utiliser. Il serait très complexe d'implémenter manuellement un type U512, car sa compatibilité avec les opérations mathmatiques classiques de Rust serait à notre entière charge!
+
+Cela impliquerait la re-défition de toutes les opérations mathématiques de base (addition, soustraction, multiplication, division, modulo, etc.) pour ce type.
+
+Il est toutefois important de garder à l'esprit que cet aspect de Nexium ne nous est absolument pas étranger, car c'est exactement cette partie de l'arithmétique que nous avions traitée lors de notre première année à l'EPITA au travers de l'\texttt{AFIT}.
+
+
+\subsection{Liaison avec Gitlab}
+
+La récupération et l'envoi des clés publiques se fera grâce à l'API du Gitlab d'Épita. Ce paradigme de récupération de clés nous permet donc de placer Épita comme autorité de certification, sans altérer ni l'infrastructure déjà en place, ni la sécurité du réseau Nexium.
+
+L'API de Gitlab nous permettra de récupérer les clés publiques des utilisateurs tel que défini sur la \href{https://docs.gitlab.com/ee/api/user_keys.html}{documentation officielle de l'API Gitlab}. Voici donc les deux requêtes que nous utiliserons :
+
+\begin{itemize}
+    \item \texttt{GET /user/keys} pour récupérer les clés publiques d'un utilisateur.
+    \item \texttt{POST /user/keys} pour ajouter une clé publique à un utilisateur.
+\end{itemize}
+
+Deux problèmes se posent alors à nous :
+\begin{itemize}
+    \item \textbf{Les clés publiques du Gitlab sont des clés GPG.} Nous devrons donc implémenter, sûrement sous forme de méthodes implémentées aux types abstraits des clés, la conversion bi-directionnelle entre les clés GPG et les clés RSA.
+
+    \item \textbf{L'API Gitlab nécessite une authentification.} Il nous sera donc nécessaire de disposer d'un moyen d'authentification lié au compte Gitlab Epita de l'étudiant. Pour des raisons de sécurité, nous préférons éviter l'éventualité de récupérer et stocker les informations brutes de connexion de l'utilisateur dans le projet binaire final. De plus, ce fonctionnement de prendrait pas en compte la présence d'une double authentification sur le compte Gitlab concerné. Nous envisageons donc d'utiliser \href{https://docs.gitlab.com/ee/integration/oauth_provider.html}{l'authentification OAuth} de Gitlab, qui permet à une application tierce de se connecter à un compte Gitlab sans avoir accès aux informations de connexion de l'utilisateur. Le token obtenu par cette intégration sera chiffré par le mot de passe de l'utilisateur, et stocké localement. Nous nous pencherons ultérieurement sur la mise en place de cette authentification, et implémenterons pour l'instant une authentification basique pour le prototype.
+
+\end{itemize}
+
+\subsection{Stockage et sécurisation de clés}
+
+Lors de la génération de la paire de clés RSA, un mot de passe sera demandé à l'utilisateur. Le programme générera ensuite un \textbf{hash} de ce mot de passe, qui sera utilisé pour chiffrer la clé privée de l'utilisateur. La clé privée chiffrée sera ensuite stockée localement, et la clé publique sera envoyée sur le Gitlab d'Épita.
+
+Afin de garantir la meilleure étanchéïté possible, nous ne stockerons jamais ni le \textbf{mot de passe}, ni son \textbf{hash}, ni la \textbf{clé privée} sur le disque. Grâce à la \textit{memory safety} de Rust, nous n'avons pas à nous soucier de la suppression de ces données, ou de leur utilisation par un autre programme : le \textit{borrow checker} nous assure que ces données ne sont jamais utilisées en dehors de leur portée.
+
+
 \end{document}

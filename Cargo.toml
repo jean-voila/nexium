@@ -9,5 +9,4 @@ repository = "https://gitlab.cri.epita.fr/jean.herail/nexium"
 license-file = "LICENSE"
 
 
-
 [dependencies]

@@ -1,5 +1,7 @@
 use crate::random::randint;
 
+
+mod tests;
 // for debugging purposes, we can set this to true.
 // it will make the prime number generation easier,
 // beginning with 5 digits prime numbers at most.
