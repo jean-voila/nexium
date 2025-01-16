@@ -3,10 +3,12 @@
 _Nexium_ is a virtual, decentralized, encryption-based money system.
 
 **Main language:** Rust
+
 **Target OS:** Linux
 
 **Project manager :** jean.herail
 
+### TODO : implement the BigUint type for the RSA keypair generation
 
 ## Please, install the following VSCode extensions:
 - [Rust](https://marketplace.visualstudio.com/items?itemName=1YiB.rust-bundle). It's a bundle with some useful extensions for Rust development

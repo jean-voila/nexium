@@ -4,13 +4,11 @@
 
 // use std::path::Path;
 // use std::io::stdin;
+use crate::maths::{_gcd, _gen_prime, _mod_inverse};
 use std::io::{self, Write};
-use crate::maths::{_gen_prime, _gcd, _mod_inverse};
 
 // CONSTANTS DECLARATION
 const _KP_FOLDER: &str = "keypair/";
-
-
 
 struct PubRSAKey {
     n: u128,
@@ -21,7 +19,6 @@ struct PrivRSAKey {
     n: u128,
     d: u128,
 }
-
 
 pub struct KeyPair {
     private_key: PrivRSAKey,
@@ -62,13 +59,10 @@ impl KeyPair {
         // une%20combinaison%20d'autres%20certificats.
 
         todo!();
-
     }
     // fn from_file(path_p: &Path) -> Result<Self, KeyErr>
     // fn wipe_keys(&mut self) -> Result<(), KeyErr>
-
 }
-
 
 // RSA Key Generation
 // https://www.simplilearn.com/tutorials/cryptography-tutorial/rsa-algorithm
@@ -87,7 +81,6 @@ impl KeyPair {
 // crypt: If true, the keys will be encrypted.
 // Returns a tuple containing the public and private keys.
 fn gen_rsa_keys() -> Option<(PubRSAKey, PrivRSAKey)> {
-
     let timer_start = std::time::Instant::now();
 
     print!("Generating RSA keys.. ");
@@ -96,26 +89,19 @@ fn gen_rsa_keys() -> Option<(PubRSAKey, PrivRSAKey)> {
     let p = _gen_prime();
     let q = _gen_prime();
 
-
     let (n, d, e) = _rsa_nde(p, q);
 
     let elapsed = timer_start.elapsed();
     println!("Done. ({}s)", elapsed.as_secs_f64());
-    
-    return Some((
-        PubRSAKey { n, e },
-        PrivRSAKey { n, d },
-    ));
 
+    return Some((PubRSAKey { n, e }, PrivRSAKey { n, d }));
 }
-
 
 // I feel the AFIT nostalgia coming back to me
 // According to the RSA algorithm up there, i think we need to
 // find the n, d and e values from the p and q values.
 
 fn _rsa_nde(p: u128, q: u128) -> (u128, u128, u128) {
-
     let n: u128 = p * q;
     let z: u128 = (p - 1) * (q - 1);
 
@@ -128,9 +114,8 @@ fn _rsa_nde(p: u128, q: u128) -> (u128, u128, u128) {
         e += 1;
     }
 
-
-    
     let d: u128 = _mod_inverse(e, z).unwrap();
 
     return (n, d, e);
 }
+

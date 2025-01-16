@@ -4,7 +4,7 @@
 \usepackage[utf8]{inputenc} % UTF-8 encoding
 \usepackage[T1]{fontenc} % Font encoding
 \usepackage{lmodern} % Latin Modern font
-\usepackage[margin=2cm]{geometry} % Page margins
+\usepackage[margin=1.5cm]{geometry} % Page margins
 \usepackage{graphicx} % Insert images
 \usepackage{amsmath,amsfonts,amssymb} % Math symbols
 \usepackage{hyperref} % Hyperlinks
@@ -12,15 +12,17 @@
 \setcounter{secnumdepth}{2}
 \usepackage{listings, ./listings-rust}
 
+\date{} % for empty date
+
 % Custom settings
 \setlength{\parindent}{0pt} % No indentation
-\setlength{\parskip}{0.5em} % Space between paragraphs
-\renewcommand{\baselinestretch}{1.2} % Line spacing
+\setlength{\parskip}{0.2em} % Space between paragraphs
+\renewcommand{\baselinestretch}{1.0} % Line spacing
 
 % Title and Author
 \title{
   \textbf{Nexium} \\
-  \large Un système économique décentralisé pour étudiants \\
+  \large Un micro-système économique décentralisé pour étudiants \\
     basé sur la blockchain et la cryptographie}
 
 \author{
@@ -32,36 +34,34 @@
     \and
     William VALENDUC \\ \texttt{william.valenduc@epita.fr}
 }
-\date{\today}
 
 \begin{document}
 
 \maketitle
 
-\renewcommand{\contentsname}{Sommaire}
-\tableofcontents
-\newpage
+%\renewcommand{\contentsname}{Sommaire}
+%\tableofcontents
+%\newpage
 
 
 \section{Principe fondamental de Nexium}
 Nexium serait une monnaie virtuelle décentralisée conçue pour les étudiants d'Épita. Chaque participant disposera d'une paire de clés cryptographiques (privée et publique) de type RSA associée à son adresse \texttt{@epita.fr}, permettant d'authentifier et de sécuriser les transactions de crédits entre utilisateurs. Grâce à une architecture distribuée, Nexium garantira la transparence et l'intégrité des virements, tout en offrant une expérience simple et accessible via une interface graphique. La monnaie du réseau Nexium, le \texttt{NXM}, sera utilisée pour effectuer des transactions entre les utilisateurs, qui pourront consulter leur solde et leur historique de transactions de manière publique.
 
-Le réseau Nexium s'articule donc comme une blockchain privée, où chaque utilisateur est un noeud du réseau.
+Le réseau Nexium s'articule donc comme une blockchain privée intrinsèquement liée à Epita, où chaque utilisateur est un noeud du réseau.
 
 Notre projet s'articulera donc en ces trois axes inter-dépendants :
 \begin{itemize}
     \item \textbf{La blockchain Nexium (le réseau) :} les fonctionnalités de communication, vérifications et synchronisation des blocs.
     \item \textbf{L'interface utilisateur :} les fonctionnalités graphiques, de gestion de compte, de virements, et de consultation de blocs.
-    \item \textbf{Les implémentations cryptographiques :} les fonctionnalités de chiffrement, déchiffrement, signature et vérification de données. Nous utiliserons le standard RSA pour la cryptographie asymétrique, et le standard SHA-256 pour les fonctions de hachage. Pour répondre à la consigne de ce projet, nous implémenterons toutes les fonctions liées à cette partie nous-même, sans utiliser de bibliothèques externes (y compris pour les fonctions arithmétiques, le RSA étant basé sur la primeur de grands nombres).
+    \item \textbf{Les implémentations cryptographiques :} les fonctionnalités "backend" de chiffrement, déchiffrement, signature et vérification de données. Nous utiliserons le chiffrement RSA appliqué au standard GPG pour la cryptographie asymétrique, et le standard SHA-256 pour les fonctions de hachage. Afin de correspondre à la consigne du projet, nous implémenterons toutes les fonctions liées à cette partie nous-même, sans utiliser de bibliothèques externes (y compris pour les fonctions arithmétiques, le RSA étant basé sur la primeur de grands nombres).
     
 \end{itemize}
 
 \section{Organisation théorique du réseau}
 
-Chaque bloc, contenant un type d'information unique, sera horodaté, signé par l'émetteur du message et validé par les autres utilisateurs du réseau. Afin de faciliter le calcul des soldes disponibles de chaque utilisateurs, ils seront calculés de manière périodique et intégrés en tant que blocs. Si un membre du réseau détecte un message dont la signature est invalide, il peut le signaler aux autres membres du réseau, qui pourront alors le rejeter et marquer le bloc comme invalide.
+Chaque bloc, contenant un type d'information unique, sera horodaté, signé par l'émetteur du message et validé par les autres utilisateurs du réseau. Afin de faciliter le calcul des soldes disponibles de chaque utilisateurs, ils seront calculés de manière régulière et intégrés en tant que blocs de résumés (dits \texttt{Checkpoints}). Si un membre du réseau détecte un message dont la signature est invalide, il peut le signaler aux autres membres du réseau, qui pourront alors le rejeter et marquer le bloc comme invalide.
 
-Bien que ce prototype est enclin à évoluer au fur et à mesure du développement de Nexium, nous avons pour l'instant défini les types de blocs suivants, que nous avons choisi de représenter en Rust :
-
+Nous avons pour l'instant défini les types de blocs suivants, représentés en Rust:
 
 \begin{lstlisting}[language=Rust,xleftmargin=.4\textwidth]
 enum BlockType {
@@ -74,7 +74,7 @@ enum BlockType {
 
 Définissons également les types suivants : 
 \begin{itemize}
-    \item \texttt{Login}: une chaîne de caractères représentant le login Epita de l'utilisateur (prenom.nom).
+    \item \texttt{Login}: une chaîne de caractères représentant le login Epita de l'utilisateur (prenom.nom). La vérification du format de la chaîne sera faite à partir d'une expression régulière.
     \item \texttt{Hash}: une chaîne de caractères représentant un hash.
 \end{itemize}
 
@@ -83,7 +83,7 @@ Tout bloc contiendra toujours au moins ces quatre champs :
     \item \texttt{type} indiquant le type de bloc (type: \texttt{BlockType}).
     \item \texttt{emitter} indiquant le login de l'émetteur du bloc. (type: \texttt{Login})
     \item \texttt{timestamp} indiquant la date et l'heure de création du bloc. (type: \texttt{DateTime})
-    \item \texttt{id\_hash} un hash du bloc, permettant de l'identifier de manière unique. (type: \texttt{Hash})
+    \item \texttt{id\_hash} un hash du bloc, permettant de l'identifier de manière unique. Cet identifiant sera incrémental. (type: \texttt{Hash})
     \item \texttt{control} une trame permettant de vérifier l'intégrité et l'authenticité du bloc. (type: \texttt{Hash})
 
 \end{itemize}

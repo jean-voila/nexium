@@ -1,12 +1,12 @@
 use crate::random::randint;
 
+// use num_bigint::{BigUint, RandBigInt};
 
 mod tests;
 // for debugging purposes, we can set this to true.
 // it will make the prime number generation easier,
 // beginning with 5 digits prime numbers at most.
 const EASY_CALC: bool = true;
-
 
 // Returns a random, large prime number.
 pub fn _gen_prime() -> u128 {
@@ -17,7 +17,7 @@ pub fn _gen_prime() -> u128 {
     let mut p: u128 = randint(0, max_prime);
 
     // Ensure p is odd
-    p |= 1; 
+    p |= 1;
 
     loop {
         if _is_prime(p) {
@@ -55,14 +55,12 @@ pub fn _mod_inverse(a: u128, m: u128) -> Option<u128> {
             return Some(n);
         }
 
-        if n == m-1 {
+        if n == m - 1 {
             return None;
         }
     }
-
     return None;
 }
-
 
 // Again, AFIT nostalgia..
 // Takes a number n and returns true if it is prime, false otherwise.
@@ -70,7 +68,6 @@ fn _is_prime(n: u128) -> bool {
     if n <= 1 {
         return false;
     }
-
     if n <= 3 {
         return true;
     }
@@ -78,7 +75,6 @@ fn _is_prime(n: u128) -> bool {
     if n % 2 == 0 || n % 3 == 0 {
         return false;
     }
-
     let mut i: u128 = 5;
     while i * i <= n {
         if n % i == 0 || n % (i + 2) == 0 {
@@ -86,6 +82,18 @@ fn _is_prime(n: u128) -> bool {
         }
         i += 6;
     }
-
     return true;
 }
+
+// According to the French Miller-Rabin algorithm's page,
+// here is the algorithm to follow to determine the probability
+// that a number is prime :
+// https://fr.wikipedia.org/wiki/Test_de_primalit%C3%A9_de_Miller-Rabin
+
+//Miller-Rabin(n,k):          entrées : n un entier impair ≥ 3, k un entier ≥ 1
+//répéter k fois :
+//choisir a aléatoirement dans l'intervalle [2, n – 1]
+//si Témoin_de_Miller(n,a)
+//  renvoyer Faux                   sortie de boucle, n est composé
+//Fin de boucle répéter
+//renvoyer Vrai                     n est probablement //premier (si k est suffisamment grand)

@@ -2,7 +2,12 @@
 name = "nexium"
 version = "0.1.0"
 edition = "2021"
-authors = ["Jean HERAIL <jean.herail@epita.fr>", "Antonin BESSIÈRES <antonin.bessieres@epita.fr>", "William VALENDUC <william.valenduc@epita.fr>", "Milo DELBOS <milo.delbos@epita.fr>"]
+authors = [
+    "Jean HERAIL <jean.herail@epita.fr>",
+    "Antonin BESSIÈRES <antonin.bessieres@epita.fr>",
+    "William VALENDUC <william.valenduc@epita.fr>",
+    "Milo DELBOS <milo.delbos@epita.fr>",
+]
 description = "A virtual, decentralized, encryption-based money system."
 readme = "README.md"
 repository = "https://gitlab.cri.epita.fr/jean.herail/nexium"
@@ -10,3 +15,5 @@ license-file = "LICENSE"
 
 
 [dependencies]
+rand = "0.8"
+num-bigint = { version = "0.4", features = ["rand"] }

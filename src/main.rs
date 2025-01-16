@@ -2,13 +2,12 @@ use std::env;
 
 const USAGE: &str = "Usage: nexium <first_name> <last_name>";
 
-mod rsa;
 mod accounts;
-mod random;
 mod maths;
+mod random;
+mod rsa;
 
 fn main() {
-
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 || args.contains(&String::from("--help")) {
         println!("{}", USAGE);
@@ -28,7 +27,4 @@ fn main() {
 
     println!("{}", account);
     return;
-
 }
-
-
