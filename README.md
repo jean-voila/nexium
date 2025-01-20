@@ -21,3 +21,4 @@ _Nexium_ is a virtual, decentralized, encryption-based money system.
 Before writing any code, **change your Word Wrapp setting to "wordWrapColumn": 80** in your VSCode settings. This is essential, as it's said on our CdC that we have to give a project that respects the 80 characters per line rule. If you have any questions about this procedure ask on the group's Discord server.
 
 
+
