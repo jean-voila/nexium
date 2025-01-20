@@ -15,7 +15,7 @@ _Nexium_ is a virtual, decentralized, encryption-based money system.
 
 - [Live Share](https://marketplace.visualstudio.com/items?itemName=MS-vsliveshare.vsliveshare). It's a tool to share your code with other developers in real-time. We'll use it for live coding sessions.
 
-- [LaTex Worksgop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop). It's a tool that we use for writing the project documentation. It has some great features such as the live preview in a VSCode tab, and graphic buttons to compile the document. (*I think you'll have to install a LaTex distribution on your computer to use this extension. Just follow the instructions on the extension page*)
+- [LaTex Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop). It's a tool that we use for writing the project documentation. It has some great features such as the live preview in a VSCode tab, and graphic buttons to compile the document. (*I think you'll have to install a LaTex distribution on your computer to use this extension. Just follow the instructions on the extension page*)
 
 ## IMPORTANT: 
 Before writing any code, **change your Word Wrapp setting to "wordWrapColumn": 80** in your VSCode settings. This is essential, as it's said on our CdC that we have to give a project that respects the 80 characters per line rule. If you have any questions about this procedure ask on the group's Discord server.
