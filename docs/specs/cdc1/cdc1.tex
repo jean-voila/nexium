@@ -1,0 +1,179 @@
+\documentclass[a4paper,12pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc} % UTF-8 encoding
+\usepackage[T1]{fontenc} % Font encoding
+\usepackage{lmodern} % Latin Modern font
+\usepackage[margin=3.2cm]{geometry} % Page margins
+\usepackage{graphicx} % Insert images
+\usepackage{amsmath,amsfonts,amssymb} % Math symbols
+\usepackage[colorlinks=true, linkcolor=black, urlcolor=blue]{hyperref} % Hyperlinks
+\usepackage{xcolor} % Colors
+\usepackage{fancyhdr} % Custom headers and footers
+\usepackage{lastpage} % Access the total number of pages
+\usepackage{booktabs} % Tables
+\graphicspath{ {./images/} } % Path to images
+
+%\setcounter{secnumdepth}{2}
+
+\date{} % for empty date
+
+% Custom settings
+\setlength{\parindent}{0pt} % No indentation
+%\setlength{\parskip}{0.2em} % Space between paragraphs%\renewcommand{\baselinestretch}{1.0} % Line spacing
+
+% Title and Author
+\title{
+  \textbf{Nexium} \\
+  \large Cahier des charges}
+
+\author{
+    Jean HERAIL \\ \texttt{jean.herail@epita.fr} 
+    \and 
+    Milo DELBOS \\ \texttt{milo.delbos@epita.fr} 
+    \and 
+    Antonin BESSIÈRES \\ \texttt{antonin.bessieres@epita.fr}
+    \and
+    William VALENDUC \\ \texttt{william.valenduc@epita.fr}
+}
+
+
+
+
+% Footer customization
+\pagestyle{fancy}
+
+% Nexium at the left of the header, and "Cahier des charges" at the right
+\fancyhf[HL]{\textbf{NEXIUM}}
+\fancyhf[HR]{\textbf{Cahier des charges}}
+
+\fancyfoot[C]{\thepage/\pageref{LastPage}} % Footer center: current page / total pages
+\begin{document}
+
+%\onecolumn
+\maketitle
+
+\renewcommand{\contentsname}{Sommaire}
+\tableofcontents
+\newpage
+
+%\twocolumn
+
+
+\section{Introduction}
+
+Le projet \textbf{Nexium} vise à développer une monnaie virtuelle décentralisée spécifiquement conçue pour les étudiants d'Épita. Chaque utilisateur disposera d'une paire de clés cryptographiques \textbf{RSA} (privée et publique) associée à son adresse \textit{@epita.fr}, garantissant l'authentification et la sécurité des transactions de crédits entre les participants. Grâce à une architecture distribuée, Nexium assurera la transparence et l'intégrité des transactions tout en offrant une interface graphique simple et accessible.\\
+
+La monnaie du réseau Nexium, le \textbf{NEX}, sera utilisée pour effectuer des transactions entre les utilisateurs, qui pourront consulter leur solde et leur historique de transactions de manière publique. Le réseau Nexium fonctionne comme une blockchain ouverte liée directement à Épita, où chaque utilisateur peut constituer un nœud du réseau.\\
+
+Le projet se décompose en trois axes interdépendants : la gestion des communications, vérifications et synchronisation des blocs pour la blockchain Nexium (le réseau), le développement des fonctionnalités graphiques, gestion des comptes, virements et consultation des blocs pour l'interface utilisateur, et le développement des fonctionnalités de chiffrement, déchiffrement, signature et vérification des données pour les implémentations cryptographiques, en utilisant le chiffrement \textbf{RSA} selon le standard \textbf{GPG} pour la cryptographie asymétrique et le standard \textbf{SHA-256} pour les fonctions de hachage, toutes ces fonctions étant implémentées en interne sans recours à des bibliothèques externes.\\
+
+
+\section{État de l'art et choix techniques}
+
+\subsection{Architecture du réseau}
+Afin de garantir la distribution du réseau, nous avons opté pour un protocole de type \textbf{blockchain}. Cette architecture, basée sur un registre immuable de blocs incrémentalement liés, nous permet d’assurer une large distribution, et donc une décentralisation plus flexible des informations du réseau. Le projet Nexium se décline en deux binaires : un \textbf{client} et un \textbf{serveur}.\\
+
+Ce dernier permet à n’importe quel utilisateur du réseau de participer à sa robustesse, en apportant sa capacité de stocker, diffuser, et valider les blocs. C’est cette force communautaire qui nous a fait choisir cette méthode décentralisée :  un tel fonctionnement par réseau fédéré permettra à Nexium d’être toujours viable, même si des serveurs venaient à être hors-ligne.\\
+
+Enfin, plus le nombre de nœuds (serveurs) du réseau sera élevé, plus ce dernier sera sûr et stable, grâce à la fonction validatrice que prend chaque serveur.\\
+
+
+\subsection{Cryptographie}
+
+\subsubsection{Algorithme}
+Nous avions pour la partie cryptographique de Nexium, le choix entre plusieurs algorithmes de chiffrement. Nous avons étudié deux d'entre eux, qui sont les standards de la cryptographie moderne : \textbf{RSA} et \textbf{ECDSA}.\\
+
+Pour des raisons d'implémentaton et de complexité algorithmique, nous avons retenu le chiffrement RSA, qui se base sur la factorisation de grands nombres premiers. Cet algorithme est plus simple à implémenter que l'ECDSA, qui se base sur les courbes elliptiques.\\
+
+Le RSA est un algorithme de chiffrement asymétrique, qui utilise une paire de clés : une \textbf{clé publique} pour chiffrer les données, et une \textbf{clé privée} pour les déchiffrer. Il a été inventé en 1977 par \textit{Ron Rivest}, \textit{Adi Shamir} et \textit{Leonard Adleman}, et est aujourd'hui largement utilisé pour sécuriser les communications sur Internet. C'est notamment le cas pour le \textbf{SSH}, le \textbf{HTTPS}, et les signatures numériques. Nous utiliserons donc le protocole de chiffrement \textbf{RSA} pour la cryptographie au sein du projet Nexium.\\
+
+\subsubsection{Implémentation}
+De par l'utilisation du Gitlab d'Épita pour récupérer des clés publiques, nous avons décidé d'utiliser le standard \textbf{GPG} pour la gestion des clés RSA. Cela nous permet de récupérer les clés publiques des utilisateurs de manière sécurisée, et de les utiliser pour chiffrer les données.\\
+
+Le programme Nexium génère une paire de clés RSA pour chaque utilisateur, la formate en \textbf{ASN1}, convertit le résultat en \textbf{DER binaire}, l'encode en \textbf{base64}, et créée un fichier de type \textbf{PEM}. Cette manière de stocker et standardiser la clé publique est largement reconnue et compatible avec l'interface du Gitlab.\\
+
+
+\subsection{Récupération des clés publiques}
+Les clés publiques des utilisateurs de Nexium sont stockées sur le \textbf{Gitlab} d'Épita. Pour récupérer ces clés, nous utilisons l'\textbf{API} du Gitlab, qui nous permet de récupérer les clés publiques des utilisateurs en fonction de leur login (\texttt{prénom.nom}).\\
+
+L'utilisation de cette API se fait par requêtes \textbf{HTTP}, et son utilisation est détaillée sur la \textbf{documentation officielle de Gitlab}.\\
+
+Nous aurions pu utiliser le stockage des clés publiques dans la blockchain, mais préférer utiliser Épita comme autorité d'authentification garantit au réseau que seuls les étudiants (et professeurs!) d'Épita puissent l'utiliser. De plus, cette méthode permet une plus grande flexibilité dans la gestion des clés publiques : les utilisateurs peuvent \textbf{ajouter}, \textbf{supprimer} ou \textbf{révoquer} leurs clés à tout moment sans incidence sur la blockchain. Il s'agit donc d'un compromis volontaire favorisant la simplicité d'utilisation à la décentralisation totale.\\
+
+
+\subsection{Interface utilisateur}
+
+Nous avons étudié plusieurs possibilités de frameworks graphiques compatibles avec Rust pour le développement de l'interface utilisateur de Nexium. Les choix que nous avons étudiés étaient \textbf{Iced}, \textbf{Tauri} et \textbf{Slint}.\\
+
+Afin d'éviter différents problèmes de stabilité et de performances, nous avons écarté l'utilisation de Tauri, qui se base sur du web pour le rendu graphique.\\
+
+Enfin, et après avoir analysé sur différentes sources la réputation des deux autres frameworks, nous avons choisi d'utiliser \textbf{Slint} pour le développement de l'interface utilisateur de Nexium. Le critère principal de ce choix est la simplicité d'utilisation et la facilité de prise en main de Slint, qui est très bien documenté, possède une communauté active, et dont la \textbf{compatibilité} avec Rust est excellente.\\
+
+
+\subsection{Stockage local}
+
+\subsubsection{Pour la blockchain}
+Chaque serveur de Nexium stocke \textbf{localement} une copie de la blockchain. Cela permet de garantir la \textbf{synchronisation} des blocs entre les différents nœuds du réseau, et de garantir l'intégrité des transactions.\\
+
+Afin de stocker localement la blockchain, et pour appliquer des optimisations de traitement qui fluidifieront les transactions du réseau, nous avons choisi d'utiliser une base de données \textbf{SQLite}.\\
+
+Cette base de données est légère, rapide, et facile à utiliser, et permet de stocker les blocs de la blockchain de manière structurée. Ce qui nous a également séduit dans SQLite est qu'elle ne nécessite \textbf{pas de dépendances} externes, les données étant stockées dans un \textbf{fichier unique} (et donc exportable!).\\
+
+Nous utiliserons le crate \texttt{rusqlite}, qui est un wrapper Rust pour \textbf{SQLite}.\\
+
+\subsubsection{Pour les clés RSA}
+Comme mentionné plus haut, les clés \textbf{RSA} seront stockées (et transférées) en format \textbf{PEM}. Le programme Nexium (client ou serveur) stocke donc localement les clés RSA de l'utilisateur dans un \textbf{chemin relatif} au binaire.\\
+
+
+\section{Répartition des tâches}
+
+Afin de mener à bien le projet Nexium, nous avons pris le parti de fonctionner en deux temps.\\
+
+la \textbf{première période} s'étend jusqu'à la semaine du 7 avril, soit la deuxième soutenance. Cette première période est dédiée à la création des fondamentaux du projet, c'est à dire l'implémentation des algorithmes cryptographiques, et la gestion de la blockchain par le serveur.\\
+
+Durant cette première période, notre équipe sera donc divisée en deux groupes:
+
+\begin{itemize}
+\item \textbf{Groupe 1} : \textbf{Jean} et \textbf{William} développeront le serveur Nexium (gestion de la base de données, logique de la blockchain, fichiers de configuration...)
+
+\item \textbf{Groupe 2} : \textbf{Milo} et \textbf{Antonin} implémenteront les fonctionnalités cryptographiques de Nexium, donc le RSA, le GPG, et le SHA-256.
+\end{itemize}
+
+Afin de fluidifier le travail de chaque équipe en parallèle, des réunions hebdomadaires ont déjà été planifiées. De plus, les prototypes de toutes les fonctions cryptographiques nécessaires au développement du serveur Nexium seront écrites en amont, avec des valeurs de retours par défaut, pour quand même permettre de tester le serveur.\\
+
+La \textbf{deuxième période} du projet Nexium concernera le développement du client. Cette période s'étendra de la deuième soutenance à la soutenance finale, et sera dédiée à l'implémentation de l'interface utilisateur, et à la gestion des communications entre le client et le serveur.\\
+
+Tous les membres de l'équipe travailleront sur le client, et les tâches seront réparties en fonction des compétences de chacun. Nous prévoyons de créer ultérieurement, en fonction de l'avancement du projet, un sous-groupe pour le backend du client, et un autre pour le frontend. \\
+
+\begin{table}[]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}|l|l|l|l|@{}}
+    \toprule
+    \multicolumn{1}{|c|}{\textbf{Personne}} & \multicolumn{1}{c|}{\textbf{Tâche}} & \multicolumn{1}{c|}{\textbf{Description}} & \multicolumn{1}{c|}{\textbf{Deadline}} \\ \midrule
+    Antonin / Milo & Implémentation du RSA. & \begin{tabular}[c]{@{}l@{}}Chiffrement et déchiffrement.\\ Signature et vérification de signature.\\ \\ L'implémentation du RSA se fait sous forme d'un crate\\ contenant une librairie dans le package cargo de Nexium.\\ \\ Cela nous permet d'utiliser le RSA dans le client et le serveur,\\ qui sont deux crates binaires du même package.\end{tabular} & Première soutenance \\ \midrule
+    Antonin / Milo & Implémentation de SHA-256. & \begin{tabular}[c]{@{}l@{}}Fonction de hashage SHA-256.\\ Le hashage nous permet de générer plus facilement les signatures,\\  et de donner un identifiant unique à chaque bloc.\end{tabular} & Première soutenance \\ \midrule
+    Jean / William & Gestion de la base de données. & Stockage, lecture et traitement de la blockchain via SQLite. & Première soutenance \\ \midrule
+    Jean / William & Gestion du réseau. & \begin{tabular}[c]{@{}l@{}}Communication entre serveurs et avec les clients. Création d'une \\ API propre à Nexium.\end{tabular} & Première soutenance \\ \midrule
+    Jean / William & Fichiers de configuration. & \begin{tabular}[c]{@{}l@{}}Enregistrement et chargement de fichiers de configurations au format\\  TOML ou YAML (à déterminer) pour le serveur.\end{tabular} & Première soutenance \\ \midrule
+    Antonin / William / Jean / Milo & Création du client et de l'interface graphique. & \begin{tabular}[c]{@{}l@{}}Développement du GUI, de la création de requêtes API avec les serveurs,\\  et de créations de blocs transactionnels.\end{tabular} & Soutenance finale \\ \bottomrule
+    \end{tabular}%
+    }
+    \end{table}
+
+\section{Planification détaillée de réalisation}
+Voici le diagramme de Gantt de la réalisation du projet Nexium :\\
+\includegraphics[width=\textwidth]{gantt.png}
+
+\newpage
+\section{Conclusion}
+Pour conclure, le projet Nexium représente une initiative innovante visant à instaurer un écosystème interactif, sécurisé et décentralisé pour les étudiants Épita tout en s’appuyant sur une approche moderne avec des éléments comme la blockchain et la cryptographie.\\
+
+Ce projet constitue également une opportunité éducative précieuse, il offre une application concrète des systèmes les plus en vogue dans le monde actuellement tout en développant notre panel de connaissances en gestion de réseaux et en cryptographie.\\
+
+Il sera également une solution facile d’accès et sur mesure pour la communauté étudiante pour se renseigner et/ou s’impliquer dans le domaine de la cryptographie.\\
+
+Les prochaines étapes de ce projet consisteront à réaliser au mieux l’ensemble de ce projet tout en ajustant le système en fonction des retours recueillis par les utilisateurs, tout en espérant réussir à concrétiser notre vision d’un écosystème sérieux et pratique pour notre école.
+
+\end{document}
