@@ -2,19 +2,21 @@
 name = "nexium"
 version = "0.1.0"
 edition = "2021"
+default-run = "nexium-server"
 
 
 [[bin]]
-name = "client"
+name = "nexium-client"
 path = "src/bin/client/main.rs"
 
 [[bin]]
-name = "server"
+name = "nexium-server"
 path = "src/bin/server/main.rs"
 
+
 [lib]
-name = "rsa"
-path = "src/lib/rsa/main.rs"
+name = "nexium"
+path = "src/lib/main.rs"
 
 
 [dependencies]

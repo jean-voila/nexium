@@ -5,7 +5,6 @@ use num_primes::Generator;
 
 pub struct KeyPair {
     pub bit_length: usize,
-    version: u8,
     n: BigUint,
     e: BigUint,
     d: BigUint,
@@ -38,7 +37,6 @@ impl KeyPair {
 
         return KeyPair {
             bit_length,
-            version: 0,
             n: n,
             e: e,
             d: d,
@@ -52,15 +50,14 @@ impl KeyPair {
         // Please refer to the documentation (I've sent links on discord)
         todo!();
     }
+}
 
-    pub fn debug_print(&self) {
-        println!("RSA KeyPair:");
-        println!("  - Bit length: {}", self.bit_length);
-        println!("  - Version: {}", self.version);
-        println!("  - n: {}", self.n);
-        println!("  - e: {}", self.e);
-        println!("  - d: {}", self.d);
-        println!("  - p: {}", self.p);
-        println!("  - q: {}", self.q);
+impl std::fmt::Debug for KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "n: {:x};\ne: {:x};\nd: {:x};\np: {:x};\nq: {:x}\n",
+            self.n, self.e, self.d, self.p, self.q
+        )
     }
 }
