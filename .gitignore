@@ -63,3 +63,4 @@ docs/**/*.fls
 # Added by cargo
 
 /target
+test_data/
