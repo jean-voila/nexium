@@ -1,8 +1,9 @@
-use std::path::Path;
-use config::Config;
-use nexium::rsa;
 mod config;
 mod srv_network;
+
+use config::Config;
+use nexium::rsa;
+use std::path::Path;
 
 fn main() {
     /////////////////////////
@@ -13,11 +14,11 @@ fn main() {
 
     /////////////////////////
     // config test
-    // let p = Path::new("./test_data/config.json");
+    let p = Path::new("./test_data/config.json");
     // let config: Config = config::Config::new();
     // config.to_file(p);
 
-    // let cfg = Config::from_file(p);
-    // dbg!(cfg);
+    let cfg = Config::from_file(p);
+    dbg!(cfg);
     /////////////////////////
 }
