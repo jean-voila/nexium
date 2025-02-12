@@ -106,6 +106,7 @@ dependencies = [
  "json",
  "num-bigint 0.4.6",
  "num-primes",
+ "num-traits",
  "rusqlite",
 ]
 
