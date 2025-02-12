@@ -51,15 +51,16 @@ check(https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/) 
 use num_primes::Generator;
 use num_traits::ToPrimitive;
 
-//NEED TO TEST
+//tranform a string in a binary string
 pub fn preprocessing(s: String) -> String {
     let mut data = String::new();
     for character in s.clone().into_bytes() {
-        data += &format!("0{:b} ", character);
+        data += &format!("{:08b} ", character);
+        data.pop();
     }
     data.push('1');
-    let mut len = data.len();
-    while len < 64 || len % 512 != 0 {
+    let mut len = data.len() - 1;
+    while (len % 512) != 448 {
         data.push('0');
         len += 1;
     }
@@ -68,6 +69,7 @@ pub fn preprocessing(s: String) -> String {
     for b in bigenlen {
         data += &format!("{:08b}", b);
     }
+    data.pop();
     data
 }
 // function for processing, that's where we do all the job
@@ -95,10 +97,15 @@ pub fn processing(s: String) {
     }
     let len = (s.len() * 8) as u64;
     let nbchunks = len / 512;
-    let dataarray = [0u32; 64];
+    let mut dataarray = [0u32; 64];
     for i in 0..nbchunks {
         for j in 0..16 {
-            dataarray[j] = &data[j * 32..(j + 1) * 32];
+            let mut val = 0u32;
+            for k in 0..32 {
+                let cur = s.chars().nth((i * 512 + j * 32 + k) as usize).unwrap();
+                val += cur.to_digit(2).unwrap() << (31 - k);
+            }
+            dataarray[j as usize] = val;
         }
     }
 }
