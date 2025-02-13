@@ -107,5 +107,48 @@ pub fn processing(s: String) {
             }
             dataarray[j as usize] = val;
         }
+        for j in 16..64 {
+            let s0 =
+                (dataarray[j - 15] >> 7) ^ (dataarray[j - 15] >> 18) ^ (dataarray[j - 15] >> 3);
+            let s1 = (dataarray[j - 2] >> 17) ^ (dataarray[j - 2] >> 19) ^ (dataarray[j - 2] >> 10);
+            dataarray[j] = dataarray[j - 16] + s0 + dataarray[j - 7] + s1;
+        }
+        let mut a = hash_val[0];
+        let mut b = hash_val[1];
+        let mut c = hash_val[2];
+        let mut d = hash_val[3];
+        let mut e = hash_val[4];
+        let mut f = hash_val[5];
+        let mut g = hash_val[6];
+        let mut h = hash_val[7];
+        for j in 0..64 {
+            let s1 = (e >> 6) ^ (e >> 11) ^ (e >> 25);
+            let ch = (e & f) ^ ((!e) & g);
+            let temp1 = h + s1 + ch + round_const[j] + dataarray[j];
+            let s0 = (a >> 2) ^ (a >> 13) ^ (a >> 22);
+            let maj = (a & b) ^ (a & c) ^ (b & c);
+            let temp2 = s0 + maj;
+            h = g;
+            g = f;
+            f = e;
+            e = d + temp1;
+            d = c;
+            c = b;
+            b = a;
+            a = temp1 + temp2;
+        }
+        hash_val[0] += a;
+        hash_val[1] += b;
+        hash_val[2] += c;
+        hash_val[3] += d;
+        hash_val[4] += e;
+        hash_val[5] += f;
+        hash_val[6] += g;
+        hash_val[7] += h;
     }
+    let mut res = String::new();
+    for i in 0..8 {
+        res += &format!("{:08x}", hash_val[i]);
+    }
+    println!("{}", res);
 }
