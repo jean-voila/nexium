@@ -20,10 +20,12 @@ impl KeyPair {
     pub fn generate(bit_length: usize) -> KeyPair {
         // I've only found this ugly way to convert the BigUint... sorry
         let p_prime: num_primes::BigUint = Generator::new_prime(bit_length / 2);
-        let p: BigUint = BigUint::parse_bytes(p_prime.to_string().as_bytes(), 10).unwrap();
+        let p: BigUint =
+            BigUint::parse_bytes(p_prime.to_string().as_bytes(), 10).unwrap();
 
         let q_prime: num_primes::BigUint = Generator::new_prime(bit_length / 2);
-        let q: BigUint = BigUint::parse_bytes(q_prime.to_string().as_bytes(), 10).unwrap();
+        let q: BigUint =
+            BigUint::parse_bytes(q_prime.to_string().as_bytes(), 10).unwrap();
 
         // N.B : We're not wondering about the perormance cost of using
         // the clone() method here, because the user will generate the key
