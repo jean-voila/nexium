@@ -1,7 +1,10 @@
 use json;
-// use nexium::login::Login;
 use std::fs;
+use std::io;
+use std::io::prelude::*;
 use std::path::Path;
+
+const DEFAULT_PATH: &str = "./test_data/config.json";
 
 const DEFAULT_PORT: u16 = 4242;
 const DEFAULT_DB_FILE: &str = "./blockchain.db";
@@ -16,8 +19,51 @@ pub struct Config {
     /// Port on which the server will listen
     port: u16,
     /// User login to use for the server
-    // user_id: Login<'a>,
     user_id: String,
+}
+
+fn read_line() -> String {
+    let mut line = String::new();
+    io::stdin()
+        .read_line(&mut line)
+        .expect("Error reading line");
+    return line.trim().to_string();
+}
+
+pub fn generate_config() {
+    println!("Where to generate config? (default: {DEFAULT_PATH})");
+
+    let line = read_line();
+
+    let p = if line.len() == 0 {
+        Path::new(DEFAULT_PATH)
+    } else {
+        Path::new(&line)
+    };
+
+    if p.exists() {
+        println!("File already exists, overwrite? (y/n) ");
+        let line = read_line();
+
+        if line.len() == 0 || line.chars().next().unwrap() != 'y' {
+            println!("Aborting config generation");
+            return;
+        }
+    }
+
+    println!("Enter user id: ");
+    let user_id = read_line();
+    if user_id.len() == 0 {
+        println!("User id cannot be empty, aborting config generation");
+        return;
+    }
+
+    // user_id check ?
+
+    let mut config = Config::new();
+    config.user_id = user_id;
+    config.to_file(p);
+    println!("Config generated with default values at '{}'", p.display());
 }
 
 impl Config {
@@ -62,7 +108,8 @@ impl Config {
         config_obj["keys"] = self.keys_filepath.to_string().into();
         config_obj["port"] = self.port.into();
         config_obj["user_id"] = self.user_id.to_string().into();
-        fs::write(path, config_obj.pretty(4).as_bytes()).expect("Error writing config file");
+        fs::write(path, config_obj.pretty(4).as_bytes())
+            .expect("Error writing config file");
     }
 }
 

@@ -1,12 +1,22 @@
-//mod config;
+mod blockchain;
+mod config;
 //mod srv_network;
 
-//use config::Config;
-//use nexium::rsa;
-use nexium::sha256;
-//use std::path::Path;
+use config::generate_config;
+// use nexium::rsa;
+// use nexium::sha256;
+use std::env;
+
+const GEN_CONFIG_ARG: &str = "--generate-config";
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.contains(&GEN_CONFIG_ARG.to_string()) {
+        generate_config();
+        return;
+    }
+
     /////////////////////////
     // rsa test
     // let keypair = rsa::KeyPair::generate(2048);
@@ -23,12 +33,12 @@ fn main() {
     // dbg!(cfg);
     /////////////////////////
 
-    let string_test: String = String::from("je hais ce monde");
-    dbg!(string_test.clone());
+    // let string_test: String = String::from("je hais ce monde");
+    // dbg!(string_test.clone());
 
-    let preprocessed = sha256::preprocessing(string_test.clone());
-    dbg!(preprocessed.clone());
+    // let preprocessed = sha256::preprocessing(string_test.clone());
+    // dbg!(preprocessed.clone());
 
-    let processed = sha256::processing(preprocessed.clone());
-    dbg!(processed.clone());
+    // let processed = sha256::processing(preprocessed.clone());
+    // dbg!(processed.clone());
 }
