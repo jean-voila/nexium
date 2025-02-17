@@ -1,14 +1,16 @@
 image: node:16
 
 pages:
-  stage: deploy
-  script:
-    - cd web
+
+  before_script:
     - npm ci
+
+  script:
     - npm run build
-    - mv dist ../public
+
   artifacts:
     paths:
       - public
+
   only:
     - main

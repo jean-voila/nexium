@@ -5,7 +5,7 @@ import starlight from '@astrojs/starlight';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://jean.herail.gitlab.cri.epita.fr',
-  base: '/web',
+  base: '/nexium',
   outDir: 'public',
   publicDir: 'static',
   integrations: [
