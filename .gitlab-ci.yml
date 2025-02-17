@@ -1,12 +1,14 @@
+image: node:16
+
 pages:
-  image: node:18
-  before_script:
-    - echo "$DOCKER_HUB_PASSWORD" | docker login --username $DOCKER_HUB_USER --password-stdin
-    - npm ci
+  stage: deploy
   script:
+    - cd web
+    - npm ci
     - npm run build
+    - mv dist ../public
   artifacts:
     paths:
       - public
   only:
-    - main
+    - master
