@@ -3,6 +3,7 @@ image: node:lts
 pages:
 
   before_script:
+    - cd web
     - npm i
 
 
