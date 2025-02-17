@@ -3,7 +3,8 @@ image: node:lts
 pages:
 
   before_script:
-    - npm ci
+    - npm i
+
 
   script:
     - npm run build
