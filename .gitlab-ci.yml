@@ -13,6 +13,8 @@ pages:
   artifacts:
     paths:
       - web/public
+  publish: web/public
 
   only:
     - main
+  
