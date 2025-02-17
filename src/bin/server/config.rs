@@ -1,7 +1,7 @@
 use json;
 use std::fs;
 use std::io;
-use std::io::prelude::*;
+// use std::io::prelude::*;
 use std::path::Path;
 
 const DEFAULT_PATH: &str = "./test_data/config.json";
@@ -78,7 +78,7 @@ impl Config {
     }
 
     /// Create a new Config from a json file
-    pub fn from_file(path: &Path) -> Config {
+    pub fn _from_file(path: &Path) -> Config {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => panic!("Error reading config file"),
