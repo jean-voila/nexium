@@ -12,7 +12,7 @@ pages:
 
   artifacts:
     paths:
-      - public
+      - web/public
 
   only:
     - main
