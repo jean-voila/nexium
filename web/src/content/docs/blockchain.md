@@ -1,3 +1,8 @@
+---
+title: La blockchain Nexium
+description: Architecture des blocs.
+---
+
 # The Nexium blockchain architecture
 
 ## Blockchain storage
@@ -32,10 +37,3 @@ When the memory pool is full, all the nodes begin to "mine" the transactions to 
 
 ## Network architecture
 `TODO`
-
-
----
-
-
-
-
