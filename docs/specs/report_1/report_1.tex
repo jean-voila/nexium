@@ -1,0 +1,417 @@
+\documentclass[a4paper,12pt,titlepage]{article}
+
+% Packages
+\usepackage[utf8]{inputenc} % UTF-8 encoding
+\usepackage[T1]{fontenc} % Font encoding
+\usepackage{lmodern} % Latin Modern font
+\usepackage[margin=3.3cm]{geometry} % Page margins
+\usepackage{graphicx} % Insert images
+\usepackage{amsmath,amsfonts,amssymb} % Math symbols
+
+
+
+
+\usepackage{svg}
+\usepackage{caption}
+\usepackage{float}  % Pour l'option [H]
+\usepackage{hyperref} % Hyperlinks
+\hypersetup{
+    colorlinks=true, % Active les liens colorés
+    linkcolor=black,  % Couleur des liens internes (table des matières, références)
+    citecolor=blue,  % Couleur des citations
+    filecolor=gray,  % Couleur des fichiers
+    urlcolor=blue    % Couleur des URLs
+}
+
+\usepackage{lipsum} % Juste pour ajouter du texte fictif
+
+\usepackage[skip=12pt plus1pt, indent=20pt]{parskip}
+
+\usepackage[normalem]{ulem}
+
+
+
+\usepackage{xcolor} % Colors
+\usepackage{fancyhdr} % Custom headers and footers
+\usepackage{lastpage} % Access the total number of pages
+\usepackage{booktabs} % Tables
+
+\usepackage{biblatex} %Imports biblatex package
+\addbibresource{report_1.bib} %Import the bibliography file
+
+\graphicspath{ {./images/} } % Path to images
+
+%\setcounter{secnumdepth}{2}
+
+\date{} % for empty date
+
+% Custom settings
+%\setlength{\parindent}{0pt} % No indentation
+%\setlength{\parskip}{0.2em} % Space between paragraphs%\renewcommand{\baselinestretch}{1.0} % Line spacing
+
+% Title and Author
+\title{
+  \textbf{Nexium} \\
+  \large Rapport de soutenance n°1}
+
+\author{
+    Jean HERAIL \\ \texttt{jean.herail@epita.fr} 
+    \and 
+    Milo DELBOS \\ \texttt{milo.delbos@epita.fr} 
+    \and 
+    Antonin BESSIÈRES \\ \texttt{antonin.bessieres@epita.fr}
+    \and
+    William VALENDUC \\ \texttt{william.valenduc@epita.fr}
+}
+
+
+
+
+% Footer customization
+\pagestyle{fancy}
+
+% Nexium at the left of the header, and "Cahier des charges" at the right
+\fancyhf[HL]{\textbf{NEXIUM}}
+\fancyhf[HR]{\textbf{Rapport de soutenance n°1}}
+
+\fancyfoot[C]{\thepage/\pageref{LastPage}} % Footer center: current page / total pages
+
+
+\begin{document}
+
+
+\vfill % Remplit l'espace avant le titre
+\maketitle
+\vfill % Remplit l'espace après le titre
+
+
+
+\newpage
+
+
+\begin{titlepage}
+  \vspace*{\fill}
+    \renewcommand{\contentsname}{Sommaire}
+    \tableofcontents
+
+  \vspace*{\fill}
+\end{titlepage}
+
+
+\newpage
+
+%\twocolumn
+
+
+\section{Introduction}
+Dans le cadre du projet de quatrième semestre à l’Epita, notre groupe a pris la décision d’entreprendre la création d’un outil que nous voulions pertinent, utile et ayant un sens pour les gens. C’est de cette conception particulière que naquit l’idée de \textbf{Nexium}.
+
+Il s’agit d’un protocole transactionnel pair-à-pair, basé sur la cryptographie, et destiné aux membres d’Epita (étudiants et personnels éducatifs). Basé sur la technologie de \textbf{blockchain} \cite{blockchain}, et construit selon le \textbf{Nakamoto-Consensus} \footnote{Le consensus de Nakamoto fait référence à la manière spécifique dont le réseau décentralisé de Bitcoin parvient à un accord sur l'état de sa blockchain.\cite{nakamotoconsensus}} établi avec le \textbf{Bitcoin} \footnote{La première et la plus capitalisée des cryptomonnaies, créée en 2009. \cite{bitcoin}} en 2008, Nexium s’assimile donc comme une réelle crypto-monnaie décentralisée, \textbf{trustless} \footnote{Le terme "trustless" ("sans confiance" en français) désigne un système ou des transactions où les parties peuvent interagir et échanger de la valeur sans avoir besoin de faire confiance à un tiers. Dans le contexte des cryptomonnaies, la trustless est souvent réalisée grâce à des protocoles cryptographiques basés sur la notion de "preuve de travail".}, indépendante et résiliente. Le produit final de Nexium se décline sous deux formes binaires : un client, et un serveur.
+
+Nous expliquerons en détail le rôle et l’agencement de ces deux pôles fondamentaux. Conformément aux contraintes techniques requises par le sujet, tout le projet est développé en \textbf{Rust} \cite{rust}. Ce langage de programmation, reconnu pour ses performances et sa \textbf{memory-safety}, \cite{memorysafety} est particulièrement propice et adapté dans le cadre d’un projet impliquant des notions de sécurité et cryptographie comme Nexium. La popularité de Rust rend tout aussi appréciable la découverte de son fonctionnement : la richesse de sa \textbf{documentation} \cite{rustdoc} et l’engagement de sa communauté permettent de résoudre aisément d’éventuels problèmes que l’on rencontre en développant.
+
+En outre, Nexium est un projet aussi ambitieux que captivant : \textbf{cryptographie, architecture et communication réseau, développement web, et travail de groupe} sont autant de compétences que chacun d’entre nous développe dans la réalisation de cet objectif commun.
+
+Nous aborderons dans ce rapport les \textbf{premières avancées} que nous avons pu réaliser lors de ces premières semaines de travail. Les notions techniques les plus importantes du projet seront explorées, et nous détaillerons également la situation globale du groupe, de son organisation, et des perspectives à venir.
+
+\newpage
+
+\section{Présentation des membres}
+\subsection{Jean HERAIL}
+
+Mon rôle pour ce début de projet est de développer, en tandem avec William, l'architecture de la blockchain et du réseau. Nous écrivons aussi, au fur et à mesure de notre avancement, la documentation théorique de Nexium au format \texttt{Markdown}, intégrée dans \textbf{le site web officiel de Nexium} \cite{nexiumsite} Cela implique de comprendre les mécanismes de la \textbf{blockchain}, de la \textbf{cryptographie}, et de la \textbf{communication réseau}.
+
+J'assume également le rôle de chef de projet, en charge de l'organisation du groupe et de la répartition des tâches. Je m'occupe également de l'écriture en \texttt{LaTex} des différents documents rendus.
+
+Étant moi même passionné de cryptographie, c'est tout naturellement que j'ai initialement suggéré à mon groupe l'idée d'une cryptomonnaie. Accompagnée par un \textit{synopsis} détaillant les grandes lignes théoriques du projet, l'idée à plu au groupe et a évolué au fil de plusieurs réunions et débats.
+
+Je suis également très intéressé par le langage \texttt{Rust}, que j'ai découvert par curiosité en amont de la SPÉ, et que j'ai eu la chance de découvrir plus en profondeur lors des cours du quatrième semestre. Les \textbf{TPs hebdomadaires} me permettent régulièrement de me familiariser avec les concepts de Rust, et d'acquiérir des automatismes dans l'écriture de code.
+
+Ce projet m'enthousiasme donc tant dans sa dimension \textbf{technique} que dans sa dimension \textbf{humaine}. Je suis ravi de pouvoir découvrir et travailler sur la blockchain dans un cadre aussi concret. Je dois aussi reconnaître que c'est une chance pour moi d'avoir pu être dans un groupe dont les membres sont aussi motivés, et avec qui je m'entendais déjà très bien avant le début du projet. Cette bonne entente me semble favoriser une communication fluide et efficace.
+
+
+\subsection{Milo DELBOS}
+
+Je suis Milo Delbos, étudiant à EPITA et anciennement bachelier spécialité mathématiques et physique. Mon attrait pour les matières scientifiques est ce qui m’a amené à prendre ce chemin d’études et qui m’a mené jusqu’ici. Je me débrouille en mathématiques ainsi qu’en théorie sur les raisonnements algorithmiques.
+
+Mon rôle dans ce projet consistera, avec Antonin, à s’occuper de toute la partie mathématique du projet, par cela j’entends réaliser les fonctions de chiffrement, déchiffrement et les calculs nécessaires pour les changements de type.
+
+Il est aussi évident que mon rôle est d'apporter un avis objectif et utile aux travaux de mes camarades s’ils en demandent afin d’améliorer le rendu global du projet.
+
+Nexium représente une pente à gravir, c’est le premier gros projet de ce type dans lequel je participe, ainsi, il me permet de développer des compétences utiles et meilleures dans tous les domaines touchés (mathématiques, algorithmique, travail de groupe et compétences sociales).
+
+Nous avons tous choisi ce projet car c’est une idée innovante et très intéressante qui n’a encore pas été vue, d’utiliser une blockchain et une crypto monnaie dans un cadre privé qui puisse répondre à beaucoup d’attentes et de requêtes et qui pourrait même être utile à l’école.
+
+Non seulement il y a mon attrait pour ce domaine de la crypto monnaie mais aussi toutes les possibilités derrières qui ne dépendent que de notre imagination, ainsi ce projet nous permettra de transmettre ce que l’on désire tout en améliorant nos compétences.
+
+\subsection{Antonin BESSIÈRES}
+
+Je m'appelle Antonin Bessieres, étudiant en deuxième année de prépa à l'EPITA, avec un bachelor spécialité Maths et NSI. 
+
+J'ai commencé à m'intéresser à l'informatique lors de mon stage de troisième que j'ai eu la chance de faire chez Thales à Paris. Cet intérêt m'a ensuite guidé dans mes choix d'orientation.
+
+Dans le cadre du projet, avec Milo, nous nous focaliserons en particulier sur l'aspect mathématique, en conséquence le chiffrement/déchiffrement et tous les calculs nécessaires à l'avancée du projet. Nexium est un projet que nous développerons sur le langage Rust que j'ai pu découvrir il y a peu de temps, mais que j'apprécie particulièrement.
+
+Ce projet me permet aussi d'aborder le chiffrement et tout un aspect serveur dont je n'avais que vaguement entendu parler avant. En résumé, ce projet est un moyen de développer quelque chose de passionnant et permet une découverte de beaucoup de connaissances ainsi qu'un développement sur l'apprentissage du langage Rust.
+
+\subsection{William VALENDUC}
+Après 3 ans de licence informatique à la faculté des sciences et ingénierie de l'université Paul Sabatier, j'ai rejoint l'EPITA en septembre dernier.
+
+De nature très curieuse, j'ai à coeur de comprendre le fonctionnement de technologies dans de multiples domaines.
+
+Réalisation de la blockchain, de l'architecture et communication réseau ainsi que le serveur web et la documentation du projet.
+
+Ne connaissant pas grand chose du monde des crypto-monnaies avant le début de Nexium, c'est très enrichissant de découvrir cet univers.
+Possédant un peu d'expérience dans certains domaines que nous avons à utiliser, c'est un plaisir pour moi de pouvoir partager mais également agrandir mes compétences.
+
+
+
+\section{Organisation du projet}
+
+L’idée originelle de Nexium a suscité chez chacun des membres de notre groupe un intérêt et enthousiasme laissant présager un bon processus de développement sur le projet. Afin de pouvoir concrétiser le plus solidement et durablement possible le projet, nous accordons une place importante à l'organisation du travail de groupe.
+
+\subsection{Outils utilisés et mis en place}
+
+Comme mentionné précédemment, une organisation claire et structurée permet une fluidification de la communication. Aussi avons-nous mis en place plusieurs solutions pour tenir un suivi régulier de l'avancement du projet.
+
+\subsubsection{Discord}
+
+Nous utilisons un serveur \href{https://discord.com/}{Discord} pour communiquer, relever des problèmes, planifier des réunions et partager des ressources. Plusieurs salons textuels sont dédiés aux différentes parties du développement, ainsi qu'à la centralisation des différents liens. Ce serveur Discord est, en outre, la \textbf{pierre angulaire} de notre communication, la centralisation de nos échanges et ressources.
+
+\subsubsection{Gitlab}
+
+Gitlab est une solution d'hébergement de \textit{repositories} Git. Nous avons choisi d'utiliser l'instance \href{https://gitlab.cri.epita.fr/}{Gitlab} hébergée par Épita pour Nexium. Cela nous permet une \textbf{meilleure gestion des collaborateurs} (avec les logins Épita), et une congruence avec le projet Nexium, puisque c'est de cette instance Gitlab que nous avons tiré l'idée de récupération des \texttt{clés publiques GPG}. De plus, Gitlab propose un outil d'hébergement de pages web (\textbf{Gitlab Pages})\cite{gitlabpages}, que nous utilisons pour automatiquement déployer notre site web, sans avoir à gérer de serveur web ou de dépendre d'un prestataire externe.
+
+
+
+\subsection{Répartition des tâches}
+
+Au-delà des réunions hebdomadaires planifiées lors de tous les week-end, notre équipe a pris la décision, pour la première phase de développement de Nexium, de se séparer en \textbf{deux groupes} distincts, chacun ayant une mission bien précise.
+
+\begin{itemize}
+    \item \textbf{Architecture} : Ce groupe est composé de Jean et William. Ils sont en charge de l'architecture de la blockchain et du réseau, ainsi que du développement du serveur web. Ils sont également responsables de la rédaction de la documentation théorique de Nexium.
+    \item \textbf{Cryptographie} : Ce groupe est composé de Milo et Antonin. Ils sont en charge de la partie mathématique du projet, c'est à dire le chiffrement/déchiffrement et les calculs nécessaires pour les changements de type. Ils ont aussi la charge du \texttt{SHA-256}.
+
+\end{itemize}
+
+\section{Pourquoi une cryptomonnaie ?}
+Bien que l'étendue des notions techniques que recouvre Nexium soit vaste, nous pensons qu'il est important, avant de se lancer dans les détails techniques, de préciser le sens qu'a l'existence des cryptomonnaies de manière générale.
+
+Les cryptomonnaies, particulièrement et en premier lieu le Bitcoin, sont apparues comme une réponse aux limites et faiblesses du \textbf{système économique traditionnel}. Une devise devrait avant tout être un vecteur d’échange, une unité de mesure permettant de faciliter les transactions et de stocker la valeur. Or la monnaie moderne repose sur la confiance.
+
+Cette confiance en les institutions financières (telles que les banques centrales) qui émettent et régulent la masse monétaire, font de ce système un système intrinsèquement \textbf{faillible}. Il repose sur des entités centralisées, susceptibles de manipulation, de politique monétaire inflationniste ou de crises économiques imprévues\cite{grece1} \cite{grece2}. Ces entités privées ou étatiques peuvent, indépendament de la volonté du peuple, imposer des restrictions sur l’accès aux finances et rendre la distribution financière déséquilibrée.
+
+Dans ce contexte apparu le \textbf{Bitcoin}. Porté par le mouvement cypherpunk\cite{cypherpunk} qui cherchait dans les annes 90 à préserver vie privé, liberté d’expression, et garantie de sécurité des données dans un monde qui devenait numérique et dont on ne mesurait pas toujours l’ampleur des enjeux sociétaux à l’époque, le Bitcoin a proposé une solution radicale : une monnaie absolument décentralisée, \textit{open-source}, sans intermédiaire de confiance. Basée sur la technologie de \textbf{blockchain}, elle permet de valider, enregistrer et émettre des transactions de manière transparente, immuable et sécurisée, sans faire appel à quelconque autorité centrale. Ainsi, le Bitcoin introduit une forme de \textbf{trustless}, où la confiance n’est plus placée en un gouvernement ou une institution, mais dans le \textbf{code informatique} qui régit le système : une concrétisation de l’adage “\textit{code is law}”\cite{codeislaw}.
+
+Cette \textbf{décentralisation}, loin d’être un simple détail technique, pose des questions profondes sur les notion de contrôle, d’autonomie et de souveraineté individuelle. Dans un monde où les gouvernements peuvent influencer la monnaie nationale par des politiques économiques \cite{trump} et où les institutions bancaires détiennent le pouvoir de décision sur les flux monétaires\cite{banques},le Bitcoin a offert un espace de liberté, où le peuple peut être souverain de sa propre monnaie, sans intervention étatique. Ce modèle a non seulement des implications économiques, mais aussi \textbf{philosophiques}. Il remet en question les fondements mêmes de l’organisation de notre société, et offre une alternative radicale à la centralisation du pouvoir économique.
+
+C’est dans cet esprit de \textbf{décentralisation}, de \textbf{souveraineté individuelle} et de \textbf{liberté} que Nexium trouve sa place. Nous voulons de Nexium qu’il incarne l’idée d’un futur où la finance et la monnaie ne seront pas seulement contrôlées par des entités centralisées, mais où chaque citoyen, chaque individu, peut participer, contribuer et décider des règles du monde dans lequel il vit. 
+
+Cette contextualisation nous paraissait naturelle à la lumière des \textbf{cours d’Éthique} que nous avons pu suivre lors du troisième semestre : le développement d’une technologie doit, tant que possible, s’accompagner d’une réflexion sur ses enjeux sociétaux et humains. Ainsi, Nexium s'inscrit dans une réflexion plus large sur l’évolution des sociétés, et sur l'émergence de nouveaux systèmes de valeurs partagées.
+
+\section{Architecture de la blockchain}
+
+Comme brièvement mentionné dans la présentation du projet, la cryptomonnaie Nexium (dont le symbole de devise est me \texttt{NXM}) est basée sur la blockchain. Définissons donc les grandes lignes de cette technologie, et comment elle est implémentée dans Nexium.
+
+Chaque transaction effectuée par un utilisateur est signée, puis ajoutée à un \textbf{bloc} contenant un certain nombre de transactions. Ce bloc est ensuite ajouté à la \textbf{blockchain}, une chaîne de blocs contenant l’historique de toutes les transactions effectuées sur le réseau. La blockchain est un registre \textbf{public, partagé et immuable}, qui permet de garantir la transparence et la sécurité des transactions.
+
+Chaque bloc est lié au bloc précédent par un \textbf{hash} cryptographique, ce qui assure l’intégrité de la chaîne. En effet, si un bloc est modifié, son hash est changé et le hash du bloc suivant ne correspond plus. Cela permet de détecter d'éventuelles tentatives de modification de la blockchain, et de les rejeter.
+
+La méthode de hashage utilisée est celle du \textbf{SHA-256}, que nous détaillerons \hyperref[sec:sha256]{\textcolor{black}{plus loin}}. Cette fonction de hashage est utilisée pour signer les transactions, générer les blocs, et lier les blocs entre eux.
+
+\subsection{Stockage de la blockchain}
+
+La blockchain est stockée dans un fichier binaire (\texttt{nxm\_blckchn.dat}) qui contient les données codées des blocs, du \textbf{genesis block} (bloc initial) jusqu’au dernier bloc.
+
+Nous pouvons rechercher n'importe quel bloc de la blockchain en \textbf{parcourant successivement} les blocs suivants, en partant du bloc initial.
+
+Pour vérifier l'intégrité ou la validité d'une transaction, nous pouvons vérifier son existence dans un bloc donné à l'aide de la \textbf{racine Merkle}, avec une complexité de \texttt{O(log n)}.
+
+
+\subsection{Mémoire tampon (\texttt{mempool})}
+
+La mémoire tampon est un stockage temporaire pour toutes les transactions qui ne sont pas encore incluses dans un bloc.
+
+Cette mémoire tampon est continuellement \textbf{synchronisée} entre tous les nœuds du réseau Nexium.
+
+Lorsque la mémoire tampon est pleine, tous les nœuds commencent à "\textbf{miner}" les transactions pour créer le nouveau bloc. Le premier nœud qui trouve le \texttt{Nonce}\footnote{Le \textbf{Nonce} est une valeur que les mineurs doivent ajuster de telle sorte que le hash du bloc concerné remplisse certaines conditions (\textit{dans le cas du Bitcoin, il doit commencer par un certain nombre de \textbf{0}.})} qui satisfait la cible de difficulté diffuse le bloc sur le réseau. 
+
+C’est ainsi que la \textbf{preuve de travail} est réalisée : le \texttt{proof of work} consiste à fournir la preuve cryptographique de minage, c'est à dire le \texttt{Nonce} qui satisfait la \textbf{cible de difficulté}\footnote{La \textbf{cible de difficulté} est un paramètre évoluant au cours du temps selon le consensus du réseau de la blockchain, et qui établit quelles contraintes doivent être remplies pour que le \texttt{Nonce} fournisse un hash valide.} actuelle.
+
+\subsection{Structure d'un bloc}
+
+Un bloc dans la blockchain de \textbf{Nexium} est structuré de la manière suivante :
+
+\begin{itemize}
+    \item \textbf{Taille du bloc} (\textit{4 octets})
+    \item \textbf{En-tête du bloc} (\textit{78 octets})
+    \begin{itemize}
+        \item \texttt{version} (\textit{2 octets}) : \textbf{Version} de la structure du bloc.
+        \item \texttt{previous\_block\_hash} (\textit{32 octets}) : \textbf{Hachage} du bloc précédent.
+        \item \texttt{merkle\_root} (\textit{32 octets}) : \textbf{Racine Merkle} des transactions du bloc.
+        \item \texttt{timestamp} (\textit{4 octets}) : \textbf{Horodatage} du bloc.
+        \item \texttt{bits} (\textit{4 octets}) : \textbf{Cible de difficulté} du bloc.
+        \item \texttt{nonce} (\textit{4 octets}) : \textbf{Nonce} du bloc.
+    \end{itemize}
+    \item \textbf{Nombre de transactions} (2 octets)
+\end{itemize}
+
+Cette conception, pour laquelle nous nous sommes directement inspirés du \textbf{Bitcoin}\cite{bitcoin2}, permet de stocker les informations essentielles de chaque bloc.
+
+Elle permet aussi un parcours fluide de la blockchain depuis le \textbf{genesis block} : en sautant à chaque fois de \texttt{n} octets, avec \texttt{n} la taille du bloc, on peut aisément accéder à n'importe quel bloc de la blockchain.
+
+L'\textbf{identifiant unique d'un bloc} correspond à son \textit{double hash SHA-256}, c'est à dire le hash du hash du bloc. Cela permet de garantir l'\textbf{unicité} de chaque bloc, et de faciliter la recherche et la vérification de l'intégrité de la blockchain. Voici donc la formule de l'identifiant d'un bloc :
+
+\[
+\boxed{
+\text{id}(\text{bloc}) = \operatorname{SHA256}(\operatorname{SHA256}(\text{bloc}))
+}
+\]
+
+Un \textbf{Arbre de Merkel} (\textit{merkle root}) est une structure de données arborescente qui permet de résumer efficacement un grand nombre de transactions, assurant ainsi l'intégrité et la vérification rapide des données à travers des hachages successifs. Voici une représentation graphique théorique de l'arbre de Merkle :
+
+\begin{figure}[H]
+  \centering
+  \fbox{\includegraphics[width=0.7\textwidth]{merkletree.png}}
+  \caption{Arbre de Merkle.}
+\end{figure}
+
+Ainsi, à partir de la racine Merkle, on peut vérifier avec une \textbf{complexité logarithmique} si une transaction est incluse dans un bloc donné.
+\newpage
+
+\section{Architecture du réseau}
+
+\subsection{Décentralisation}
+Nous avons choisi une approche \textbf{décentralisée} afin de garantir une disponibilité élevée et ainsi assurer un réseau fiable contre les pannes. Chaque noeud est donc \textbf{indépendant} des autres, pouvant ainsi continuer comme si de rien n'était en cas de noeud hors ligne ou défaillant.
+
+Afin de garantir la communication entre tous les noeuds et d'optimiser la communication au sein réseau, nous allons nous baser sur la \textbf{théorie des graphes} \cite{graphes},à savoir la \textit{connexité}, la \textit{bi-connexité} et d'autres propriétés. Voici une illustration du concept de \textbf{forte-connexité}, que nous utiliserons pour la distribution du réseau.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\includegraphics[width=0.7\textwidth]{connexity.png}}
+  \caption{Composantes fortement connexes \cite{connexity}}
+\end{figure}
+
+
+\subsection{Sécurité}
+Nous avons songé au problème qui se poserait dans l'éventualité où une personne tenterait de posséder une part au moins égale à \texttt{51\%} des noeuds du réseau. Nous avons décidé pour cette raison de restreindre les noeuds à un par membre d'Épita, en se basant sur le \textbf{login} unique de chaque élève et professeur, que l'on retrouve notamment dans son adresse mail \texttt{@epita.fr} et qui se compose par \texttt{<prénom>\textbf{.}<nom>}.
+
+\newpage
+\section{Hashage SHA-256}
+\label{sec:sha256}
+
+Pour notre projet, nous avons fait le choix d'avoir recours à une \textbf{méthode de hachage} \cite{morpher_hashing_blockchain} \cite{tahiti_sha256_explique} pour garantir la \textbf{sécurité} et l'\textbf{intégrité} des informations/données lors de leur transmission, mais aussi comme \textit{preuve de travail} (\textit{Proof of Work}, PoW) présente dans la blockchain. 
+
+\subsection{Définition d'une méthode de hachage}
+
+Définissons tout d'abord ce qu'est une \textbf{méthode de hachage}. C'est une \textit{fonction mathématique} dont le but est de changer une chaîne de caractères avec une taille quelconque en une nouvelle chaîne de \textbf{longueur fixe et unique}. Avoir une fonction mathématique, c'est bien, mais alors pourquoi s'en servir ? La particularité d'une fonction de hachage est que la transformation est \textbf{irréversible} dûe aux nombreux \texttt{décalages de bits}, \texttt{XOR} et autres opérations appliquées sur la chaîne de caractères initiale. Mais, en plus d'être irréversible, le moindre changement dans l'entrée initiale change \textbf{complètement} la valeur de sortie. 
+
+\subsection{Utilités des fonctions de hachage}
+
+Maintenant que nous savons ce qu'est une méthode de hachage, intéressons-nous à toutes ses utilités, mais surtout à celles qui nous concernent.
+
+Passons d'abord les utilités possibles qui ne sont pas en relation directe avec notre projet. Parmi celles-ci, on retrouve :
+\begin{itemize}
+    \item Le \textbf{stockage et l'authentification} de mots de passe,
+    \item La \textbf{création de signatures numériques},
+    \item La \textbf{détection de logiciels malveillants}.
+\end{itemize}
+
+À présent, regardons les deux points qui nous concernent dans l'utilisation du hachage dans la blockchain. 
+
+\subsubsection{Intégrité des données}
+
+Un premier point déjà évoqué est l'\textbf{intégrité des données}, permettant de repérer les données possiblement corrompues ou falsifiées grâce à une simple \textbf{comparaison} entre le \textit{résultat attendu} et le \textit{résultat calculé}.
+
+\subsubsection{Preuve de travail}
+
+Le second point est la \textbf{preuve de travail} (\texttt{Proof of Work, PoW}) au sein de la blockchain. Ce mécanisme de consensus \cite{ledger_preuve_de_travail} permet d’obtenir un \textbf{accord sur le réseau de blockchains}, pour \textbf{confirmer les transactions} et \textbf{produire de nouveaux blocs} sur la chaîne.
+
+\subsection{Utilisation du SHA256 dans le Bitcoin}
+
+Avant de parler de l'implémentation du \texttt{SHA256}, voyons son \textbf{utilisation dans le Bitcoin} :
+\begin{itemize}
+    \item Vérification de l'\textbf{intégrité des transactions} : une transaction ne doit pas pouvoir être modifiée. Grâce au hachage, la modification de n'importe quel caractère entraîne une différence de résultat et donc la détection immédiate de la moindre anomalie.
+    \item Lien entre les blocs dans un \textbf{Arbre de Merkle}, ce qui permet de condenser et sécuriser la mémoire.
+    \item Utilisation dans le \textbf{processus de preuve de travail}, déjà évoqué.
+\end{itemize}
+
+\subsection{Implémentation du SHA256}
+
+Tous les points et les définitions ayant été abordés, regardons de quelle manière nous avons implémenté le \texttt{SHA256}. Pour ce faire, nous avons fait le choix de \textbf{séparer en deux} la transformation de la chaîne de caractères :
+
+\subsubsection{Prétraitement des données}
+
+La fonction \texttt{preprocessing} prend une chaîne de caractères en entrée et la convertit en un \textbf{vecteur d'octets}. Elle ajoute ensuite un \textbf{bit de fin} (\texttt{0x80}) et remplit le vecteur avec des \textbf{zéros} jusqu'à ce que sa longueur soit un \textbf{multiple de 512 bits moins 64 bits}. Enfin, la \textbf{longueur initiale} de la chaîne, exprimée en bits, est ajoutée à la fin du vecteur. Cette étape \textbf{prépare les données} pour le traitement en assurant qu'elles respectent le format requis par l'algorithme de hachage \texttt{SHA256}.
+
+\subsubsection{Traitement des données}
+
+La fonction \texttt{processing} commence par \textbf{initialiser des valeurs de hachage} et des \textbf{constantes de rondes} spécifiques à l'algorithme \texttt{SHA256}. Puis, elle :
+\begin{itemize}
+    \item Découpe les données en \textbf{blocs de 64 octets} et prépare un \textbf{tableau de 64 entiers de 32 bits} pour chaque bloc.
+    \item Effectue une \textbf{série d'opérations bit à bit et arithmétiques} pour mettre à jour les valeurs de hachage, en utilisant des \textbf{variables temporaires} calculées à partir des données et des constantes de rondes.
+    \item Après avoir traité tous les blocs, la fonction \textbf{combine les valeurs de hachage finales} pour produire une \textbf{chaîne hexadécimale} représentant le hachage final.
+\end{itemize}
+
+Cet algorithme renvoie une \textbf{sortie fixe de 256 bits}.
+
+\newpage
+\section{Chiffrement RSA}
+
+Notre réseau utilisera le chiffrement RSA \cite{wikipedia_chiffrement_rsa}. Il s'agit d'un concept de \textbf{cryptographie asymétrique} composé d’une clé privée et une clé publique par utilisateur qui leur permettront de s’échanger des \textit{messages} tout en restant secrets et sécurisés.
+
+Ainsi, un utilisateur \textbf{A} pourra envoyer un \textit{message} en le cryptant avec sa clé publique à un utilisateur \textbf{B} qui, pour le lire, devra décrypter ce message avec sa clé privée et vice-versa.
+
+Cela rend impossible, sans connaître la clé privée du receveur, d’intercepter un message qui ne vous est pas destiné. Notre travail est donc de créer/générer ces clés et de faire en sorte que chaque personne utilisant Nexium puisse crypter et décrypter des messages grâce à leur propre clé privée et publique.
+
+Tout d’abord, la génération de clé se passe sous la forme d’un \textbf{algorithme mathématique} \cite{webia_algo_cours5} qui forme des clés en utilisant cinq nombres, que nous appellerons \textbf{p}, \textbf{q}, \textbf{n}, \textbf{e} et \textbf{d}, où :
+
+\begin{itemize}
+    \item \textbf{p} et \textbf{q} sont deux nombres premiers distincts,
+    \item \textbf{n} est leur produit, $n = p \times q$,
+    \item \textbf{e} est un nombre premier avec la valeur de l’indicatrice d’Euler en \textbf{n},
+    \item \textbf{d} est l’inverse modulaire de \textbf{e} mod($\varphi(n)$) où $\varphi(n) = (p-1)(q-1)$.
+\end{itemize}
+
+La clé publique sera donc le couple $(n, e)$ tandis que la clé privée est le nombre \textbf{d}. \\
+
+Nous avons rencontré des problèmes lors de nos premières générations de clés. Il s'agissait de problèmes \textbf{d’optimisation} liés à la taille en bits, en rapport donc avec les types natifs \cite{typesnatifs} de Rust qui sont limités en taille et qui deviennent donc insuffisants si nous avons besoin de manipuler des nombres très grands. Or, le standard RSA requiert généralement des nombres de l’ordre de \textbf{1024 bits} pour être sécurisé \cite{rsabits}.
+
+Ces types de taille fixe en mémoire ont donc posé problème pour la génération. Pour résoudre ce problème, nous avons dû utiliser les crates \href{https://crates.io/crates/num-bigint}{\textcolor{black}{\texttt{num\_bigint}}} et \href{https://crates.io/crates/num-primes}{\textcolor{black}{\texttt{num\_primes}}}.
+
+
+Ces \textbf{crates} nous permettent de générer de grands entiers sans limite de taille. Par exemple, \texttt{num\_biguint} est une structure dynamique qui s’adapte à la taille du nombre, contrairement aux types natifs de Rust (grâce à l’utilisation de vecteurs \texttt{u32} ou \texttt{u64} pour limiter la taille en mémoire). Nous avons également utilisé \texttt{num\_primes} pour générer aléatoirement et manipuler des nombres premiers efficacement. Si nous avions dû les générer nous-mêmes, le coût en calcul aurait été énorme. Ainsi, nous avons opté pour cette crate qui propose des algorithmes optimisés de génération de nombres premiers.
+
+Le dernier point que nous traiterons, lié au chiffrement RSA, est le chiffrement/déchiffrement. Pour cela, il est assez simple d’implémenter ces algorithmes car, une fois les cinq entiers utilisés dans la génération de clés trouvés, il nous suffit de les utiliser ainsi :
+
+Le \textbf{message chiffré} sera de la forme :
+\begin{equation}
+    \boxed{\text{Message chiffré} = (\text{Message}^e) \mod(n)}
+\end{equation}
+avec \textit{Message} un entier naturel inférieur à $n$. \\
+
+Le \textbf{message déchiffré} sera de la forme :
+\begin{equation}
+    \boxed{\text{Message déchiffré} = (\text{Message chiffré}^d) \mod(n)}
+\end{equation}
+avec \textit{d} ici l’inverse de $(p-1)(q-1) \mod(n)$.
+
+
+\section{Site Web}
+
+\textbf{\href{astro.build}{Astro}} permet une approche simple et rapide pour la création d'une documentation web.
+
+Utilisant \texttt{Vite}, Astro offre une rapidité de développement accrue avec le \textbf{SSR} (\textit{Server Side Rendering}), permettant une actualisation dynamique des pages à chaque modification.
+
+Prenant en charge \texttt{Markdown}, il nous est possible d'écrire la documentation en respectant la syntaxe Markdown, puis de laisser Astro faire le \textit{build}, générant les fichiers \texttt{html}, \texttt{css} et \texttt{js} nécessaires pour les navigateurs web.
+
+La dernière étape étant de servir les fichiers générés, nous utilisons \textbf{GitLab Pages} pour l'hébergement. Nous avons également configuré sur GitLab un déploiement automatique qui met à jour la documentation à chaque nouveau commit.
+
+\newpage
+\section{Conclusion}
+[...]
+
+
+\newpage
+\printbibliography[title={Bibliographie}]
+\end{document}
