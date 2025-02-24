@@ -3,19 +3,21 @@ mod config;
 //mod srv_network;
 
 use config::generate_config;
-// use nexium::rsa;
+use nexium::rsa;
 // use nexium::sha256;
 use std::env;
 
 const GEN_CONFIG_ARG: &str = "--generate-config";
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    //let args: Vec<String> = env::args().collect();
 
-    if args.contains(&GEN_CONFIG_ARG.to_string()) {
-        generate_config();
-        return;
-    }
+    //if args.contains(&GEN_CONFIG_ARG.to_string()) {
+    //    generate_config();
+    //    return;
+    //}
+    let keypair = rsa::KeyPair::generate(2048);
+    dbg!(keypair);
 
     /////////////////////////
     // rsa test

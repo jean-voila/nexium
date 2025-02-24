@@ -6,7 +6,7 @@ description: Architecture des blocs.
 # The Nexium blockchain architecture
 
 ## Blockchain storage
-The blockchain is stored in a binary file (example : `nxm_blckchn.dat`) wich contains the encoded data of the blocks, from the **genesis block** to the last oen.
+The blockchain is stored in a binary file (example : `nxm_blckchn.dat`) wich contains the encoded data of the blocks, from the **genesis block** to the last one.
 
 We can search through any block in the blockchain by jumping to the next block with the size of the current block.
 

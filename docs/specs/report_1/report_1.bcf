@@ -2386,6 +2386,7 @@
     <bcf:citekey order="23" intorder="1">webia_algo_cours5</bcf:citekey>
     <bcf:citekey order="24" intorder="1">typesnatifs</bcf:citekey>
     <bcf:citekey order="25" intorder="1">rsabits</bcf:citekey>
+    <bcf:citekey order="26" intorder="1">gitlabpages</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">

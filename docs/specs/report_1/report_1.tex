@@ -7,9 +7,15 @@
 \usepackage[margin=3.3cm]{geometry} % Page margins
 \usepackage{graphicx} % Insert images
 \usepackage{amsmath,amsfonts,amssymb} % Math symbols
+\usepackage{listings, ./listings-rust}
 
-
-
+\usepackage{listings}
+\lstdefinestyle{custom}{
+  frame=single, % Encadrement du bloc
+  rulecolor=\color{black}, % Couleur du cadre
+  breaklines=true, % Coupe les longues lignes
+  basicstyle=\ttfamily\small, % Style du texte
+}
 
 \usepackage{svg}
 \usepackage{caption}
@@ -35,6 +41,9 @@
 \usepackage{fancyhdr} % Custom headers and footers
 \usepackage{lastpage} % Access the total number of pages
 \usepackage{booktabs} % Tables
+
+\usepackage{breakurl}
+\usepackage{url}
 
 \usepackage{biblatex} %Imports biblatex package
 \addbibresource{report_1.bib} %Import the bibliography file
@@ -123,9 +132,9 @@ Mon rôle pour ce début de projet est de développer, en tandem avec William, l
 
 J'assume également le rôle de chef de projet, en charge de l'organisation du groupe et de la répartition des tâches. Je m'occupe également de l'écriture en \texttt{LaTex} des différents documents rendus.
 
-Étant moi même passionné de cryptographie, c'est tout naturellement que j'ai initialement suggéré à mon groupe l'idée d'une cryptomonnaie. Accompagnée par un \textit{synopsis} détaillant les grandes lignes théoriques du projet, l'idée à plu au groupe et a évolué au fil de plusieurs réunions et débats.
+Étant moi même passionné de cryptographie, c'est tout naturellement que j'ai initialement suggéré à mon groupe l'idée d'une cryptomonnaie. Accompagnée par un \textit{synopsis} détaillant les grandes lignes théoriques du projet, l'idée a plu au groupe et a évolué au fil de plusieurs réunions et débats.
 
-Je suis également très intéressé par le langage \texttt{Rust}, que j'ai découvert par curiosité en amont de la SPÉ, et que j'ai eu la chance de découvrir plus en profondeur lors des cours du quatrième semestre. Les \textbf{TPs hebdomadaires} me permettent régulièrement de me familiariser avec les concepts de Rust, et d'acquiérir des automatismes dans l'écriture de code.
+Je suis également très intéressé par le langage \texttt{Rust}, que j'ai découvert par curiosité en amont de la SPÉ, et que j'ai eu la chance de découvrir plus en profondeur lors des cours du quatrième semestre. Les \textbf{TPs hebdomadaires} me permettent régulièrement de me familiariser avec les concepts de Rust, et d'acquérir des automatismes dans l'écriture de code.
 
 Ce projet m'enthousiasme donc tant dans sa dimension \textbf{technique} que dans sa dimension \textbf{humaine}. Je suis ravi de pouvoir découvrir et travailler sur la blockchain dans un cadre aussi concret. Je dois aussi reconnaître que c'est une chance pour moi d'avoir pu être dans un groupe dont les membres sont aussi motivés, et avec qui je m'entendais déjà très bien avant le début du projet. Cette bonne entente me semble favoriser une communication fluide et efficace.
 
@@ -397,6 +406,28 @@ Le \textbf{message déchiffré} sera de la forme :
 \end{equation}
 avec \textit{d} ici l’inverse de $(p-1)(q-1) \mod(n)$.
 
+Nous disposons déjà d'une \textbf{implémentation fonctionnelle} de la génération de clé \textbf{RSA 2048 bits}. En voici un exemple simplifié d'exécution :
+
+\begin{lstlisting}[language=Rust, title={test.rs}, style=custom]
+use nexium::rsa;
+
+fn main() {
+    let keypair = rsa::KeyPair::generate(2048);
+    dbg!(keypair);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[title={test.rs: Output}, style=custom]
+[src/bin/server/main.rs:20:5] 
+  keypair = {
+    n: <xxxx>
+    d: <xxxx>
+    p: <xxxx>
+    q: <xxxx>
+  }
+\end{lstlisting}
+
+\newpage
 
 \section{Site Web}
 
@@ -406,16 +437,42 @@ Utilisant \texttt{Vite}, Astro offre une rapidité de développement accrue avec
 
 Prenant en charge \texttt{Markdown}, il nous est possible d'écrire la documentation en respectant la syntaxe Markdown, puis de laisser Astro faire le \textit{build}, générant les fichiers \texttt{html}, \texttt{css} et \texttt{js} nécessaires pour les navigateurs web.
 
+
 La dernière étape étant de servir les fichiers générés, nous utilisons \textbf{GitLab Pages} pour l'hébergement. Nous avons également configuré sur GitLab un déploiement automatique qui met à jour la documentation à chaque nouveau commit.
+
+Le \textbf{site web officiel de Nexium} est disponible à l'adresse \url{https://jean.herail.pages.epita.fr/nexium}
+
+Afin d'illustrer la \textbf{facilité d'utilisation} et de développement propre à \texttt{Astro}, voici un exemple de code \texttt{Markdown} suffisant à la génération d'une page Web: 
+
+\begin{lstlisting}[style=custom, caption={blockchain.md}]
+---
+title: La blockchain Nexium
+description: Architecture des blocs.
+---
+
+# L'architecture de la blockchain Nexium
+## Stockage de la blockchain
+Nous stockons la **blockchain** dans un fichier binaire `nxm_blckchn.dat`.
+
+\end{lstlisting}
+
+\textbf{Astro} se charge de convertir ce code \texttt{Markdown} en \texttt{HTML} statique, prêt à être servi par un serveur web. C'est ensuite \textbf{GitLab Pages} \cite{gitlabpages} qui se charge du \textbf{build}, et de l'\textbf{exposition} automatique du site à chaque nouveau \texttt{git push}.
+
 
 \newpage
 \section{Conclusion}
-\begin{figure}[H]
-    \centering
-    \fbox{\includegraphics[width=0.7\textwidth]{antonin.png}}
-    \caption{Dimanche 23 Février, 23h30.}
-  \end{figure}
 
+Nexium nous permet d'explorer des concepts cryptographiques avancés, tel que la \textbf{blockchain}, l'\textbf{architecture réseau} et le \textbf{développement web}. 
+
+En appliquant des principes de sécurité éprouvés comme le \textbf{SHA-256} pour le hachage et le chiffrement \textbf{RSA} pour l'authentification, nous avons pu établir les bases d'un système robuste et fiable que nous comptons concrétiser le plus fidèlement dans les prochaines étapes du développement.
+
+Nous avons mis en place au fil de cette première étape du projet les fondations essentielles de la \textbf{structure théorique} et de la \textbf{cryptographie}, en s'inspirant du Bitcoin et en l'adaptant aux besoins spécifiques dans notre cas d'usage. 
+
+Le \textbf{site web} et la \textbf{documentation} permettront une transparence et une accessibilité accrues pour nos travaux.
+
+Nexium, au-delà d'être un exercice technique, est une expérimentation réelle des enjeux modernes liés à la \textbf{décentralisation} et à la \textbf{souveraineté numérique}, autant de thématiques qui nous paraissent importantes et que nous approfondissons en nous questionnant sur l’impact des cryptomonnaies dans notre société.
+
+Les prochaines étapes du projet seront tout aussi importantes : \textbf{optimisation des performances}, \textbf{sécurisation structurelle du réseau} et \textbf{interface utilisateur intuitive} sont dans notre ligne de mire.
 
 \newpage
 \printbibliography[title={Bibliographie}]
