@@ -1,0 +1,711 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global}
+    \entry{bitcoin}{online}{}
+      \name{author}{1}{}{%
+        {{hash=d023ec040f79f1a9b2ac960b43785089}{%
+           family={Bitcoin},
+           familyi={B\bibinitperiod}}}%
+      }
+      \strng{namehash}{d023ec040f79f1a9b2ac960b43785089}
+      \strng{fullhash}{d023ec040f79f1a9b2ac960b43785089}
+      \strng{bibnamehash}{d023ec040f79f1a9b2ac960b43785089}
+      \strng{authorbibnamehash}{d023ec040f79f1a9b2ac960b43785089}
+      \strng{authornamehash}{d023ec040f79f1a9b2ac960b43785089}
+      \strng{authorfullhash}{d023ec040f79f1a9b2ac960b43785089}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Bitcoin Whitepaper}
+      \verb{urlraw}
+      \verb https://bitcoin.org/bitcoin.pdf
+      \endverb
+      \verb{url}
+      \verb https://bitcoin.org/bitcoin.pdf
+      \endverb
+    \endentry
+    \entry{banques}{report}{}
+      \name{author}{1}{}{%
+        {{hash=a22ffe3d0c55693ce87bcc72c0288283}{%
+           family={Blancheton},
+           familyi={B\bibinitperiod},
+           given={Bertrand},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Groupe de Recherche en Economie Théorique et Appliquée (GREThA)}%
+      }
+      \strng{namehash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \strng{fullhash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \strng{bibnamehash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \strng{authorbibnamehash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \strng{authornamehash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \strng{authorfullhash}{a22ffe3d0c55693ce87bcc72c0288283}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Les improvisations financière de la guerre de 1914-1918 en France. Les enjeux de la liquidité}
+      \field{type}{techreport}
+      \field{year}{2014}
+    \endentry
+    \entry{morpher_hashing_blockchain}{online}{}
+      \name{author}{1}{}{%
+        {{hash=27c5b8c9b0a45edb514c38b54136f4d7}{%
+           family={Bukhdir},
+           familyi={B\bibinitperiod},
+           given={Anes},
+           giveni={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \strng{fullhash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \strng{bibnamehash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \strng{authorbibnamehash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \strng{authornamehash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \strng{authorfullhash}{27c5b8c9b0a45edb514c38b54136f4d7}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Consulté le 23 février 2025}
+      \field{title}{Le rôle du hachage dans la technologie de la blockchain}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://www.morpher.com/fr/blog/hashing-in-blockchain
+      \endverb
+      \verb{url}
+      \verb https://www.morpher.com/fr/blog/hashing-in-blockchain
+      \endverb
+    \endentry
+    \entry{tahiti_sha256_explique}{online}{}
+      \name{author}{1}{}{%
+        {{hash=ebe606345fcd0ff8c90c20a3e984e372}{%
+           family={Cryptomonnaies},
+           familyi={C\bibinitperiod},
+           given={Tahiti},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \strng{fullhash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \strng{bibnamehash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \strng{authorbibnamehash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \strng{authornamehash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \strng{authorfullhash}{ebe606345fcd0ff8c90c20a3e984e372}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Consulté le 23 février 2025}
+      \field{title}{Les petits secrets de Bitcoin : Le SHA-256 expliqué}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://tahiti-cryptomonnaies.com/actualites/les-petits-secrets-de-bitcoin-le-sha-256-explique/
+      \endverb
+      \verb{url}
+      \verb https://tahiti-cryptomonnaies.com/actualites/les-petits-secrets-de-bitcoin-le-sha-256-explique/
+      \endverb
+    \endentry
+    \entry{graphes}{inproceedings}{}
+      \name{author}{5}{}{%
+        {{hash=36f6ca9894eacf6ebd497d74a5419cc0}{%
+           family={Freeman},
+           familyi={F\bibinitperiod},
+           given={RA},
+           giveni={R\bibinitperiod}}}%
+        {{hash=1f0cc4f747ca2639415a155b9db3c53f}{%
+           family={Gordon},
+           familyi={G\bibinitperiod},
+           given={GJ},
+           giveni={G\bibinitperiod}}}%
+        {{hash=911bc67984a2a44d2c80e6d47d2f5a7a}{%
+           family={Lynch},
+           familyi={L\bibinitperiod},
+           given={KM},
+           giveni={K\bibinitperiod}}}%
+        {{hash=ecd801d6a0132512a1ef543b83ac63e1}{%
+           family={Srinivasa},
+           familyi={S\bibinitperiod},
+           given={SS},
+           giveni={S\bibinitperiod}}}%
+        {{hash=ae710c19add98b349b141fa32e690c3f}{%
+           family={Sukthankar},
+           familyi={S\bibinitperiod},
+           given={R},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{9bb5277838ee0d3e159af9b8a1888977}
+      \strng{fullhash}{27645895c77a56f6a169e62235df9a12}
+      \strng{bibnamehash}{9bb5277838ee0d3e159af9b8a1888977}
+      \strng{authorbibnamehash}{9bb5277838ee0d3e159af9b8a1888977}
+      \strng{authornamehash}{9bb5277838ee0d3e159af9b8a1888977}
+      \strng{authorfullhash}{27645895c77a56f6a169e62235df9a12}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2008 American Control Conference, Seattle, WA}
+      \field{title}{Decentralized estimation and control of graph connectivity in mobile sensor networks}
+      \field{year}{2008}
+      \field{pages}{2678\bibrangedash 2683}
+      \range{pages}{6}
+    \endentry
+    \entry{gitlabgpg}{online}{}
+      \name{author}{1}{}{%
+        {{hash=9792e23419583666b178605decaec552}{%
+           family={Gitlab},
+           familyi={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{9792e23419583666b178605decaec552}
+      \strng{fullhash}{9792e23419583666b178605decaec552}
+      \strng{bibnamehash}{9792e23419583666b178605decaec552}
+      \strng{authorbibnamehash}{9792e23419583666b178605decaec552}
+      \strng{authornamehash}{9792e23419583666b178605decaec552}
+      \strng{authorfullhash}{9792e23419583666b178605decaec552}
+      \field{extraname}{1}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Gitlab GPG}
+      \verb{urlraw}
+      \verb https://docs.gitlab.com/api/user_keys/
+      \endverb
+      \verb{url}
+      \verb https://docs.gitlab.com/api/user_keys/
+      \endverb
+    \endentry
+    \entry{gitlabpages}{online}{}
+      \name{author}{1}{}{%
+        {{hash=9792e23419583666b178605decaec552}{%
+           family={Gitlab},
+           familyi={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{9792e23419583666b178605decaec552}
+      \strng{fullhash}{9792e23419583666b178605decaec552}
+      \strng{bibnamehash}{9792e23419583666b178605decaec552}
+      \strng{authorbibnamehash}{9792e23419583666b178605decaec552}
+      \strng{authornamehash}{9792e23419583666b178605decaec552}
+      \strng{authorfullhash}{9792e23419583666b178605decaec552}
+      \field{extraname}{2}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Gitlab Pages}
+      \verb{urlraw}
+      \verb https://docs.gitlab.com/user/project/pages/
+      \endverb
+      \verb{url}
+      \verb https://docs.gitlab.com/user/project/pages/
+      \endverb
+    \endentry
+    \entry{cypherpunk}{article}{}
+      \name{author}{1}{}{%
+        {{hash=ec03a279432ca7edf8451d44a524ef3f}{%
+           family={Jarvis},
+           familyi={J\bibinitperiod},
+           given={Craig},
+           giveni={C\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Taylor \& Francis}%
+      }
+      \strng{namehash}{ec03a279432ca7edf8451d44a524ef3f}
+      \strng{fullhash}{ec03a279432ca7edf8451d44a524ef3f}
+      \strng{bibnamehash}{ec03a279432ca7edf8451d44a524ef3f}
+      \strng{authorbibnamehash}{ec03a279432ca7edf8451d44a524ef3f}
+      \strng{authornamehash}{ec03a279432ca7edf8451d44a524ef3f}
+      \strng{authorfullhash}{ec03a279432ca7edf8451d44a524ef3f}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Internet Histories}
+      \field{number}{3}
+      \field{title}{Cypherpunk ideology: objectives, profiles, and influences (1992--1998)}
+      \field{volume}{6}
+      \field{year}{2022}
+      \field{pages}{315\bibrangedash 342}
+      \range{pages}{28}
+    \endentry
+    \entry{ledger_preuve_de_travail}{online}{}
+      \name{author}{1}{}{%
+        {{hash=4dcb5735ef7ac1cdab0635a81d6570a0}{%
+           family={Ledger},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \strng{fullhash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \strng{bibnamehash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \strng{authorbibnamehash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \strng{authornamehash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \strng{authorfullhash}{4dcb5735ef7ac1cdab0635a81d6570a0}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Consulté le 23 février 2025}
+      \field{title}{Qu’est-ce que la preuve de travail ?}
+      \field{year}{2019}
+      \verb{urlraw}
+      \verb https://www.ledger.com/fr/academy/quest-ce-que-la-preuve-de-travail
+      \endverb
+      \verb{url}
+      \verb https://www.ledger.com/fr/academy/quest-ce-que-la-preuve-de-travail
+      \endverb
+    \endentry
+    \entry{codeislaw}{article}{}
+      \name{author}{1}{}{%
+        {{hash=b927f6177442a683e2822507be56dbd8}{%
+           family={Lessig},
+           familyi={L\bibinitperiod},
+           given={Lawrence},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{b927f6177442a683e2822507be56dbd8}
+      \strng{fullhash}{b927f6177442a683e2822507be56dbd8}
+      \strng{bibnamehash}{b927f6177442a683e2822507be56dbd8}
+      \strng{authorbibnamehash}{b927f6177442a683e2822507be56dbd8}
+      \strng{authornamehash}{b927f6177442a683e2822507be56dbd8}
+      \strng{authorfullhash}{b927f6177442a683e2822507be56dbd8}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Harvard magazine}
+      \field{number}{2000}
+      \field{title}{Code is law}
+      \field{volume}{1}
+      \field{year}{2000}
+    \endentry
+    \entry{blockchain}{online}{}
+      \name{author}{1}{}{%
+        {{hash=3bbc2c857f0834b36885dce99656c833}{%
+           family={Libertés},
+           familyi={L\bibinitperiod},
+           given={Commission\bibnamedelima Nationale},
+           giveni={C\bibinitperiod\bibinitdelim N\bibinitperiod},
+           prefix={de\bibnamedelima l'Informatique\bibnamedelimb et\bibnamedelima des},
+           prefixi={d\bibinitperiod\bibinitdelim l\bibinitperiod\bibinitdelim e\bibinitperiod\bibinitdelim d\bibinitperiod}}}%
+      }
+      \strng{namehash}{3bbc2c857f0834b36885dce99656c833}
+      \strng{fullhash}{3bbc2c857f0834b36885dce99656c833}
+      \strng{bibnamehash}{3bbc2c857f0834b36885dce99656c833}
+      \strng{authorbibnamehash}{3bbc2c857f0834b36885dce99656c833}
+      \strng{authornamehash}{3bbc2c857f0834b36885dce99656c833}
+      \strng{authorfullhash}{3bbc2c857f0834b36885dce99656c833}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{CNIL - Blockchain}
+      \verb{urlraw}
+      \verb https://www.cnil.fr/fr/definition/blockchain
+      \endverb
+      \verb{url}
+      \verb https://www.cnil.fr/fr/definition/blockchain
+      \endverb
+    \endentry
+    \entry{grece2}{article}{}
+      \name{author}{1}{}{%
+        {{hash=052d9395189860522da97c9aeae06df8}{%
+           family={Mitsakis},
+           familyi={M\bibinitperiod},
+           given={Fotios\bibnamedelima V},
+           giveni={F\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Macrothink Institute}%
+      }
+      \strng{namehash}{052d9395189860522da97c9aeae06df8}
+      \strng{fullhash}{052d9395189860522da97c9aeae06df8}
+      \strng{bibnamehash}{052d9395189860522da97c9aeae06df8}
+      \strng{authorbibnamehash}{052d9395189860522da97c9aeae06df8}
+      \strng{authornamehash}{052d9395189860522da97c9aeae06df8}
+      \strng{authorfullhash}{052d9395189860522da97c9aeae06df8}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Business and Economic Research}
+      \field{number}{1}
+      \field{title}{The impact of economic crisis in Greece: key facts and an overview of the banking sector}
+      \field{volume}{4}
+      \field{year}{2014}
+      \field{pages}{250\bibrangedash 267}
+      \range{pages}{18}
+    \endentry
+    \entry{nexiumsite}{online}{}
+      \name{author}{1}{}{%
+        {{hash=f869c3c104e04d9cc552148d264afcb7}{%
+           family={Nexium},
+           familyi={N\bibinitperiod}}}%
+      }
+      \strng{namehash}{f869c3c104e04d9cc552148d264afcb7}
+      \strng{fullhash}{f869c3c104e04d9cc552148d264afcb7}
+      \strng{bibnamehash}{f869c3c104e04d9cc552148d264afcb7}
+      \strng{authorbibnamehash}{f869c3c104e04d9cc552148d264afcb7}
+      \strng{authornamehash}{f869c3c104e04d9cc552148d264afcb7}
+      \strng{authorfullhash}{f869c3c104e04d9cc552148d264afcb7}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Site officiel}
+      \verb{urlraw}
+      \verb https://jean.herail.pages.epita.fr/nexium
+      \endverb
+      \verb{url}
+      \verb https://jean.herail.pages.epita.fr/nexium
+      \endverb
+    \endentry
+    \entry{grece1}{book}{}
+      \name{author}{1}{}{%
+        {{hash=39ffa8c7d0d6d2f921a471472e991063}{%
+           family={Noëlle},
+           familyi={N\bibinitperiod},
+           given={Burgi},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Bord de l'eau (Le)}%
+      }
+      \strng{namehash}{39ffa8c7d0d6d2f921a471472e991063}
+      \strng{fullhash}{39ffa8c7d0d6d2f921a471472e991063}
+      \strng{bibnamehash}{39ffa8c7d0d6d2f921a471472e991063}
+      \strng{authorbibnamehash}{39ffa8c7d0d6d2f921a471472e991063}
+      \strng{authornamehash}{39ffa8c7d0d6d2f921a471472e991063}
+      \strng{authorfullhash}{39ffa8c7d0d6d2f921a471472e991063}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{La grande régression. La Grèce et l’avenir de l’Europe}
+      \field{year}{2014}
+    \endentry
+    \entry{nakamotoconsensus}{article}{}
+      \name{author}{1}{}{%
+        {{hash=984971dd161c0b271f6c090548f3d5dd}{%
+           family={Ren},
+           familyi={R\bibinitperiod},
+           given={Ling},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{984971dd161c0b271f6c090548f3d5dd}
+      \strng{fullhash}{984971dd161c0b271f6c090548f3d5dd}
+      \strng{bibnamehash}{984971dd161c0b271f6c090548f3d5dd}
+      \strng{authorbibnamehash}{984971dd161c0b271f6c090548f3d5dd}
+      \strng{authornamehash}{984971dd161c0b271f6c090548f3d5dd}
+      \strng{authorfullhash}{984971dd161c0b271f6c090548f3d5dd}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Cryptology ePrint Archive}
+      \field{title}{Analysis of nakamoto consensus}
+      \field{year}{2019}
+    \endentry
+    \entry{rsabits}{inproceedings}{}
+      \name{author}{1}{}{%
+        {{hash=1d52eec0ffbfdccba7e4014552b66e67}{%
+           family={Robshaw},
+           familyi={R\bibinitperiod},
+           given={MJB},
+           giveni={M\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {WESTERN PERIODICALS COMPANY}%
+      }
+      \strng{namehash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \strng{fullhash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \strng{bibnamehash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \strng{authorbibnamehash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \strng{authornamehash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \strng{authorfullhash}{1d52eec0ffbfdccba7e4014552b66e67}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{WESCON CONFERENCE RECORD}
+      \field{title}{Security Estimates for 512-bit RSA}
+      \field{year}{1995}
+      \field{pages}{409\bibrangedash 412}
+      \range{pages}{4}
+    \endentry
+    \entry{rustdoc}{online}{}
+      \name{author}{1}{}{%
+        {{hash=f5e265d607cb720058fc166e00083fe8}{%
+           family={Rust},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{fullhash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{bibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorbibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authornamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorfullhash}{f5e265d607cb720058fc166e00083fe8}
+      \field{extraname}{1}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{La documentation Rust}
+      \verb{urlraw}
+      \verb https://prev.rust-lang.org/fr-FR/documentation.html
+      \endverb
+      \verb{url}
+      \verb https://prev.rust-lang.org/fr-FR/documentation.html
+      \endverb
+    \endentry
+    \entry{typesnatifs}{online}{}
+      \name{author}{1}{}{%
+        {{hash=f5e265d607cb720058fc166e00083fe8}{%
+           family={Rust},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{fullhash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{bibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorbibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authornamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorfullhash}{f5e265d607cb720058fc166e00083fe8}
+      \field{extraname}{2}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Le langage de programmation Rust - Les types de données}
+      \verb{urlraw}
+      \verb https://jimskapt.github.io/rust-book-fr/ch03-02-data-types.html
+      \endverb
+      \verb{url}
+      \verb https://jimskapt.github.io/rust-book-fr/ch03-02-data-types.html
+      \endverb
+    \endentry
+    \entry{rust}{online}{}
+      \name{author}{1}{}{%
+        {{hash=f5e265d607cb720058fc166e00083fe8}{%
+           family={Rust},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{fullhash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{bibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorbibnamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authornamehash}{f5e265d607cb720058fc166e00083fe8}
+      \strng{authorfullhash}{f5e265d607cb720058fc166e00083fe8}
+      \field{extraname}{3}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Rust Programming Language}
+      \verb{urlraw}
+      \verb https://www.rust-lang.org/
+      \endverb
+      \verb{url}
+      \verb https://www.rust-lang.org/
+      \endverb
+    \endentry
+    \entry{bitcoin2}{online}{}
+      \name{author}{1}{}{%
+        {{hash=a1b34ec7d559a0142d48fe473b379873}{%
+           family={Soutadé},
+           familyi={S\bibinitperiod},
+           given={Grégory},
+           giveni={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{a1b34ec7d559a0142d48fe473b379873}
+      \strng{fullhash}{a1b34ec7d559a0142d48fe473b379873}
+      \strng{bibnamehash}{a1b34ec7d559a0142d48fe473b379873}
+      \strng{authorbibnamehash}{a1b34ec7d559a0142d48fe473b379873}
+      \strng{authornamehash}{a1b34ec7d559a0142d48fe473b379873}
+      \strng{authorfullhash}{a1b34ec7d559a0142d48fe473b379873}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{day}{20}
+      \field{month}{8}
+      \field{title}{Bitcoin en interne}
+      \field{year}{2015}
+      \field{dateera}{ce}
+      \verb{urlraw}
+      \verb https://blog.soutade.fr/post/2015/08/bitcoin-en-interne.html
+      \endverb
+      \verb{url}
+      \verb https://blog.soutade.fr/post/2015/08/bitcoin-en-interne.html
+      \endverb
+    \endentry
+    \entry{webia_algo_cours5}{online}{}
+      \name{author}{1}{}{%
+        {{hash=d4b1b5111472f18f40b41c922c4c2727}{%
+           family={Webia},
+           familyi={W\bibinitperiod}}}%
+      }
+      \strng{namehash}{d4b1b5111472f18f40b41c922c4c2727}
+      \strng{fullhash}{d4b1b5111472f18f40b41c922c4c2727}
+      \strng{bibnamehash}{d4b1b5111472f18f40b41c922c4c2727}
+      \strng{authorbibnamehash}{d4b1b5111472f18f40b41c922c4c2727}
+      \strng{authornamehash}{d4b1b5111472f18f40b41c922c4c2727}
+      \strng{authorfullhash}{d4b1b5111472f18f40b41c922c4c2727}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Consulté le 23 février 2025}
+      \field{title}{Cours 5 : Algorithmes}
+      \field{year}{2015}
+      \verb{urlraw}
+      \verb https://webia.lip6.fr/~spanjaard/cours/Algo_cours5.pdf
+      \endverb
+      \verb{url}
+      \verb https://webia.lip6.fr/~spanjaard/cours/Algo_cours5.pdf
+      \endverb
+    \endentry
+    \entry{wikipedia_chiffrement_rsa}{online}{}
+      \name{author}{1}{}{%
+        {{hash=030bd0fa2faebea3a5543e5242f1569f}{%
+           family={Wikipédia},
+           familyi={W\bibinitperiod}}}%
+      }
+      \strng{namehash}{030bd0fa2faebea3a5543e5242f1569f}
+      \strng{fullhash}{030bd0fa2faebea3a5543e5242f1569f}
+      \strng{bibnamehash}{030bd0fa2faebea3a5543e5242f1569f}
+      \strng{authorbibnamehash}{030bd0fa2faebea3a5543e5242f1569f}
+      \strng{authornamehash}{030bd0fa2faebea3a5543e5242f1569f}
+      \strng{authorfullhash}{030bd0fa2faebea3a5543e5242f1569f}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Consulté le 23 février 2025}
+      \field{title}{Chiffrement RSA}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://fr.wikipedia.org/wiki/Chiffrement_RSA
+      \endverb
+      \verb{url}
+      \verb https://fr.wikipedia.org/wiki/Chiffrement_RSA
+      \endverb
+    \endentry
+    \entry{connexity}{inproceedings}{}
+      \name{author}{1}{}{%
+        {{hash=9c677286866aad38f8e9b660f5411814}{%
+           family={Wikipedia},
+           familyi={W\bibinitperiod}}}%
+      }
+      \strng{namehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{fullhash}{9c677286866aad38f8e9b660f5411814}
+      \strng{bibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorbibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authornamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorfullhash}{9c677286866aad38f8e9b660f5411814}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Strongly connected component}
+      \verb{urlraw}
+      \verb https://en.wikipedia.org/wiki/Strongly_connected_component
+      \endverb
+      \verb{url}
+      \verb https://en.wikipedia.org/wiki/Strongly_connected_component
+      \endverb
+    \endentry
+    \entry{memorysafety}{article}{}
+      \name{author}{5}{}{%
+        {{hash=7c731d48072111518a7ebbe2327e4e7c}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Hui},
+           giveni={H\bibinitperiod}}}%
+        {{hash=b06301091f0a733d8632214571f8c6d2}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Zhuangbin},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=2d39e07b3b686f7948fcc0b85839b4e5}{%
+           family={Sun},
+           familyi={S\bibinitperiod},
+           given={Mingshen},
+           giveni={M\bibinitperiod}}}%
+        {{hash=1f002985b7cceb65b53c997e86b9974c}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Yangfan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=89afa2af91c8dfa048fdcec740d6684e}{%
+           family={Lyu},
+           familyi={L\bibinitperiod},
+           given={Michael\bibnamedelima R},
+           giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {ACM New York, NY}%
+      }
+      \strng{namehash}{87baa7ea87f72a15dfceb28579655068}
+      \strng{fullhash}{fb59970ac678828afd47005c74d67b73}
+      \strng{bibnamehash}{87baa7ea87f72a15dfceb28579655068}
+      \strng{authorbibnamehash}{87baa7ea87f72a15dfceb28579655068}
+      \strng{authornamehash}{87baa7ea87f72a15dfceb28579655068}
+      \strng{authorfullhash}{fb59970ac678828afd47005c74d67b73}
+      \field{sortinit}{X}
+      \field{sortinithash}{1965c258adceecf23ce3d67b05113442}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{ACM Transactions on Software Engineering and Methodology (TOSEM)}
+      \field{number}{1}
+      \field{title}{Memory-safety challenge considered solved? An in-depth study with all Rust CVEs}
+      \field{volume}{31}
+      \field{year}{2021}
+      \field{pages}{1\bibrangedash 25}
+      \range{pages}{25}
+    \endentry
+    \entry{trump}{article}{}
+      \name{author}{1}{}{%
+        {{hash=d9fc2273fb679c8a55e75cc0168add32}{%
+           family={York},
+           familyi={Y\bibinitperiod},
+           given={Erica},
+           giveni={E\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {< bound method Organization. get\_name\_with\_acronym of< Organization: Tax~…}%
+      }
+      \strng{namehash}{d9fc2273fb679c8a55e75cc0168add32}
+      \strng{fullhash}{d9fc2273fb679c8a55e75cc0168add32}
+      \strng{bibnamehash}{d9fc2273fb679c8a55e75cc0168add32}
+      \strng{authorbibnamehash}{d9fc2273fb679c8a55e75cc0168add32}
+      \strng{authornamehash}{d9fc2273fb679c8a55e75cc0168add32}
+      \strng{authorfullhash}{d9fc2273fb679c8a55e75cc0168add32}
+      \field{sortinit}{Y}
+      \field{sortinithash}{fd67ad5a9ef0f7456bdd9aab10fe1495}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Trump Tariffs: The Economic Impact of the Trump Trade War}
+      \field{year}{2025}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

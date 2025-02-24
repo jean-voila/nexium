@@ -2379,14 +2379,15 @@
     <bcf:citekey order="16" intorder="1">graphes</bcf:citekey>
     <bcf:citekey order="17" intorder="1">connexity</bcf:citekey>
     <bcf:citekey order="18" intorder="1">connexity</bcf:citekey>
-    <bcf:citekey order="19" intorder="1">morpher_hashing_blockchain</bcf:citekey>
-    <bcf:citekey order="20" intorder="1">tahiti_sha256_explique</bcf:citekey>
-    <bcf:citekey order="21" intorder="1">ledger_preuve_de_travail</bcf:citekey>
-    <bcf:citekey order="22" intorder="1">wikipedia_chiffrement_rsa</bcf:citekey>
-    <bcf:citekey order="23" intorder="1">webia_algo_cours5</bcf:citekey>
-    <bcf:citekey order="24" intorder="1">typesnatifs</bcf:citekey>
-    <bcf:citekey order="25" intorder="1">rsabits</bcf:citekey>
-    <bcf:citekey order="26" intorder="1">gitlabpages</bcf:citekey>
+    <bcf:citekey order="19" intorder="1">gitlabgpg</bcf:citekey>
+    <bcf:citekey order="20" intorder="1">morpher_hashing_blockchain</bcf:citekey>
+    <bcf:citekey order="21" intorder="1">tahiti_sha256_explique</bcf:citekey>
+    <bcf:citekey order="22" intorder="1">ledger_preuve_de_travail</bcf:citekey>
+    <bcf:citekey order="23" intorder="1">wikipedia_chiffrement_rsa</bcf:citekey>
+    <bcf:citekey order="24" intorder="1">webia_algo_cours5</bcf:citekey>
+    <bcf:citekey order="25" intorder="1">typesnatifs</bcf:citekey>
+    <bcf:citekey order="26" intorder="1">rsabits</bcf:citekey>
+    <bcf:citekey order="27" intorder="1">gitlabpages</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">

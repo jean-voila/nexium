@@ -8,7 +8,7 @@
 \usepackage{graphicx} % Insert images
 \usepackage{amsmath,amsfonts,amssymb} % Math symbols
 \usepackage{listings, ./listings-rust}
-
+\usepackage{framed}
 \usepackage{listings}
 \lstdefinestyle{custom}{
   frame=single, % Encadrement du bloc
@@ -99,11 +99,11 @@
 
 
 \begin{titlepage}
-  \vspace*{\fill}
+
     \renewcommand{\contentsname}{Sommaire}
     \tableofcontents
 
-  \vspace*{\fill}
+
 \end{titlepage}
 
 
@@ -306,6 +306,15 @@ Afin de garantir la communication entre tous les noeuds et d'optimiser la commun
 \subsection{Sécurité}
 Nous avons songé au problème qui se poserait dans l'éventualité où une personne tenterait de posséder une part au moins égale à \texttt{51\%} des noeuds du réseau. Nous avons décidé pour cette raison de restreindre les noeuds à un par membre d'Épita, en se basant sur le \textbf{login} unique de chaque élève et professeur, que l'on retrouve notamment dans son adresse mail \texttt{@epita.fr} et qui se compose par \texttt{<prénom>\textbf{.}<nom>}.
 
+Nous pouvons ainsi, par un système dont nous avons théorisé les bases, accéder à la \textbf{clé publique} de n'importe quel utilisateur via l'\textbf{API de Gitlab} \cite{gitlabgpg}. La requête suivante permet de récupérer la clé publique d'un \texttt{login} donné : 
+
+\begin{center}
+\boxed{\text{GET} /\texttt{login}/gpg\_keys/key\_id}
+\end{center}
+
+
+
+
 \newpage
 \section{Hashage SHA-256}
 \label{sec:sha256}
@@ -370,10 +379,12 @@ Cet algorithme renvoie une \textbf{sortie fixe de 256 bits}.
 
 Notre réseau utilisera le chiffrement RSA \cite{wikipedia_chiffrement_rsa}. Il s'agit d'un concept de \textbf{cryptographie asymétrique} composé d’une clé privée et une clé publique par utilisateur qui leur permettront de s’échanger des \textit{messages} tout en restant secrets et sécurisés.
 
+\subsection{Fonctionnement du RSA}
 Ainsi, un utilisateur \textbf{A} pourra envoyer un \textit{message} en le cryptant avec sa clé publique à un utilisateur \textbf{B} qui, pour le lire, devra décrypter ce message avec sa clé privée et vice-versa.
 
 Cela rend impossible, sans connaître la clé privée du receveur, d’intercepter un message qui ne vous est pas destiné. Notre travail est donc de créer/générer ces clés et de faire en sorte que chaque personne utilisant Nexium puisse crypter et décrypter des messages grâce à leur propre clé privée et publique.
 
+\subsection{Génération de clés}
 Tout d’abord, la génération de clé se passe sous la forme d’un \textbf{algorithme mathématique} \cite{webia_algo_cours5} qui forme des clés en utilisant cinq nombres, que nous appellerons \textbf{p}, \textbf{q}, \textbf{n}, \textbf{e} et \textbf{d}, où :
 
 \begin{itemize}
@@ -390,8 +401,9 @@ Nous avons rencontré des problèmes lors de nos premières générations de cl�
 Ces types de taille fixe en mémoire ont donc posé problème pour la génération. Pour résoudre ce problème, nous avons dû utiliser les crates \href{https://crates.io/crates/num-bigint}{\textcolor{black}{\texttt{num\_bigint}}} et \href{https://crates.io/crates/num-primes}{\textcolor{black}{\texttt{num\_primes}}}.
 
 
-Ces \textbf{crates} nous permettent de générer de grands entiers sans limite de taille. Par exemple, \texttt{num\_biguint} est une structure dynamique qui s’adapte à la taille du nombre, contrairement aux types natifs de Rust (grâce à l’utilisation de vecteurs \texttt{u32} ou \texttt{u64} pour limiter la taille en mémoire). Nous avons également utilisé \texttt{num\_primes} pour générer aléatoirement et manipuler des nombres premiers efficacement. Si nous avions dû les générer nous-mêmes, le coût en calcul aurait été énorme. Ainsi, nous avons opté pour cette crate qui propose des algorithmes optimisés de génération de nombres premiers.
+Ces \textbf{crates} nous permettent de générer de grands entiers sans limite de taille. Par exemple, \texttt{num\_biguint} est une structure dynamique qui s’adapte à la taille du nombre, contrairement aux types natifs de Rust (grâce à l’utilisation de vecteurs \texttt{u32} ou \texttt{u64} pour limiter la taille en mémoire). Nous avons également utilisé \texttt{num\_primes} pour générer aléatoirement et manipuler des nombres premiers efficacement.
 
+\subsection{Chiffrement et Déchiffrement}
 Le dernier point que nous traiterons, lié au chiffrement RSA, est le chiffrement/déchiffrement. Pour cela, il est assez simple d’implémenter ces algorithmes car, une fois les cinq entiers utilisés dans la génération de clés trouvés, il nous suffit de les utiliser ainsi :
 
 Le \textbf{message chiffré} sera de la forme :
@@ -399,7 +411,6 @@ Le \textbf{message chiffré} sera de la forme :
     \boxed{\text{Message chiffré} = (\text{Message}^e) \mod(n)}
 \end{equation}
 avec \textit{Message} un entier naturel inférieur à $n$. \\
-
 Le \textbf{message déchiffré} sera de la forme :
 \begin{equation}
     \boxed{\text{Message déchiffré} = (\text{Message chiffré}^d) \mod(n)}
@@ -408,7 +419,7 @@ avec \textit{d} ici l’inverse de $(p-1)(q-1) \mod(n)$.
 
 Nous disposons déjà d'une \textbf{implémentation fonctionnelle} de la génération de clé \textbf{RSA 2048 bits}. En voici un exemple simplifié d'exécution :
 
-\begin{lstlisting}[language=Rust, title={test.rs}, style=custom]
+\begin{lstlisting}[language=Rust, title={\texttt{test.rs}}, style=custom]
 use nexium::rsa;
 
 fn main() {
@@ -417,19 +428,22 @@ fn main() {
 }
 \end{lstlisting}
 
-\begin{lstlisting}[title={test.rs: Output}, style=custom]
-[src/bin/server/main.rs:20:5] 
+\begin{lstlisting}[title={\texttt{test.rs:} \textbf{Output}}, style=custom]
+[test.rs:5:5] 
   keypair = {
     n: <xxxx>
     d: <xxxx>
     p: <xxxx>
     q: <xxxx>
-  }
+}
 \end{lstlisting}
+
+Nous aborderons ultérieurement dans le développement du projet le système de \textbf{signatures} et de \textbf{vérification} de messages, tout autant essentiels à Nexium.
 
 \newpage
 
 \section{Site Web}
+
 
 \textbf{\href{astro.build}{Astro}} permet une approche simple et rapide pour la création d'une documentation web.
 
@@ -444,7 +458,7 @@ Le \textbf{site web officiel de Nexium} est disponible à l'adresse \url{https:/
 
 Afin d'illustrer la \textbf{facilité d'utilisation} et de développement propre à \texttt{Astro}, voici un exemple de code \texttt{Markdown} suffisant à la génération d'une page Web: 
 
-\begin{lstlisting}[style=custom, caption={blockchain.md}]
+\begin{lstlisting}[style=custom, title={\texttt{web/contents/blockchain.md}}]
 ---
 title: La blockchain Nexium
 description: Architecture des blocs.
@@ -460,6 +474,10 @@ Nous stockons la **blockchain** dans un fichier binaire `nxm_blckchn.dat`.
 
 
 \newpage
+
+
+
+
 \section{Conclusion}
 
 Nexium nous permet d'explorer des concepts cryptographiques avancés, tel que la \textbf{blockchain}, l'\textbf{architecture réseau} et le \textbf{développement web}. 
@@ -474,6 +492,13 @@ Nexium, au-delà d'être un exercice technique, est une expérimentation réelle
 
 Les prochaines étapes du projet seront tout aussi importantes : \textbf{optimisation des performances}, \textbf{sécurisation structurelle du réseau} et \textbf{interface utilisateur intuitive} sont dans notre ligne de mire.
 
+
 \newpage
-\printbibliography[title={Bibliographie}]
+
+
+  \renewcommand*{\bibfont}{\normalfont\footnotesize}
+  \printbibliography[title={Bibliographie}]
+
+
+
 \end{document}
