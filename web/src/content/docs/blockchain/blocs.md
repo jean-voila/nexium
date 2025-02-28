@@ -1,6 +1,7 @@
 ---
 title: La blockchain Nexium
 description: Architecture des blocs.
+order: 4
 ---
 
 # The Nexium blockchain architecture

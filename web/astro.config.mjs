@@ -11,6 +11,21 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Nexium",
+      sidebar: [
+        {
+          label: 'Introduction',
+          autogenerate: { directory: 'introduction' },
+        },
+        {
+          label: 'Blockchain',
+          autogenerate: { directory: 'blockchain' },
+        },
+        {
+          label: 'Réseau',
+          autogenerate: { directory: 'reseau' },
+        },
+      ],
     }),
   ],
 });
+
