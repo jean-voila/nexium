@@ -6,8 +6,9 @@ pub fn preprocessing(s: String) -> Vec<u8> {
     while (data.len() * 8) % 512 != 448 {
         data.push(0x00);
     }
+
     data.extend_from_slice(&bit_len.to_be_bytes());
-    data
+    return data;
 }
 
 // function for processing, that's where we do all the job
