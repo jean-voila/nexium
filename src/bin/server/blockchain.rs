@@ -14,8 +14,8 @@ struct BlockHeader {
 }
 
 pub struct Block {
-    size: u32,
     header: BlockHeader,
+    // transactions
 }
 
 impl BlockHeader {
