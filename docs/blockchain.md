@@ -65,3 +65,22 @@
 
 ---
 
+La limite de taille de **1719** octets du `data` d'une transaction est établie de telle sorte à ce que la taille totale de la transaction (`data`+`transaction_header`+`signature`) n'excède pas **2048 octets**.
+
+## Tailles théoriques de blocs
+
+Les tailles pour un **bloc de n transactions** seraient donc :
+- *transactions sans description* : `82 + n*(73+256+69)` octets.
+- *transactions avec description* : `82 + n*(73+256+325)` octets.
+
+Ces tailles de blocs partent du principe que les transactions contenues par ledit bloc sont toutes **avec** ou **sans** description. 
+
+Cette approche n'est pas réaliste mais permet d'encadrer la taille d'un bloc de **n** transactions.
+
+Par exemple, **pour un bloc de 1000 transactions** :
+- *transactions sans description* : `82 + 1000*(73+256+69)` = **398082** octets.
+- *transactions avec description* : `82 + 1000*(73+256+325)` = **654082** octets.
+
+**Donc,** la taille d'un bloc contenant 1000 transactions est comprise **entre environ 398 Ko et 654 Ko**. 
+
+En supposant la taille du `bloc_header` (**80 octets**) négligeable devant la taille des transactions, on peut considérer la taille d'un bloc *proportionnelle* à son nombre de transactions : `10 fois moins de transactions <=> bloc 10 fois moins gros`.
