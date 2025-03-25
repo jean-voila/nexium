@@ -1,12 +1,12 @@
 # Structure des blocs
 
 ## Bloc (*variable*)
-- `bloc_header` (*80 octets*)
+- `bloc_header` (*82 octets*)
     - En-tête du bloc.
 - `transactions` (*de 330 à (2048\*`transaction_count`)*)
     - Liste des transactions, concaténées.
 
-### `bloc_header` (*80 octets*)
+### `bloc_header` (*82 octets*)
 - `version`(*2 octets*)
     - Version du protocole adoptée (**ex: `1`**).
 - `previous_block_hash` (*32 octets*)

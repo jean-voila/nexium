@@ -3,6 +3,12 @@ use std::{
     io::{Read, Write},
 };
 
+use json::JsonValue::Null;
+
+const BLOCK_HEADER_SIZE: usize = 82;
+const TRANSACTION_COUNT: usize = 10;
+
+#[derive(Debug, Default)]
 struct BlockHeader {
     version: u16,
     previous_block_hash: [u8; 32],
@@ -10,12 +16,41 @@ struct BlockHeader {
     timestamp: u32,
     difficulty_target: u32,
     nonce: u32,
-    transaction: u16,
+    transactions_size: u32,
 }
 
+#[derive(Debug, Default)]
+struct TransactionHeader {
+    //
+}
+
+#[derive(Debug, Default)]
+enum DataType {
+    #[default]
+    Unknow,
+}
+
+#[derive(Debug)]
+struct Transaction {
+    transaction_header: TransactionHeader,
+    data: DataType,
+    signature: [u8; 256],
+}
+
+impl Default for Transaction {
+    fn default() -> Self {
+        Self {
+            transaction_header: Default::default(),
+            data: Default::default(),
+            signature: [0; 256],
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct Block {
     header: BlockHeader,
-    // transactions
+    transactions: [Transaction; TRANSACTION_COUNT],
 }
 
 impl BlockHeader {
@@ -64,13 +99,10 @@ impl Block {
 /// Read a block from the file
 /// Returns the new position in the file
 pub fn readBlock(file: &mut File, pos: u32) -> u32 {
-    let size_buff = &mut [0_u8; 4];
-    let _ = file.read(size_buff);
-    let head_buff = &mut [0_u8; 80];
+    let head_buff = &mut [0_u8; BLOCK_HEADER_SIZE];
     let _ = file.read(head_buff);
 
     let block = Block {
-        size: u32::from_be_bytes(*size_buff),
         header: BlockHeader {
             version: u16::from_be_bytes(head_buff[0..2].try_into().unwrap()),
             previous_block_hash: head_buff[2..34].try_into().unwrap(),
@@ -82,13 +114,40 @@ pub fn readBlock(file: &mut File, pos: u32) -> u32 {
                 head_buff[70..74].try_into().unwrap(),
             ),
             nonce: u32::from_be_bytes(head_buff[74..78].try_into().unwrap()),
-            transaction: u16::from_be_bytes(
-                head_buff[78..80].try_into().unwrap(),
+            transactions_size: u32::from_be_bytes(
+                head_buff[78..82].try_into().unwrap(),
             ),
         },
+        ..Default::default()
     };
 
-    return pos + block.size;
+    // let tr_buff = [0_u8; block.header.transactions_size as usize];
+    let mut tr_buff = &mut vec![0_u8; block.header.transactions_size as usize];
+    // let _ = file.read(&mut tr_buff);
+
+    for i in 0..TRANSACTION_COUNT {
+        // block.transactions[i].data;
+        // block.transactions[i].signature;
+        // block.transactions[i].transaction_header;
+    }
+
+    // let transactions: [Transaction; TRANSACTION_COUNT] =
+    //     [Default::default(); TRANSACTION_COUNT];
+    // let mut block = Block {
+    //     header: block_header,
+    //     // transactions: [Transaction {
+    //     //     data: 0,
+    //     //     signature: [0; 256],
+    //     //     transaction_header: TransactionHeader {
+
+    //     //     },
+    //     // }; TRANSACTION_COUNT],
+    // };
+
+    // let block: Block = Default::default();
+    // block.header.
+
+    return pos + BLOCK_HEADER_SIZE as u32;
 }
 
 pub fn writeBlock(file: &mut File, data: &[u8]) {
