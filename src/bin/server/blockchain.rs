@@ -3,12 +3,11 @@ use std::{
     io::{Read, Write},
 };
 
-use json::JsonValue::Null;
-
 const BLOCK_HEADER_SIZE: usize = 82;
 const TRANSACTION_COUNT: usize = 10;
+const TRANSACTION_HEADER_SIZE: usize = 73;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 struct BlockHeader {
     version: u16,
     previous_block_hash: [u8; 32],
@@ -19,135 +18,135 @@ struct BlockHeader {
     transactions_size: u32,
 }
 
-#[derive(Debug, Default)]
-struct TransactionHeader {
-    //
+impl BlockHeader {
+    fn from_buff(buff: [u8; 82]) -> Self {
+        BlockHeader {
+            version: u16::from_be_bytes(buff[0..2].try_into().unwrap()),
+            previous_block_hash: buff[2..34].try_into().unwrap(),
+            merkle_root: buff[34..66].try_into().unwrap(),
+            timestamp: u32::from_be_bytes(buff[66..70].try_into().unwrap()),
+            difficulty_target: u32::from_be_bytes(
+                buff[70..74].try_into().unwrap(),
+            ),
+            nonce: u32::from_be_bytes(buff[74..78].try_into().unwrap()),
+            transactions_size: u32::from_be_bytes(
+                buff[78..82].try_into().unwrap(),
+            ),
+        }
+    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 enum DataType {
     #[default]
-    Unknow,
+    Unknown = 0,
+    ClassicTransaction = 1,
 }
 
-#[derive(Debug)]
+impl DataType {
+    fn from_u8(t: u8) -> Self {
+        match t {
+            1 => DataType::ClassicTransaction,
+            _ => DataType::Unknown,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct TransactionHeader {
+    transaction_size: u16,
+    timestamp: u32,
+    fees: u16,
+    emitter: [u8; 64],
+    data_type: DataType,
+}
+
+#[derive(Debug, Clone, Copy)]
 struct Transaction {
     transaction_header: TransactionHeader,
-    data: DataType,
+    // data: DataType,
     signature: [u8; 256],
+}
+
+impl DataType {
+    fn from(t: u8) {}
 }
 
 impl Default for Transaction {
     fn default() -> Self {
         Self {
-            transaction_header: Default::default(),
-            data: Default::default(),
             signature: [0; 256],
+            ..Default::default()
         }
     }
 }
 
-#[derive(Debug, Default)]
+impl Default for TransactionHeader {
+    fn default() -> Self {
+        Self {
+            emitter: [0; 64],
+            ..Default::default()
+        }
+    }
+}
+
+impl Transaction {
+    fn fill_from_buffer(&mut self, buff: &[u8]) -> usize {
+        self.transaction_header.fill_from_buffer(
+            &buff[0..TRANSACTION_HEADER_SIZE].try_into().unwrap(),
+        );
+        // self.data = DataType::Unknown;
+        self.signature = buff
+            [self.transaction_header.transaction_size as usize..]
+            .try_into()
+            .unwrap();
+        TRANSACTION_HEADER_SIZE
+            + self.transaction_header.transaction_size as usize
+    }
+}
+
+impl TransactionHeader {
+    fn fill_from_buffer(&mut self, buff: &[u8; TRANSACTION_HEADER_SIZE]) {
+        self.transaction_size =
+            u16::from_be_bytes(buff[0..2].try_into().unwrap());
+        self.timestamp = u32::from_be_bytes(buff[2..6].try_into().unwrap());
+        self.fees = u16::from_be_bytes(buff[6..8].try_into().unwrap());
+        self.emitter = buff[8..72].try_into().unwrap();
+        self.data_type = DataType::from_u8(buff[72]);
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Block {
     header: BlockHeader,
     transactions: [Transaction; TRANSACTION_COUNT],
 }
 
-impl BlockHeader {
-    // pub fn new() -> BlockHeader {
-    //     BlockHeader {
-    //         version: 0,
-    //         previous_block_hash: [0; 32],
-    //         merkle_root: [0; 32],
-    //         timestamp: 0,
-    //         bits: 0,
-    //         nonce: 0,
-    //     }
-    // }
-}
-
-impl Block {
-    // pub fn new() -> Block {
-    //     Block {
-    //         size: 0,
-    //         header: BlockHeader::new(),
-    //     }
-    // }
-}
-
-// impl core::fmt::Display for BlockHeader {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "{{\nbits: {}\nmerkle_root: {:?}\nnonce: {}\nprevious_block_hash: {:?}\ntimestamp: {}\nversion: {}\n}}",
-//             self.bits,
-//             self.merkle_root,
-//             self.nonce,
-//             self.previous_block_hash,
-//             self.timestamp,
-//             self.version
-//         )
-//     }
-// }
-
-// impl core::fmt::Debug for Block {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{{\nsize: {}\nheader: {}}}\n", self.size, self.header)
-//     }
-// }
-
 /// Read a block from the file
 /// Returns the new position in the file
-pub fn readBlock(file: &mut File, pos: u32) -> u32 {
+pub fn readBlock(file: &mut File, pos: u32) -> (Block, u32) {
     let head_buff = &mut [0_u8; BLOCK_HEADER_SIZE];
     let _ = file.read(head_buff);
 
-    let block = Block {
-        header: BlockHeader {
-            version: u16::from_be_bytes(head_buff[0..2].try_into().unwrap()),
-            previous_block_hash: head_buff[2..34].try_into().unwrap(),
-            merkle_root: head_buff[34..66].try_into().unwrap(),
-            timestamp: u32::from_be_bytes(
-                head_buff[66..70].try_into().unwrap(),
-            ),
-            difficulty_target: u32::from_be_bytes(
-                head_buff[70..74].try_into().unwrap(),
-            ),
-            nonce: u32::from_be_bytes(head_buff[74..78].try_into().unwrap()),
-            transactions_size: u32::from_be_bytes(
-                head_buff[78..82].try_into().unwrap(),
-            ),
-        },
+    let mut block = Block {
+        header: BlockHeader::from_buff(*head_buff),
         ..Default::default()
     };
 
-    // let tr_buff = [0_u8; block.header.transactions_size as usize];
     let mut tr_buff = &mut vec![0_u8; block.header.transactions_size as usize];
-    // let _ = file.read(&mut tr_buff);
+    let _ = file.read(&mut tr_buff);
+
+    let mut current_pos = 0;
 
     for i in 0..TRANSACTION_COUNT {
-        // block.transactions[i].data;
-        // block.transactions[i].signature;
-        // block.transactions[i].transaction_header;
+        current_pos +=
+            block.transactions[i].fill_from_buffer(&tr_buff[current_pos..]);
     }
 
-    // let transactions: [Transaction; TRANSACTION_COUNT] =
-    //     [Default::default(); TRANSACTION_COUNT];
-    // let mut block = Block {
-    //     header: block_header,
-    //     // transactions: [Transaction {
-    //     //     data: 0,
-    //     //     signature: [0; 256],
-    //     //     transaction_header: TransactionHeader {
-
-    //     //     },
-    //     // }; TRANSACTION_COUNT],
-    // };
-
-    // let block: Block = Default::default();
-    // block.header.
-
-    return pos + BLOCK_HEADER_SIZE as u32;
+    (
+        block,
+        pos + BLOCK_HEADER_SIZE as u32 + block.header.transactions_size as u32,
+    )
 }
 
 pub fn writeBlock(file: &mut File, data: &[u8]) {
