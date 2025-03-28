@@ -1,6 +1,6 @@
 mod config;
 use config::Config;
-use nexium::gitlab::{GitlabClient, GitlabError};
+use nexium::gitlab::GitlabClient;
 use std::{env, path::Path};
 
 /// Default path to the Nexium home directory
@@ -33,20 +33,10 @@ fn main() {
     let config = Config::from_file(&config_path);
 
     // Creating the gitlab API client
-    let gitlab_client = GitlabClient::new(
+    let _gitlab_client = GitlabClient::new(
         config.gitlab_api_url.clone(),
         config.gitlab_token.clone(),
     );
 
-    // Checking if the gitlab token is valid
-    match gitlab_client.check_token() {
-        Ok(_) => println!("Gitlab token is valid"),
-        Err(GitlabError::InvalidToken) => {
-            panic!("Invalid Gitlab token");
-        }
-        Err(e) => {
-            panic!("Error checking Gitlab token: {:?}", e);
-        }
-    }
     return;
 }
