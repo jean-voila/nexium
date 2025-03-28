@@ -2,45 +2,46 @@ use json;
 use std::fs;
 use std::io;
 use std::io::Write;
-// use std::io::prelude::*;
 
-use nexium::gitlab;
-use nexium::login;
 use std::path::Path;
 
+/// Default port to listen on
 const DEFAULT_PORT: u16 = 4242;
+/// Default path to database file
 const DEFAULT_DB_FILE: &str = "blockchain.db";
+/// Default path to keys directory
 const DEFAULT_KEYS_DIR: &str = "keys/";
+/// Default path to the Gitlab API URL
+const DEFAULT_GITLAB_API_URL: &str = "https://gitlab.cri.epita.fr/api/v4";
 
 /// Config struct to hold the configuration of the server
 
 #[derive(Debug)]
 pub struct Config {
     /// Path to the database file
-    database_filepath: String,
+    pub database_filepath: String,
     /// Path to the directory containing the keys
-    keys_filepath: String,
+    pub keys_filepath: String,
     /// Port on which the server will listen
-    port: u16,
+    pub port: u16,
     /// User login to use for the server
-    user_login: login::Login,
+    pub user_login: String,
     /// Gitlab Token for the user
-    gitlab_token: gitlab::GitlabToken,
+    pub gitlab_token: String,
+    /// Gitlab API URL
+    pub gitlab_api_url: String,
 }
 
 impl Config {
     /// Create a new Config object with default values
-    pub fn generate() -> Config {
-        let ulogin: login::Login =
-            match login::Login::from(ask("Enter user id: ")) {
-                Some(l) => l,
-                None => {
-                    panic!("Invalid user id");
-                }
-            };
+    pub fn generate(path: &Path) -> Config {
+        let user_login = ask("Enter your login (format: first.last): ");
+        if !_check_login_syntax(user_login.clone()) {
+            panic!("Invalid login format");
+        }
 
-        let token = ask("Enter Gitlab token: ");
-        if token.is_empty() {
+        let gitlab_token = ask("Enter Gitlab token: ");
+        if gitlab_token.is_empty() {
             panic!("Empty Gitlab token");
         }
 
@@ -81,25 +82,38 @@ impl Config {
             s => s.to_string(),
         };
 
-        let gitlab_token = gitlab::GitlabToken::new(token, ulogin.clone());
-        if !gitlab_token.check_token() {
-            panic!("Invalid token");
-        }
+        let gitlab_api_url = match ask(&format!(
+            "Enter Gitlab API URL (default: {}): ",
+            DEFAULT_GITLAB_API_URL
+        ))
+        .as_str()
+        {
+            "" => {
+                println!("Empty path, using default");
+                String::from(DEFAULT_GITLAB_API_URL)
+            }
+            s => s.to_string(),
+        };
 
-        return Config {
+        let res = Config {
             database_filepath,
             keys_filepath,
             port,
-            user_login: ulogin,
+            user_login,
             gitlab_token,
+            gitlab_api_url,
         };
+
+        res.to_file(path);
+
+        return res;
     }
 
     /// Create a new Config from a json file
     pub fn from_file(path: &Path) -> Config {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
-            Err(_) => panic!("Error reading config file"),
+            Err(_) => panic!("Error reading config file: file not found. Try --generate-config."),
         };
 
         let parsed = json::parse(content.as_str()).unwrap();
@@ -108,20 +122,21 @@ impl Config {
             || parsed["port"].is_null()
             || parsed["user_id"].is_null()
             || parsed["gitlab_token"].is_null()
+            || parsed["gitlab_api_url"].is_null()
             || !parsed["port"].is_number()
         {
             panic!("Error parsing config file");
         }
 
-        let token = gitlab::GitlabToken::new(
-            parsed["gitlab_token"].to_string(),
-            login::Login::from(parsed["user_id"].to_string())
-                .expect("Config read: Invalid user id"),
-        );
+        let gitlab_token = match parsed["gitlab_token"].as_str() {
+            Some(t) => t.to_string(),
+            None => panic!("Error parsing gitlab token"),
+        };
 
-        if !token.check_token() {
-            panic!("Invalid token");
-        }
+        let gitlab_api_url = match parsed["gitlab_api_url"].as_str() {
+            Some(t) => t.to_string(),
+            None => panic!("Error parsing gitlab api url"),
+        };
 
         Config {
             database_filepath: parsed["database"].to_string(),
@@ -129,9 +144,9 @@ impl Config {
             port: parsed["port"]
                 .as_u16()
                 .expect("Config read: Port is not a number"),
-            user_login: login::Login::from(parsed["user_id"].to_string())
-                .expect("Config read: Invalid user id"),
-            gitlab_token: token,
+            user_login: parsed["user_id"].to_string(),
+            gitlab_token,
+            gitlab_api_url,
         }
     }
 
@@ -142,7 +157,8 @@ impl Config {
         config_obj["keys"] = self.keys_filepath.to_string().into();
         config_obj["port"] = self.port.into();
         config_obj["user_id"] = self.user_login.to_string().into();
-        config_obj["gitlab_token"] = self.gitlab_token.get_token().into();
+        config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
+        config_obj["gitlab_api_url"] = self.gitlab_api_url.to_string().into();
         fs::write(path, config_obj.pretty(4).as_bytes())
             .expect("Error writing config file");
     }
@@ -158,4 +174,15 @@ fn ask(ask: &str) -> String {
         .expect("Error reading line");
 
     return line.trim().to_string();
+}
+
+fn _check_login_syntax(login: String) -> bool {
+    let parts: Vec<&str> = login.split('.').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    if parts[0].len() == 0 || parts[1].len() == 0 {
+        return false;
+    }
+    return true;
 }

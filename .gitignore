@@ -110,3 +110,7 @@ examples/**/env.d.ts
 # https://github.com/withastro/astro/pull/11759#discussion_r1721444711)
 *.code-workspace
 public/
+
+
+# For nexium test data
+.nexiumlocal/

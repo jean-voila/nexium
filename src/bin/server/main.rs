@@ -1,37 +1,52 @@
 mod config;
-use std::fs;
+use config::Config;
+use nexium::gitlab::{GitlabClient, GitlabError};
 use std::{env, path::Path};
 
 /// Default path to the Nexium home directory
-const NEXIUM_HOME_DEFAULT: &str = "~/.nexium/";
-
-/// Default path to the configuration file
-const DEFAULT_PATH: &str = "config.json";
-
+const NEXIUM_HOME_DEFAULT: &str = ".nexiumlocal";
+/// Default path to the configuration file, relative Nxm home
+const DEFAULT_CONFIG_NAME: &str = "config.json";
+/// Argument to pass to the program to generate the config file
 const GEN_CONFIG_ARG: &str = "--generate-config";
 
 fn main() {
-    let nexium_home: &str =
-        &NEXIUM_HOME_DEFAULT.replace("~", env::var("HOME").unwrap().as_str());
+    // Getting the arguments
+    let args = env::args().collect::<Vec<String>>();
 
-    if !Path::new(&nexium_home).exists() {
-        fs::create_dir_all(nexium_home).unwrap();
+    // Constructing the config path
+    let mut config_path = Path::new(&NEXIUM_HOME_DEFAULT).to_path_buf();
+    config_path.push(DEFAULT_CONFIG_NAME);
+
+    // Creating the config directory if it doesn't exist
+    if !config_path.exists() {
+        std::fs::create_dir_all(config_path.parent().unwrap())
+            .expect("Failed to create config directory");
     }
 
-    let path = format!("{}/{}", &nexium_home, DEFAULT_PATH);
+    // If GEN_CONFIG_ARG is passed, generate the config file
+    if args.len() > 1 && args[1] == GEN_CONFIG_ARG {
+        Config::generate(&config_path);
+    }
 
-    let config: config::Config = match env::args().nth(1) {
-        Some(arg) => {
-            if arg == GEN_CONFIG_ARG {
-                let res = config::Config::generate();
-                res.to_file(Path::new(&path));
-                res
-            } else {
-                config::Config::from_file(Path::new(&path))
-            }
+    // Constructing the config object
+    let config = Config::from_file(&config_path);
+
+    // Creating the gitlab API client
+    let gitlab_client = GitlabClient::new(
+        config.gitlab_api_url.clone(),
+        config.gitlab_token.clone(),
+    );
+
+    // Checking if the gitlab token is valid
+    match gitlab_client.check_token() {
+        Ok(_) => println!("Gitlab token is valid"),
+        Err(GitlabError::InvalidToken) => {
+            panic!("Invalid Gitlab token");
         }
-        None => config::Config::from_file(Path::new(&path)),
-    };
-
-    println!("Valid config and valid token");
+        Err(e) => {
+            panic!("Error checking Gitlab token: {:?}", e);
+        }
+    }
+    return;
 }
