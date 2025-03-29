@@ -43,7 +43,6 @@ impl KeyPair {
             q: q,
         };
     }
-<<<<<<< HEAD
 
     //NEED TO COMMENT TO EXPLAIN FUNCTIONS HERE WILL DO IT
 
