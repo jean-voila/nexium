@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    io::{Read, Write},
-};
+use std::{fs::File, io::Read, vec};
 
 const BLOCK_HEADER_SIZE: usize = 82;
 const HEADER_VERSION: usize = 2;
@@ -21,8 +18,9 @@ const TRANSACTION_EMITTER: usize = 64;
 const TRANSACTION_DATA_TYPE: usize = 1;
 const SIGNATURE_SIZE: usize = 256;
 
-#[derive(Debug, Default, Clone, Copy)]
-struct BlockHeader {
+// #[derive(Debug, Default, Clone, Copy)]
+#[derive(Default, Clone, Copy)]
+pub struct BlockHeader {
     version: u16,
     previous_block_hash: [u8; HEADER_PREVIOUS_BLOCK_HASH],
     merkle_root: [u8; HEADER_MERKLE_ROOT],
@@ -79,7 +77,7 @@ impl DataType {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct TransactionHeader {
+pub struct TransactionHeader {
     transaction_size: u16,
     timestamp: u32,
     fees: u16,
@@ -87,10 +85,12 @@ struct TransactionHeader {
     data_type: DataType,
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Transaction {
+#[derive(Clone)]
+pub struct Transaction {
     transaction_header: TransactionHeader,
-    // data: DataType,
+    // data: [u8],
+    // data: &[u8],
+    data: Vec<u8>,
     signature: [u8; SIGNATURE_SIZE],
 }
 
@@ -98,7 +98,8 @@ impl Default for Transaction {
     fn default() -> Self {
         Self {
             signature: [0; SIGNATURE_SIZE],
-            ..Default::default()
+            transaction_header: Default::default(),
+            data: vec![],
         }
     }
 }
@@ -107,31 +108,49 @@ impl Default for TransactionHeader {
     fn default() -> Self {
         Self {
             emitter: [0; TRANSACTION_EMITTER],
-            ..Default::default()
+            data_type: DataType::Unknown,
+            transaction_size: 0,
+            timestamp: 0,
+            fees: 0,
         }
     }
 }
 
 impl Transaction {
     fn fill_from_buffer(&mut self, buff: &[u8]) -> usize {
-        self.transaction_header.fill_from_buffer(
-            &buff[0..TRANSACTION_HEADER_SIZE].try_into().unwrap(),
-        );
-        // self.data = DataType::Unknown;
-        self.signature = buff
-            [self.transaction_header.transaction_size as usize..]
-            .try_into()
-            .unwrap();
-        TRANSACTION_HEADER_SIZE
+        let data_start = TRANSACTION_HEADER_SIZE;
+        self.transaction_header
+            .fill_from_buffer(&buff[0..data_start].try_into().unwrap());
+
+        let signature_start =
+            data_start + self.transaction_header.transaction_size as usize;
+        let signature_end = signature_start + SIGNATURE_SIZE;
+        self.data = buff[data_start..signature_start]
+            [0..self.transaction_header.transaction_size as usize]
+            .to_vec();
+        self.signature =
+            buff[signature_start..signature_end].try_into().unwrap();
+        return TRANSACTION_HEADER_SIZE
             + self.transaction_header.transaction_size as usize
+            + SIGNATURE_SIZE;
     }
 
     fn to_buffer(self) -> Vec<u8> {
-        let mut res =
-            vec![0; self.transaction_header.transaction_size as usize];
+        let data_start = TRANSACTION_HEADER_SIZE;
+        let signature_start =
+            data_start + self.transaction_header.transaction_size as usize;
+        let mut res = vec![
+            0;
+            TRANSACTION_HEADER_SIZE
+                + self.transaction_header.transaction_size
+                    as usize
+                + SIGNATURE_SIZE
+        ];
         res[0..TRANSACTION_HEADER_SIZE]
             .copy_from_slice(&self.transaction_header.to_buffer());
-        res[TRANSACTION_HEADER_SIZE..].copy_from_slice(&self.signature);
+        res[TRANSACTION_HEADER_SIZE..signature_start]
+            .copy_from_slice(&self.data);
+        res[signature_start..].copy_from_slice(&self.signature);
         return res;
     }
 }
@@ -157,24 +176,85 @@ impl TransactionHeader {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct Block {
-    header: BlockHeader,
-    transactions: [Transaction; TRANSACTION_COUNT],
+    pub header: BlockHeader,
+    pub transactions: [Transaction; TRANSACTION_COUNT],
 }
 
-// impl Block {
-//     fn to_buffer(self) -> Vec<u8> {
-//         let mut res: Vec<u8> =
-//             vec![0; BLOCK_HEADER_SIZE + self.header.transactions_size as usize];
+impl Block {
+    pub fn to_buffer(self) -> Vec<u8> {
+        let mut res = vec![];
+        res.extend_from_slice(&self.header.to_buffer());
+        for t in self.transactions {
+            res.extend_from_slice(&t.to_buffer());
+        }
+        return res;
+    }
 
-//         return res;
-//     }
-// }
+    fn extract_header(buff: &[u8]) {
+        //
+    }
+}
+
+impl core::fmt::Debug for BlockHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\n")?;
+        write!(f, "  transactions_size: {},\n", self.transactions_size)?;
+        write!(f, "  version: {},\n", self.version)?;
+        write!(
+            f,
+            "  previous_block_hash: {:?},\n",
+            String::from_utf8(self.previous_block_hash.to_vec()).unwrap()
+        )?;
+        write!(
+            f,
+            "  merkle_root: {:?},\n",
+            String::from_utf8(self.merkle_root.to_vec()).unwrap()
+        )?;
+        write!(f, "  timestamp: {},\n", self.timestamp)?;
+        write!(f, "  difficulty_target: {},\n", self.difficulty_target)?;
+        write!(f, "  nonce: {},\n", self.nonce)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl core::fmt::Debug for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\n")?;
+
+        write!(f, "header: {:?},\n", self.header)?;
+        write!(f, "transactions: [\n")?;
+        for t in &self.transactions {
+            write!(f, "{:?},\n", t)?;
+        }
+        write!(f, "],\n")?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl core::fmt::Debug for Transaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\n")?;
+
+        write!(f, "header: {:?},\n", self.transaction_header)?;
+        write!(f, "transactions: [\n")?;
+        // write!(f, "{:?},\n", self.data)?;
+        write!(
+            f,
+            "signature: {:?},\n",
+            String::from_utf8(self.signature.to_vec()).unwrap()
+        )?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
 
 /// Read a block from the file
 /// Returns the new position in the file
-pub fn readBlock(file: &mut File, pos: u32) -> (Block, u32) {
+pub fn readBlock(file: &mut File, pos: usize) -> (Block, usize) {
     let head_buff = &mut [0_u8; BLOCK_HEADER_SIZE];
     let _ = file.read(head_buff);
 
@@ -183,7 +263,8 @@ pub fn readBlock(file: &mut File, pos: u32) -> (Block, u32) {
         ..Default::default()
     };
 
-    let mut tr_buff = &mut vec![0_u8; block.header.transactions_size as usize];
+    let tr_size = block.header.transactions_size;
+    let mut tr_buff = &mut vec![0_u8; tr_size as usize];
     let _ = file.read(&mut tr_buff);
 
     let mut current_pos = 0;
@@ -193,19 +274,59 @@ pub fn readBlock(file: &mut File, pos: u32) -> (Block, u32) {
             block.transactions[i].fill_from_buffer(&tr_buff[current_pos..]);
     }
 
-    (
-        block,
-        pos + BLOCK_HEADER_SIZE as u32 + block.header.transactions_size as u32,
-    )
+    // dbg!(tr_size, current_pos, tr_size == current_pos as u32);
+    return (block, pos + BLOCK_HEADER_SIZE + tr_size as usize);
 }
 
-pub fn writeBlock(file: &mut File, block: Block) {
-    let head_buff = block.header.to_buffer();
-    let _ = file.write(&head_buff).unwrap();
+// pub fn writeBlock(file: &mut File, block: Block) {
+//     let buff = block.to_buffer();
+//     let _ = file.write(&buff).unwrap();
+//     // let head_buff = block.header.to_buffer();
+//     // let _ = file.write(&head_buff).unwrap();
 
-    let mut tr_buff = vec![];
-    for i in 0..TRANSACTION_COUNT {
-        tr_buff.extend(block.transactions[i].to_buffer());
+//     // let mut tr_buff = vec![];
+//     // for t in block.transactions {
+//     //     tr_buff.extend(t.to_buffer());
+//     // }
+//     // let _ = file.write(&tr_buff).unwrap();
+// }
+
+pub fn _create_temp_block() -> Block {
+    // let transactions:[Transaction;TRANSACTION_COUNT] = [Default::default();TRANSACTION_COUNT];
+    let mut tr = vec![];
+    for _ in 0..TRANSACTION_COUNT {
+        let data = [0; 16253];
+        tr.push(Transaction {
+            transaction_header: TransactionHeader {
+                transaction_size: 16253,
+                timestamp: 1743171415,
+                fees: 0,
+                emitter: ['a' as u8; TRANSACTION_EMITTER],
+                data_type: DataType::ClassicTransaction,
+            },
+            data: data.to_vec(),
+            signature: ['a' as u8; SIGNATURE_SIZE],
+        });
     }
-    let _ = file.write(&tr_buff).unwrap();
+
+    let tr_size = tr.iter().fold(0, |acc, t| {
+        acc + size_of_val(&t.transaction_header)
+            + t.data.len()
+            + t.signature.len()
+    });
+
+    // dbg!(tr_size);
+
+    Block {
+        header: BlockHeader {
+            version: 1,
+            previous_block_hash: ['a' as u8; HEADER_PREVIOUS_BLOCK_HASH],
+            merkle_root: ['a' as u8; HEADER_MERKLE_ROOT],
+            timestamp: 1743171086,
+            difficulty_target: 3,
+            nonce: 5,
+            transactions_size: tr_size as u32,
+        },
+        transactions: tr.try_into().unwrap(),
+    }
 }

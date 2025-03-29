@@ -1,3 +1,4 @@
+mod blockchain;
 mod config;
 use config::Config;
 use nexium::gitlab::GitlabClient;
