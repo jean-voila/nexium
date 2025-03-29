@@ -1,6 +1,7 @@
 use base64;
 use num_bigint::BigUint;
 use num_primes::Generator;
+
 // See the PKCS#1 standard for more information
 
 pub struct KeyPair {
@@ -10,10 +11,6 @@ pub struct KeyPair {
     d: BigUint,
     p: BigUint,
     q: BigUint,
-}
-
-struct _ASN1Key {
-    value: String,
 }
 
 impl KeyPair {
@@ -46,6 +43,7 @@ impl KeyPair {
             q: q,
         };
     }
+<<<<<<< HEAD
 
     //NEED TO COMMENT TO EXPLAIN FUNCTIONS HERE WILL DO IT
 

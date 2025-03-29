@@ -1,45 +1,42 @@
-mod blockchain;
 mod config;
-//mod srv_network;
+use config::Config;
+use nexium::gitlab::GitlabClient;
+use std::{env, path::Path};
 
-use config::generate_config;
-use nexium::rsa;
-// use nexium::sha256;
-use std::env;
-
+/// Default path to the Nexium home directory
+const NEXIUM_HOME_DEFAULT: &str = ".nexiumlocal";
+/// Default path to the configuration file, relative Nxm home
+const DEFAULT_CONFIG_NAME: &str = "config.json";
+/// Argument to pass to the program to generate the config file
 const GEN_CONFIG_ARG: &str = "--generate-config";
 
 fn main() {
-    // let args: Vec<String> = env::args().collect();
-    // if args.contains(&GEN_CONFIG_ARG.to_string()) {
-    //     generate_config();
-    //     return;
-    // }
-    let keypair: rsa::KeyPair = rsa::KeyPair::generate(2048);
-    dbg!(keypair);
+    // Getting the arguments
+    let args = env::args().collect::<Vec<String>>();
 
-    /////////////////////////
-    // rsa test
-    // let keypair = rsa::KeyPair::generate(2048);
-    // dbg!(keypair);
-    /////////////////////////
+    // Constructing the config path
+    let mut config_path = Path::new(&NEXIUM_HOME_DEFAULT).to_path_buf();
+    config_path.push(DEFAULT_CONFIG_NAME);
 
-    /////////////////////////
-    // config test
-    // let p = Path::new("./test_data/config.json");
-    // let config: Config = config::Config::new();
-    // config.to_file(p);
+    // Creating the config directory if it doesn't exist
+    if !config_path.exists() {
+        std::fs::create_dir_all(config_path.parent().unwrap())
+            .expect("Failed to create config directory");
+    }
 
-    // let cfg = Config::from_file(p);
-    // dbg!(cfg);
-    /////////////////////////
+    // If GEN_CONFIG_ARG is passed, generate the config file
+    if args.len() > 1 && args[1] == GEN_CONFIG_ARG {
+        Config::generate(&config_path);
+    }
 
-    // let string_test: String = String::from("je hais ce monde");
-    // dbg!(string_test.clone());
+    // Constructing the config object
+    let config = Config::from_file(&config_path);
 
-    // let preprocessed = sha256::preprocessing(string_test.clone());
-    // dbg!(preprocessed.clone());
+    // Creating the gitlab API client
+    let _gitlab_client = GitlabClient::new(
+        config.gitlab_api_url.clone(),
+        config.gitlab_token.clone(),
+    );
 
-    // let processed = sha256::processing(preprocessed.clone());
-    // dbg!(processed.clone());
+    return;
 }

@@ -1,5 +1,5 @@
 // transforms a string into a binary vector
-pub fn preprocessing(s: String) -> Vec<u8> {
+fn preprocessing(s: String) -> Vec<u8> {
     let mut data = s.into_bytes();
     let bit_len = (data.len() * 8) as u64;
     data.push(0x80);
@@ -12,7 +12,7 @@ pub fn preprocessing(s: String) -> Vec<u8> {
 }
 
 // function for processing, that's where we do all the job
-pub fn processing(data: Vec<u8>) -> String {
+fn processing(data: Vec<u8>) -> String {
     let mut hash_val = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c,
         0x1f83d9ab, 0x5be0cd19,
@@ -97,4 +97,10 @@ pub fn processing(data: Vec<u8>) -> String {
         res += &format!("{:08x}", hash_val[i]);
     }
     res
+}
+
+pub fn sha256(s: String) -> String {
+    let preprocessed_data = preprocessing(s);
+    let hash = processing(preprocessed_data);
+    hash
 }

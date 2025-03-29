@@ -58,8 +58,8 @@
     - `amount` (*4 octets*)
         - **montant** de la transaction, en `NEX`.
     - `has_description` (*1 octet*)
-        - `00000001` s'il y a une description
-        - `00000000` sinon.
+        - `1` s'il y a une description
+        - `0` sinon.
     - `description` (facultative) (*256 octets*)
         - Descriptif de la transaction chiffré avec la clé publique du destinataire. Le destinataire est donc le seul à pouvoir lire le descriptif de la transaction. L'existence de ce champ dépend de la valeur de `has_description`.
 
@@ -70,16 +70,16 @@ La limite de taille de **1719** octets du `data` d'une transaction est établie 
 ## Tailles théoriques de blocs
 
 Les tailles pour un **bloc de n transactions** seraient donc :
-- *transactions sans description* : `82 + n*(73+256+69)` octets.
-- *transactions avec description* : `82 + n*(73+256+325)` octets.
+- *transactions sans description* : `82 + n*398` octets.
+- *transactions avec description* : `82 + n*654` octets.
 
 Ces tailles de blocs partent du principe que les transactions contenues par ledit bloc sont toutes **avec** ou **sans** description. 
 
 Cette approche n'est pas réaliste mais permet d'encadrer la taille d'un bloc de **n** transactions.
 
 Par exemple, **pour un bloc de 1000 transactions** :
-- *transactions sans description* : `82 + 1000*(73+256+69)` = **398082** octets.
-- *transactions avec description* : `82 + 1000*(73+256+325)` = **654082** octets.
+- *transactions sans description* : `82 + 1000*398` = **398082** octets.
+- *transactions avec description* : `82 + 1000*654` = **654082** octets.
 
 **Donc,** la taille d'un bloc contenant 1000 transactions est comprise **entre environ 398 Ko et 654 Ko**. 
 
