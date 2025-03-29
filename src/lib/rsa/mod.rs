@@ -13,6 +13,10 @@ pub struct KeyPair {
     q: BigUint,
 }
 
+struct _ASN1Key {
+    value: String,
+}
+
 impl KeyPair {
     pub fn generate(bit_length: usize) -> KeyPair {
         // I've only found this ugly way to convert the BigUint... sorry
