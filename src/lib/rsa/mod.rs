@@ -171,3 +171,29 @@ fn rsa_encrypt(key: &KeyPair, message: &BigUint) -> BigUint {
 fn rsa_decrypt(key: &KeyPair, message: &BigUint) -> BigUint {
     return message.modpow(&key.d, &key.n);
 }
+
+///RSA Signing: S = M^d mod n
+fn message_sign(message: &[u8], key_pair: &KeyPair) -> Result<BigUint, Box<dyn Error>> {
+    if message.is_empty() {
+        return Err("The message can't be empty".into());
+    }
+
+    let m = BigUint::from_bytes_be(message);
+
+    if &m >= &key_pair.n {
+        return Err("The message is too big".into());
+    }
+
+    Ok(m.modpow(&key_pair.d, &key_pair.n))
+}
+
+///RSA  Verification: M' = S^e mod n
+fn signature_verification(message: &[u8], signature: &BigUint, key_pair: &KeyPair) -> Result<bool, Box<dyn Error>> {
+    if message.is_empty() {
+        return Err("The message can't be empty".into());
+    }
+    let m_verif = signature.modpow(&key_pair.e, &key_pair.n);
+    let message_b = BigUint::from_bytes_be(message);
+
+    Ok(m_verif == message_b)
+}
