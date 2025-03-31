@@ -138,7 +138,7 @@ impl KeyPair {
         let mut signed_data = Vec::new();
         signed_data.extend(&public_packet);
         signed_data.extend(&uid_packet);
-        let signature_packet = self.signature_packet(&signed_data);
+        let signature_packet = self.signaturepacket(&signed_data);
 
         let mut full = vec![];
         full.extend(public_packet);
@@ -190,12 +190,135 @@ impl KeyPair {
         out.push_str("-----END PGP PRIVATE KEY BLOCK-----");
         out
     }
+
+    // The next two function follow the following idea :
+    /*
+    find the tag , ex 0x05 for secret key)
+    read the packet length
+    skip metadata (version, timestamp, algorithm)
+    parse through each MPI
+    */
+
+    // We have the same start for both,
+    // we strip the pem format out of the file to keep only encoded data
+
     pub fn priv_from_pem(_pem: &str) -> Result<KeyPair, RSAError> {
-        todo!();
+        let content: String = _pem
+            .lines()
+            .filter(|line| {
+                !line.starts_with("-----")
+                    && !line.starts_with("Version:")
+                    && !line.trim().is_empty()
+                    && !line.starts_with('=')
+            })
+            .collect::<Vec<_>>()
+            .join("");
+        let decoded = match STANDARD.decode(&content) {
+            Ok(bytes) => bytes,
+            Err(_) => return Err(RSAError::BadPEMFormat),
+        };
+        let mut length = 0;
+        let mut i = 0;
+        let mut numtag = 0;
+        while i < decoded.len() {
+            let tag = decoded[i];
+            numtag = tag & 0x3f;
+            i += 1;
+            let (len, len2) = if decoded[i] < 192 {
+                (decoded[i] as usize, 1)
+            } else if decoded[i] <= 223 {
+                let b1 = decoded[i] as usize;
+                let b2 = decoded[i + 1] as usize;
+                (((b1 - 192) << 8) + b2 + 192, 2)
+            } else if decoded[i] == 255 {
+                length = ((decoded[i + 1] as usize) << 24)
+                    | ((decoded[i + 2] as usize) << 16)
+                    | ((decoded[i + 3] as usize) << 8)
+                    | (decoded[i + 4] as usize);
+                (length, 5)
+            } else {
+                return Err(RSAError::BadPEMFormat);
+            };
+            i += len2;
+            if numtag == 5 {
+                let mut j = i;
+                j += 6; // skip metadata
+                let n = parse_mpi(&decoded, &mut j);
+                let e = parse_mpi(&decoded, &mut j);
+                if decoded[j] != 0x00 {
+                    return Err(RSAError::BadPEMFormat);
+                }
+                j += 1;
+                let d = parse_mpi(&decoded, &mut j);
+                let p = parse_mpi(&decoded, &mut j);
+                let q = parse_mpi(&decoded, &mut j);
+                let _u = parse_mpi(&decoded, &mut j);
+                return Ok(KeyPair { n, e, d, p, q });
+            } else {
+                i += len;
+            }
+        }
+        Err(RSAError::BadPEMFormat)
     }
     pub fn pub_from_pem(_pem: &str) -> Result<KeyPair, RSAError> {
-        todo!();
+        let content: String = _pem
+            .lines()
+            .filter(|line| {
+                !line.starts_with("-----")
+                    && !line.starts_with("Version:")
+                    && !line.trim().is_empty()
+                    && !line.starts_with('=')
+            })
+            .collect::<Vec<_>>()
+            .join("");
+        let decoded = match STANDARD.decode(&content) {
+            Ok(bytes) => bytes,
+            Err(_) => return Err(RSAError::BadPEMFormat),
+        };
+        let mut length = 0;
+        let mut i = 0;
+        let mut numtag = 0;
+        while i < decoded.len() {
+            let tag = decoded[i];
+            numtag = tag & 0x3f;
+            i += 1;
+            let (len, len2) = if decoded[i] < 192 {
+                (decoded[i] as usize, 1)
+            } else if decoded[i] <= 223 {
+                let b1 = decoded[i] as usize;
+                let b2 = decoded[i + 1] as usize;
+                (((b1 - 192) << 8) + b2 + 192, 2)
+            } else if decoded[i] == 255 {
+                length = ((decoded[i + 1] as usize) << 24)
+                    | ((decoded[i + 2] as usize) << 16)
+                    | ((decoded[i + 3] as usize) << 8)
+                    | (decoded[i + 4] as usize);
+                (length, 5)
+            } else {
+                return Err(RSAError::BadPEMFormat);
+            };
+            i += len2;
+            if numtag == 5 {
+                let mut j = i;
+                j += 6; // skip metadata
+                let n = parse_mpi(&decoded, &mut j);
+                let e = parse_mpi(&decoded, &mut j);
+                if decoded[j] != 0x00 {
+                    return Err(RSAError::BadPEMFormat);
+                }
+                j += 1;
+                let d = parse_mpi(&decoded, &mut j);
+                let p = parse_mpi(&decoded, &mut j);
+                let q = parse_mpi(&decoded, &mut j);
+                let _u = parse_mpi(&decoded, &mut j);
+                return Ok(KeyPair { n, e, d, p, q });
+            } else {
+                i += len;
+            }
+        }
+        Err(RSAError::BadPEMFormat)
     }
+
     // Generates the public packet of the openpgp tag 6
     // a tag is the integer that represents the kind of data you treat
     // for example public-key-packet is 6, secret-key-packet is 5.. etc
@@ -277,7 +400,7 @@ impl KeyPair {
     // Also contains prefixes (empty and first 2 bytes hash prefix)
     // At last, contains the body (mpi encoded)
 
-    pub fn signature_packet(&self, signed_data: &[u8]) -> Vec<u8> {
+    pub fn signaturepacket(&self, signed_data: &[u8]) -> Vec<u8> {
         let hash = sha256(signed_data.to_vec());
         let m = BigUint::from_bytes_be(&hash);
         let signature = m.modpow(&self.d, &self.n);
@@ -287,7 +410,16 @@ impl KeyPair {
         body.push(0x13);
         body.push(0x01);
         body.push(0x08);
-        body.extend_from_slice(&[0x00, 0x00]);
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u32;
+        let mut hashed = Vec::new();
+        hashed.push(5); // len
+        hashed.push(2); // type = creation time
+        hashed.extend_from_slice(&timestamp.to_be_bytes());
+        body.extend_from_slice(&(hashed.len() as u16).to_be_bytes());
+        body.extend(&hashed);
         body.extend_from_slice(&hash[..2]);
         body.extend(mpi);
         let mut packet = vec![0xc0 | 2]; // Packet tag 2 = signature
@@ -369,6 +501,17 @@ fn crc24(data: &[u8]) -> u32 {
         }
     }
     crc & 0xFFFFFF
+}
+
+//
+
+fn parse_mpi(data: &[u8], i: &mut usize) -> BigUint {
+    let bit_len = ((data[*i] as u16) << 8) | data[*i + 1] as u16;
+    let byte_len = ((bit_len + 7) / 8) as usize;
+    *i += 2;
+    let value = BigUint::from_bytes_be(&data[*i..*i + byte_len]);
+    *i += byte_len;
+    value
 }
 
 impl std::fmt::Debug for KeyPair {
