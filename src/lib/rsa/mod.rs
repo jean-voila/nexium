@@ -1,9 +1,23 @@
 use base64;
 use num_bigint::BigUint;
 use num_primes::Generator;
+use std::io::{Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-// See the PKCS#1 standard for more information
+#[derive(Debug)]
+pub enum RSAError {
+    MessageTooBig,
+    EmptyMessage,
+    BadSignatureFormat,
+    FileWriteError,
+    FileReadError,
+    BadPEMFormat,
+}
+
+pub enum PEMType {
+    PublicKey,
+    PrivateKey,
+}
 
 pub struct KeyPair {
     pub bit_length: usize,
@@ -199,7 +213,7 @@ impl KeyPair {
     // Concatenate packet of the public key with packet of user id
     // does the crc24
     // encodes everything in base64
-    // puts it in format with header of gpg
+    // puts it in format with header of gpg (ASCII ARMOR)
 
     //Like this :
     /* I took out the version because i still don't know if we should put it early on
@@ -263,6 +277,111 @@ impl KeyPair {
         out.push_str("-----END PGP PRIVATE KEY BLOCK-----");
         out
     }
+
+    ///RSA Signing: S = M^d mod n
+    pub fn sign(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.d, &self.n))
+    }
+
+    ///RSA  Verification: M' = S^e mod n
+    pub fn check_signature(
+        &self,
+        message: &[u8],
+        signature: &BigUint,
+    ) -> Result<bool, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+        let m_verif = signature.modpow(&self.e, &self.n);
+        let message_b = BigUint::from_bytes_be(message);
+
+        Ok(m_verif == message_b)
+    }
+
+    pub fn crypt(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.e, &self.n))
+    }
+    pub fn decrypt(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.d, &self.n))
+    }
+
+    pub fn to_pem(&self) -> (String, String) {
+        todo!();
+    }
+
+    fn from_pem(_pem: &str) -> Result<KeyPair, RSAError> {
+        todo!();
+    }
+
+    pub fn to_file(&self, path: &str) -> Result<(), RSAError> {
+        let file = std::fs::File::create(path);
+        match file {
+            Ok(mut f) => {
+                let to_write = self.to_pem().1;
+
+                // Writing the PEM file
+                match f.write_all(to_write.as_bytes()) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        return Err(RSAError::FileWriteError);
+                    }
+                }
+
+                Ok(())
+            }
+            Err(_) => Err(RSAError::FileWriteError),
+        }
+    }
+
+    pub fn from_file(path: &str) -> Result<KeyPair, RSAError> {
+        let file = std::fs::File::open(path);
+        match file {
+            Ok(mut f) => {
+                let mut contents = String::new();
+                match f.read_to_string(&mut contents) {
+                    Ok(_) => {
+                        // Parsing the PEM file
+                        match KeyPair::from_pem(&contents) {
+                            Ok(key_pair) => Ok(key_pair),
+                            Err(_) => Err(RSAError::BadPEMFormat),
+                        }
+                    }
+                    Err(_) => Err(RSAError::FileReadError),
+                }
+            }
+            Err(_) => Err(RSAError::FileReadError),
+        }
+    }
 }
 
 impl std::fmt::Debug for KeyPair {
@@ -273,12 +392,4 @@ impl std::fmt::Debug for KeyPair {
             self.n, self.e, self.d, self.p, self.q
         )
     }
-}
-
-fn rsa_encrypt(key: &KeyPair, message: &BigUint) -> BigUint {
-    return message.modpow(&key.e, &key.n);
-}
-
-fn rsa_decrypt(key: &KeyPair, message: &BigUint) -> BigUint {
-    return message.modpow(&key.d, &key.n);
 }

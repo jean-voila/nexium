@@ -1,16 +1,16 @@
 use json;
+use std::env;
 use std::fs;
 use std::io;
 use std::io::Write;
-
 use std::path::Path;
 
 /// Default port to listen on
 const DEFAULT_PORT: u16 = 4242;
 /// Default path to database file
 const DEFAULT_DB_FILE: &str = "blockchain.db";
-/// Default path to keys directory
-const DEFAULT_KEYS_DIR: &str = "keys/";
+/// Default path to key file
+const DEFAULT_KEY_PATH: &str = "private-key.pem";
 /// Default path to the Gitlab API URL
 const DEFAULT_GITLAB_API_URL: &str = "https://gitlab.cri.epita.fr/api/v4";
 
@@ -20,8 +20,8 @@ const DEFAULT_GITLAB_API_URL: &str = "https://gitlab.cri.epita.fr/api/v4";
 pub struct Config {
     /// Path to the database file
     pub database_filepath: String,
-    /// Path to the directory containing the keys
-    pub keys_filepath: String,
+    /// Path to the directory containing the key
+    pub key_filepath: String,
     /// Port on which the server will listen
     pub port: u16,
     /// User login to use for the server
@@ -40,10 +40,19 @@ impl Config {
             panic!("Invalid login format");
         }
 
-        let gitlab_token = ask("Enter Gitlab token: ");
-        if gitlab_token.is_empty() {
-            panic!("Empty Gitlab token");
-        }
+        let gitlab_token = match env::var("GITLAB_TOKEN") {
+            Ok(t) => {
+                println!("Using GITLAB_TOKEN from environment variable");
+                t
+            }
+            Err(_) => match ask("Enter Gitlab token: ").as_str() {
+                "" => {
+                    println!("Empty token, using default");
+                    String::from("")
+                }
+                s => s.to_string(),
+            },
+        };
 
         let port: u16 =
             match ask(&format!("Enter port (default: {}): ", DEFAULT_PORT))
@@ -69,15 +78,15 @@ impl Config {
             s => s.to_string(),
         };
 
-        let keys_filepath = match ask(&format!(
-            "Enter keys directory path (default: {}): ",
-            DEFAULT_KEYS_DIR
+        let key_filepath = match ask(&format!(
+            "Enter key directory path (default: {}): ",
+            DEFAULT_KEY_PATH
         ))
         .as_str()
         {
             "" => {
                 println!("Empty path, using default");
-                String::from(DEFAULT_KEYS_DIR)
+                String::from(DEFAULT_KEY_PATH)
             }
             s => s.to_string(),
         };
@@ -97,7 +106,7 @@ impl Config {
 
         let res = Config {
             database_filepath,
-            keys_filepath,
+            key_filepath,
             port,
             user_login,
             gitlab_token,
@@ -118,7 +127,7 @@ impl Config {
 
         let parsed = json::parse(content.as_str()).unwrap();
         if parsed["database"].is_null()
-            || parsed["keys"].is_null()
+            || parsed["key"].is_null()
             || parsed["port"].is_null()
             || parsed["user_id"].is_null()
             || parsed["gitlab_token"].is_null()
@@ -140,7 +149,7 @@ impl Config {
 
         Config {
             database_filepath: parsed["database"].to_string(),
-            keys_filepath: parsed["keys"].to_string(),
+            key_filepath: parsed["key"].to_string(),
             port: parsed["port"]
                 .as_u16()
                 .expect("Config read: Port is not a number"),
@@ -154,7 +163,7 @@ impl Config {
     pub fn to_file(&self, path: &Path) {
         let mut config_obj = json::JsonValue::new_object();
         config_obj["database"] = self.database_filepath.to_string().into();
-        config_obj["keys"] = self.keys_filepath.to_string().into();
+        config_obj["key"] = self.key_filepath.to_string().into();
         config_obj["port"] = self.port.into();
         config_obj["user_id"] = self.user_login.to_string().into();
         config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
