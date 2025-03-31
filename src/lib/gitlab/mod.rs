@@ -139,6 +139,7 @@ impl GitlabClient {
                 if resp.status().is_success() {
                     return Ok(());
                 } else if resp.status().as_u16() == 400 {
+                    dbg!(resp.text().unwrap());
                     return Err(GitlabError::BadGPGFormat);
                 }
                 return Err(GitlabError::InvalidToken);
