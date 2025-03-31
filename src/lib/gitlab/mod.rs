@@ -172,14 +172,16 @@ impl GitlabClient {
         }
     }
 
-    pub fn get_token() -> Result<String, Box<dyn std::error::Error>> {
+    pub fn get_token() -> Result<String, GitlabError> {
         // Configuration du client OAuth2
-        let auth_url = AuthUrl::new(format!("{}/oauth/authorize", GITLAB_URL))?;
-        let token_url = TokenUrl::new(format!("{}/oauth/token", GITLAB_URL))?;
+        let auth_url =
+            AuthUrl::new(format!("{}/oauth/authorize", GITLAB_URL)).unwrap();
+        let token_url =
+            TokenUrl::new(format!("{}/oauth/token", GITLAB_URL)).unwrap();
 
         let client_id = ClientId::new(CLIENT_ID.to_string());
         let client_secret = ClientSecret::new(CLIENT_SECRET.to_string());
-        let redirect_uri = RedirectUrl::new(REDIRECT_URI.to_string())?;
+        let redirect_uri = RedirectUrl::new(REDIRECT_URI.to_string()).unwrap();
 
         let client = BasicClient::new(client_id)
             .set_client_secret(client_secret)
@@ -202,19 +204,20 @@ impl GitlabClient {
         let _ = open_authorization_url(&authorize_url.to_string());
 
         // Démarrage d'un serveur local pour écouter la redirection
-        let listener = TcpListener::bind("127.0.0.1:8080")?;
-        let (code, state) = listen_for_code(&listener)?;
+        let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+        let (code, state) = listen_for_code(&listener).unwrap();
 
         // Vérification de l'état CSRF
         if &state != csrf_state.secret() {
-            return Err("État CSRF non valide".into());
+            return Err(GitlabError::InvalidToken);
         }
 
         // Échange du code d'autorisation contre un token d'accès
         let token_result = client
             .exchange_code(AuthorizationCode::new(code))
             .set_pkce_verifier(pkce_verifier)
-            .request(&Client::new())?;
+            .request(&Client::new())
+            .unwrap();
 
         Ok(token_result.access_token().secret().clone())
     }

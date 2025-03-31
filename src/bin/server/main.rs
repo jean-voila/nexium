@@ -1,7 +1,7 @@
 mod blockchain;
 mod config;
 
-use nexium::sha256::sha256;
+// use nexium::sha256::sha256;
 
 use config::Config;
 use nexium::gitlab::GitlabClient;
@@ -38,21 +38,20 @@ fn main() {
     let config = Config::from_file(&config_path);
 
     // Creating the gitlab API client
-    let gitlab_client = GitlabClient::new(config.gitlab_token.clone());
+    let _gitlab_client = GitlabClient::new(config.gitlab_token.clone());
 
-    let res = sha256(GitlabClient::get_token().unwrap().as_bytes().to_vec());
-    println!("{:?}", res);
+    let _keypair = KeyPair::generate(2048);
 
-    let keypair = KeyPair::generate(2048);
-
-    let pub_pem = keypair.pub_to_pem(&config.user_login);
+    /*
+    let pub_pem = keypair.priv_to_pem();
 
     match gitlab_client.add_gpg_key(&pub_pem) {
         Ok(_) => println!("GPG key added successfully"),
         Err(e) => println!("Failed to add GPG key: {:?}", e),
-    }
 
+    }
     println!("Public key:\n{}", pub_pem);
+    */
 
     return;
 }
