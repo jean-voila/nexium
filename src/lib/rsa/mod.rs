@@ -1,6 +1,7 @@
 use base64;
 use num_bigint::BigUint;
 use num_primes::Generator;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // See the PKCS#1 standard for more information
 
@@ -48,109 +49,219 @@ impl KeyPair {
         };
     }
 
-    //NEED TO COMMENT TO EXPLAIN FUNCTIONS HERE WILL DO IT
+    // this function encodes a biguint to the mpi format
+    //(multi-precision-integer) used in openpgp
+    // -2 bytes for length
+    // -bytes of the integer in bigendian
 
-    fn encode_integer(n: &BigUint) -> Vec<u8> {
-        let mut be = n.to_bytes_be();
-        if be.first().map_or(false, |b| b & 0x80 != 0) {
-            be.insert(0, 0x00);
-        }
-        let mut out = vec![0x02];
-        out.extend(Self::encode_length(be.len()));
-        out.extend(be);
-        out
+    fn encode_n_e(value: &BigUint) -> Vec<u8> {
+        let bytes = value.to_bytes_be();
+        let bit_len =
+            (bytes.len() * 8 - bytes[0].leading_zeros() as usize) as u16;
+        let mut result = Vec::new();
+        result.extend_from_slice(&bit_len.to_be_bytes());
+        result.extend(bytes);
+        result
     }
+
+    // this one encodes the length of an openpgp packet
+    // following this format : (RFC 4880)
+    // 3 different cases as we can see below
+    // I believe the function is kinda self-explaining
+    // but just in case, depending on the len of the packet
+    // we encode it on 1 byte, 2 bytes or 0xff + 4 bytes
 
     fn encode_length(len: usize) -> Vec<u8> {
-        if len < 0x80 {
+        if len < 192 {
             vec![len as u8]
+        } else if len <= 8383 {
+            let len = len - 192;
+            vec![((len >> 8) + 192) as u8, (len & 0xff) as u8]
         } else {
-            let lenb = len
-                .to_be_bytes()
-                .into_iter()
-                .skip_while(|b| *b == 0)
-                .collect::<Vec<_>>();
-            let mut out = vec![0x80 | (lenb.len() as u8)];
-            out.extend(lenb);
-            out
+            let mut v = vec![0xff];
+            v.extend_from_slice(&(len as u32).to_be_bytes());
+            v
         }
     }
 
-    fn encode_sequence(elt: Vec<u8>) -> Vec<u8> {
-        let mut out = vec![0x30];
-        out.extend(Self::encode_length(elt.len()));
-        out.extend(elt);
+    // Generates the public packet of the openpgp tag 6
+    // a tag is the integer that represents the kind of data you treat
+    // for example public-key-packet is 6, secret-key-packet is 5.. etc
+
+    // so this one generates the public packet that contains :
+    // version, timestamp, id of the rsa algorithm,
+    // the mpi encoded n and e and then it adds the openpgp header
+
+    fn publickeypacket(key: &KeyPair) -> Vec<u8> {
+        let mut body = Vec::new();
+        //push version
+        body.push(0x04);
+
+        // seconds since 01/01/1970 as jean explained to us
+        // general term that add in
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u32;
+        body.extend_from_slice(&timestamp.to_be_bytes());
+        //we add rsa algo id below
+        body.push(0x01);
+
+        // mpi encoded n and e
+        body.extend(Self::encode_n_e(&key.n));
+        body.extend(Self::encode_n_e(&key.e));
+
+        let mut packet = vec![0xc0 | 6];
+        packet.extend(Self::encode_length(body.len()));
+        packet.extend(body);
+        packet
+    }
+
+    // same idea as in public, I've put notes inside code on what is happening
+
+    fn privatekeypacket(key: &KeyPair) -> Vec<u8> {
+        let mut body = Vec::new();
+
+        //version, same idea as in public
+        body.push(0x04);
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u32;
+        body.extend_from_slice(&timestamp.to_be_bytes());
+
+        // Add of tthe public key of rsa algo
+        body.push(0x01);
+
+        // Here we push the public encoded n and e
+        body.extend(Self::encode_n_e(&key.n));
+        body.extend(Self::encode_n_e(&key.e));
+
+        // 0x00 = indicates that the key is not encrypted yet
+        body.push(0x00);
+
+        // Here we add the secrets encodings of n and e
+        body.extend(Self::encode_n_e(&key.d));
+        body.extend(Self::encode_n_e(&key.p));
+        body.extend(Self::encode_n_e(&key.q));
+        let u = key.q.modinv(&key.p).unwrap();
+        body.extend(Self::encode_n_e(&u));
+
+        // push the header
+        let mut packet = vec![0xc0 | 5];
+        packet.extend(Self::encode_length(body.len()));
+        packet.extend(body);
+
+        packet
+    }
+
+    // function that treats the user id (we have a function that gets it)
+    // so I just put it in parameter, this way it treats it right away
+    // by putting it UTF-8, after a header that contains (tag+length)
+    // and when we have uid we have email so it's 2 in 1
+
+    fn uidpacket(user_id: &str) -> Vec<u8> {
+        let email = format!("{}@epita.fr", user_id);
+        let uid = email;
+        let bytesuid = uid.as_bytes().to_vec();
+        let mut packet = vec![0xc0 | 13];
+        packet.extend(Self::encode_length(bytesuid.len()));
+        packet.extend(bytesuid);
+        packet
+    }
+
+    // before base64 encoding, "cyclic redundancy check"
+    // we check the integrity of the corresponding information
+    // ex: if we copy a key from a mail and a character changes,
+    // the crc check will not pass and then not work
+
+    // theory :
+    // Initialized at : 0xB704CE
+    // use the polynom : 0x1864CFB
+    // return a checksum on 3 bytes
+    // later encoded in base64
+
+    fn crc24(data: &[u8]) -> u32 {
+        let mut crc = 0xB704CEu32;
+        for b in data {
+            crc ^= (*b as u32) << 16;
+            for _ in 0..8 {
+                crc <<= 1;
+                if (crc & 0x1000000) != 0 {
+                    crc ^= 0x1864CFB;
+                }
+            }
+        }
+        crc & 0xFFFFFF
+    }
+
+    // Concatenate packet of the public key with packet of user id
+    // does the crc24
+    // encodes everything in base64
+    // puts it in format with header of gpg
+
+    //Like this :
+    /* I took out the version because i still don't know if we should put it early on
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    ...
+    =CRC
+    -----END PGP PUBLIC KEY BLOCK-----
+    */
+
+    fn publickeygpg(key: &KeyPair, user_id: &str) -> String {
+        let public_packet = Self::publickeypacket(key);
+        let uid_packet = Self::uidpacket(user_id);
+        let mut full = vec![];
+        full.extend(public_packet);
+        full.extend(uid_packet);
+
+        // HERE WE NEED TO ADD SIGNATURE PACKET (waiting for antonin to do it)
+
+        let b64 = base64::encode(&full);
+        let crc = Self::crc24(&full);
+        let crcbytes = [(crc >> 16) as u8, (crc >> 8) as u8, crc as u8];
+        let base64crc = base64::encode(&crcbytes);
+        let mut out = String::new();
+        out.push_str("-----BEGIN PGP PUBLIC KEY BLOCK-----\n");
+
+        // I did not put version yet because i don't know if we need to write it here
+        // or if the push after is enough
+
+        for chunk in b64.as_bytes().chunks(64) {
+            out.push_str(&String::from_utf8_lossy(chunk));
+            out.push('\n');
+        }
+        out.push('=');
+        out.push_str(&base64crc);
+        out.push('\n');
+        out.push_str("-----END PGP PUBLIC KEY BLOCK-----");
         out
     }
 
-    pub fn public_key_formatted(&self) -> String {
-        let n_encoded = Self::encode_integer(&self.n);
-        let e_encoded = Self::encode_integer(&self.e);
-        let public_key_sequence =
-            Self::encode_sequence([n_encoded, e_encoded].concat());
+    // same idea as the public one but this time we concatenate the packet
+    // of the secret key
+    // and we adapt the header
 
-        //Here we put the public key as a vec and we put the tag at the beginning
-        let mut bitstr = vec![0x03];
-        bitstr.extend(Self::encode_length(public_key_sequence.len() + 1));
-        bitstr.push(0x00);
-        bitstr.extend(public_key_sequence);
+    // waiting for signature
 
-        //Here is the algorithmidentifier for rsa
-        let rsa_oid = vec![
-            0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
-        ];
-        let null_param = vec![0x05, 0x00];
-        let algoident = Self::encode_sequence([rsa_oid, null_param].concat());
-
-        // Here we combine the algorithmidentifier and the bitstring into
-        // the "publickeyinfo" sequence
-        let public_key_info =
-            Self::encode_sequence([algoident, bitstr].concat());
-
-        // We encode the DER-encoded public key as base64
-        let pem_body = base64::encode(&public_key_info);
-
-        // Here we apply the format of the PEM with appropriate headers and endings
-        // we add line breaks every 64 characters for readability
-        let pem = format!(
-            "-----BEGIN PUBLIC KEY-----\n{}\n-----END PUBLIC KEY-----",
-            pem_body
-                .chars()
-                .collect::<Vec<_>>()
-                .chunks(64)
-                .map(|c| c.iter().collect::<String>())
-                .collect::<Vec<_>>()
-                .join("\n")
-        );
-        pem
-    }
-
-    //COMMENTS TO BE DONE BELOW
-    // i'll write them under every step when I write my part of the report
-    // so i'll think of a way to explain it clearly
-
-    fn private_key_formatted(&self) -> _ASN1Key {
-        let version = BigUint::from(0u8);
-        let exponent1 = &self.d % (&self.p - 1u32);
-        let exponent2 = &self.d % (&self.q - 1u32);
-        let coefficient = self.q.modinv(&self.p).unwrap();
-        let mut encoded = Vec::new();
-        encoded.extend(Self::encode_integer(&version));
-        encoded.extend(Self::encode_integer(&self.n));
-        encoded.extend(Self::encode_integer(&self.e));
-        encoded.extend(Self::encode_integer(&self.d));
-        encoded.extend(Self::encode_integer(&self.p));
-        encoded.extend(Self::encode_integer(&self.q));
-        encoded.extend(Self::encode_integer(&exponent1));
-        encoded.extend(Self::encode_integer(&exponent2));
-        encoded.extend(Self::encode_integer(&coefficient));
-        let der = Self::encode_sequence(encoded);
-        let pem = base64::encode(der.clone());
-        let formatted = format!(
-            "-----BEGIN RSA PRIVATE KEY-----\n{}\n-----END RSA PRIVATE KEY-----",
-            pem.chars().collect::<Vec<_>>().chunks(64).map(|c| c.iter().collect::<String>()).collect::<Vec<_>>().join("\n")
-        );
-        _ASN1Key { value: formatted }
+    fn privatekeygpg(key: &KeyPair) -> String {
+        let secret_packet = Self::privatekeypacket(key);
+        let b64 = base64::encode(&secret_packet);
+        let crc = Self::crc24(&secret_packet);
+        let crcbytes = [(crc >> 16) as u8, (crc >> 8) as u8, crc as u8];
+        let base64crc = base64::encode(&crcbytes);
+        let mut out = String::new();
+        out.push_str("-----BEGIN PGP PRIVATE KEY BLOCK-----\n");
+        for chunk in b64.as_bytes().chunks(64) {
+            out.push_str(&String::from_utf8_lossy(chunk));
+            out.push('\n');
+        }
+        out.push('=');
+        out.push_str(&base64crc);
+        out.push('\n');
+        out.push_str("-----END PGP PRIVATE KEY BLOCK-----");
+        out
     }
 }
 
