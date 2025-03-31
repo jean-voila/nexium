@@ -2,7 +2,7 @@ mod blockchain;
 mod config;
 
 use config::Config;
-use nexium::gitlab::GitlabClient;
+use nexium::{gitlab::GitlabClient, rsa::KeyPair};
 
 use std::{env, path::Path};
 
@@ -40,6 +40,16 @@ fn main() {
         config.gitlab_api_url.clone(),
         config.gitlab_token.clone(),
     );
+
+    let keypair = KeyPair::generate(2048);
+
+    let message = "Hello, world!".as_bytes().to_vec();
+    let signature = keypair.sign(message.clone()).unwrap();
+    if !keypair.check_signature(message, &signature).unwrap() {
+        println!("Signature is invalid");
+    } else {
+        println!("Signature is valid");
+    }
 
     return;
 }
