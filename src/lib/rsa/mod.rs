@@ -3,6 +3,7 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use num_bigint::BigUint;
 use num_primes::Generator;
 
+use core::hash;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -122,11 +123,14 @@ impl KeyPair {
     pub fn pub_to_pem(&self, user_id: &str) -> String {
         let public_packet = self.publickeypacket();
         let uid_packet = uidpacket(user_id);
+        // HERE WE NEED TO ADD SIGNATURE PACKET
+        // let signature_packet = self.signaturepacket();
+        //let signature_packet = self.signaturepacket(user_id);
+
         let mut full = vec![];
         full.extend(public_packet);
         full.extend(uid_packet);
-
-        // HERE WE NEED TO ADD SIGNATURE PACKET (waiting for antonin to do it)
+        //full.extend(signature_packet);
 
         // let b64 = base64::encode(&full);
         let b64 = STANDARD.encode(&full);
@@ -136,7 +140,7 @@ impl KeyPair {
         // let base64crc = base64::encode(&crcbytes);
         let base64crc = STANDARD.encode(&crcbytes);
         let mut out = String::new();
-        out.push_str("-----BEGIN PGP PUBLIC KEY BLOCK-----\n");
+        out.push_str("-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n");
 
         // I did not put version yet because i don't know if we need to write it here
         // or if the push after is enough
@@ -148,7 +152,7 @@ impl KeyPair {
         out.push('=');
         out.push_str(&base64crc);
         out.push('\n');
-        out.push_str("-----END PGP PUBLIC KEY BLOCK-----");
+        out.push_str("-----END PGP PUBLIC KEY BLOCK-----\n");
         out
     }
     pub fn priv_to_pem(&self) -> String {
@@ -246,6 +250,9 @@ impl KeyPair {
         packet.extend(body);
 
         packet
+    }
+    fn signaturepacket(&self, user_id: &str) -> Vec<u8> {
+        todo!();
     }
 }
 
