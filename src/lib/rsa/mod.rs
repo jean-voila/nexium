@@ -1,8 +1,22 @@
-use base64;
+use std::io::{Read, Write};
+
 use num_bigint::BigUint;
 use num_primes::Generator;
 
-// See the PKCS#1 standard for more information
+#[derive(Debug)]
+pub enum RSAError {
+    MessageTooBig,
+    EmptyMessage,
+    BadSignatureFormat,
+    FileWriteError,
+    FileReadError,
+    BadPEMFormat,
+}
+
+pub enum PEMType {
+    PublicKey,
+    PrivateKey,
+}
 
 pub struct KeyPair {
     pub bit_length: usize,
@@ -48,109 +62,109 @@ impl KeyPair {
         };
     }
 
-    //NEED TO COMMENT TO EXPLAIN FUNCTIONS HERE WILL DO IT
-
-    fn encode_integer(n: &BigUint) -> Vec<u8> {
-        let mut be = n.to_bytes_be();
-        if be.first().map_or(false, |b| b & 0x80 != 0) {
-            be.insert(0, 0x00);
+    ///RSA Signing: S = M^d mod n
+    pub fn sign(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
         }
-        let mut out = vec![0x02];
-        out.extend(Self::encode_length(be.len()));
-        out.extend(be);
-        out
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.d, &self.n))
     }
 
-    fn encode_length(len: usize) -> Vec<u8> {
-        if len < 0x80 {
-            vec![len as u8]
-        } else {
-            let lenb = len
-                .to_be_bytes()
-                .into_iter()
-                .skip_while(|b| *b == 0)
-                .collect::<Vec<_>>();
-            let mut out = vec![0x80 | (lenb.len() as u8)];
-            out.extend(lenb);
-            out
+    ///RSA  Verification: M' = S^e mod n
+    pub fn check_signature(
+        &self,
+        message: &[u8],
+        signature: &BigUint,
+    ) -> Result<bool, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+        let m_verif = signature.modpow(&self.e, &self.n);
+        let message_b = BigUint::from_bytes_be(message);
+
+        Ok(m_verif == message_b)
+    }
+
+    pub fn crypt(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.e, &self.n))
+    }
+    pub fn decrypt(&self, message: &[u8]) -> Result<BigUint, RSAError> {
+        if message.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(message);
+
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        Ok(m.modpow(&self.d, &self.n))
+    }
+
+    pub fn to_pem(&self) -> (String, String) {
+        todo!();
+    }
+
+    fn from_pem(_pem: &str) -> Result<KeyPair, RSAError> {
+        todo!();
+    }
+
+    pub fn to_file(&self, path: &str) -> Result<(), RSAError> {
+        let file = std::fs::File::create(path);
+        match file {
+            Ok(mut f) => {
+                let to_write = self.to_pem().1;
+
+                // Writing the PEM file
+                match f.write_all(to_write.as_bytes()) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        return Err(RSAError::FileWriteError);
+                    }
+                }
+
+                Ok(())
+            }
+            Err(_) => Err(RSAError::FileWriteError),
         }
     }
 
-    fn encode_sequence(elt: Vec<u8>) -> Vec<u8> {
-        let mut out = vec![0x30];
-        out.extend(Self::encode_length(elt.len()));
-        out.extend(elt);
-        out
-    }
-
-    pub fn public_key_formatted(&self) -> String {
-        let n_encoded = Self::encode_integer(&self.n);
-        let e_encoded = Self::encode_integer(&self.e);
-        let public_key_sequence =
-            Self::encode_sequence([n_encoded, e_encoded].concat());
-
-        //Here we put the public key as a vec and we put the tag at the beginning
-        let mut bitstr = vec![0x03];
-        bitstr.extend(Self::encode_length(public_key_sequence.len() + 1));
-        bitstr.push(0x00);
-        bitstr.extend(public_key_sequence);
-
-        //Here is the algorithmidentifier for rsa
-        let rsa_oid = vec![
-            0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
-        ];
-        let null_param = vec![0x05, 0x00];
-        let algoident = Self::encode_sequence([rsa_oid, null_param].concat());
-
-        // Here we combine the algorithmidentifier and the bitstring into
-        // the "publickeyinfo" sequence
-        let public_key_info =
-            Self::encode_sequence([algoident, bitstr].concat());
-
-        // We encode the DER-encoded public key as base64
-        let pem_body = base64::encode(&public_key_info);
-
-        // Here we apply the format of the PEM with appropriate headers and endings
-        // we add line breaks every 64 characters for readability
-        let pem = format!(
-            "-----BEGIN PUBLIC KEY-----\n{}\n-----END PUBLIC KEY-----",
-            pem_body
-                .chars()
-                .collect::<Vec<_>>()
-                .chunks(64)
-                .map(|c| c.iter().collect::<String>())
-                .collect::<Vec<_>>()
-                .join("\n")
-        );
-        pem
-    }
-
-    //COMMENTS TO BE DONE BELOW
-    // i'll write them under every step when I write my part of the report
-    // so i'll think of a way to explain it clearly
-
-    fn private_key_formatted(&self) -> _ASN1Key {
-        let version = BigUint::from(0u8);
-        let exponent1 = &self.d % (&self.p - 1u32);
-        let exponent2 = &self.d % (&self.q - 1u32);
-        let coefficient = self.q.modinv(&self.p).unwrap();
-        let mut encoded = Vec::new();
-        encoded.extend(Self::encode_integer(&version));
-        encoded.extend(Self::encode_integer(&self.n));
-        encoded.extend(Self::encode_integer(&self.e));
-        encoded.extend(Self::encode_integer(&self.d));
-        encoded.extend(Self::encode_integer(&self.p));
-        encoded.extend(Self::encode_integer(&self.q));
-        encoded.extend(Self::encode_integer(&exponent1));
-        encoded.extend(Self::encode_integer(&exponent2));
-        encoded.extend(Self::encode_integer(&coefficient));
-        let der = Self::encode_sequence(encoded);
-        let pem = base64::encode(der.clone());
-        let formatted = format!(
-            "-----BEGIN RSA PRIVATE KEY-----\n{}\n-----END RSA PRIVATE KEY-----",
-            pem.chars().collect::<Vec<_>>().chunks(64).map(|c| c.iter().collect::<String>()).collect::<Vec<_>>().join("\n")
-        );
-        _ASN1Key { value: formatted }
+    pub fn from_file(path: &str) -> Result<KeyPair, RSAError> {
+        let file = std::fs::File::open(path);
+        match file {
+            Ok(mut f) => {
+                let mut contents = String::new();
+                match f.read_to_string(&mut contents) {
+                    Ok(_) => {
+                        // Parsing the PEM file
+                        match KeyPair::from_pem(&contents) {
+                            Ok(key_pair) => Ok(key_pair),
+                            Err(_) => Err(RSAError::BadPEMFormat),
+                        }
+                    }
+                    Err(_) => Err(RSAError::FileReadError),
+                }
+            }
+            Err(_) => Err(RSAError::FileReadError),
+        }
     }
 }
 
@@ -162,38 +176,4 @@ impl std::fmt::Debug for KeyPair {
             self.n, self.e, self.d, self.p, self.q
         )
     }
-}
-
-fn rsa_encrypt(key: &KeyPair, message: &BigUint) -> BigUint {
-    return message.modpow(&key.e, &key.n);
-}
-
-fn rsa_decrypt(key: &KeyPair, message: &BigUint) -> BigUint {
-    return message.modpow(&key.d, &key.n);
-}
-
-///RSA Signing: S = M^d mod n
-fn message_sign(message: &[u8], key_pair: &KeyPair) -> Result<BigUint, Box<dyn Error>> {
-    if message.is_empty() {
-        return Err("The message can't be empty".into());
-    }
-
-    let m = BigUint::from_bytes_be(message);
-
-    if &m >= &key_pair.n {
-        return Err("The message is too big".into());
-    }
-
-    Ok(m.modpow(&key_pair.d, &key_pair.n))
-}
-
-///RSA  Verification: M' = S^e mod n
-fn signature_verification(message: &[u8], signature: &BigUint, key_pair: &KeyPair) -> Result<bool, Box<dyn Error>> {
-    if message.is_empty() {
-        return Err("The message can't be empty".into());
-    }
-    let m_verif = signature.modpow(&key_pair.e, &key_pair.n);
-    let message_b = BigUint::from_bytes_be(message);
-
-    Ok(m_verif == message_b)
 }

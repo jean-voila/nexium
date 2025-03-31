@@ -1,11 +1,13 @@
 mod blockchain;
 mod config;
+
 use config::Config;
 use nexium::gitlab::GitlabClient;
+
 use std::{env, path::Path};
 
 /// Default path to the Nexium home directory
-const NEXIUM_HOME_DEFAULT: &str = ".nexiumlocal";
+const NEXIUM_HOME: &str = ".nexiumlocal";
 /// Default path to the configuration file, relative Nxm home
 const DEFAULT_CONFIG_NAME: &str = "config.json";
 /// Argument to pass to the program to generate the config file
@@ -16,7 +18,7 @@ fn main() {
     let args = env::args().collect::<Vec<String>>();
 
     // Constructing the config path
-    let mut config_path = Path::new(&NEXIUM_HOME_DEFAULT).to_path_buf();
+    let mut config_path = Path::new(&NEXIUM_HOME).to_path_buf();
     config_path.push(DEFAULT_CONFIG_NAME);
 
     // Creating the config directory if it doesn't exist
