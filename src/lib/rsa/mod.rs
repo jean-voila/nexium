@@ -1,6 +1,6 @@
 use super::sha256::sha256;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use core::hash;
+
 use num_bigint::BigUint;
 use num_primes::Generator;
 use std::time::{SystemTime, UNIX_EPOCH};

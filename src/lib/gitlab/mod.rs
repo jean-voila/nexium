@@ -1,5 +1,25 @@
+use oauth2::{
+    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret,
+    CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl,
+};
 use reqwest::blocking::Client;
 use serde_json;
+
+use std::io::{BufRead, Write};
+use std::net::TcpListener;
+
+use url::Url;
+use webbrowser;
+
+/// Default path to the Gitlab API URL
+const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";
+
+const CLIENT_ID: &str =
+    "f180d1cbd126017dcc20629aee0af5dd229dc5fd13d19c6a9ace1361e2039c59";
+const CLIENT_SECRET: &str =
+    "gloas-83e39025a820061c0744402c93a5915c5dc1bdb30ac2d23df3b68485b044545c";
+const REDIRECT_URI: &str = "http://localhost:8080/callback";
+
 #[derive(Debug)]
 pub struct GitlabClient {
     api_url: String,
@@ -14,11 +34,15 @@ pub enum GitlabError {
     UnknownError,
     NoGPGKeys,
     BadGPGFormat,
+    NoWebBrowser,
 }
 
 impl GitlabClient {
-    pub fn new(api_url: String, token: String) -> Self {
-        GitlabClient { api_url, token }
+    pub fn new(token: String) -> Self {
+        GitlabClient {
+            api_url: format!("{}/api/v4", GITLAB_URL),
+            token,
+        }
     }
     pub fn check_token(&self) -> Result<bool, GitlabError> {
         let url = format!("{}/user", self.api_url);
@@ -147,4 +171,92 @@ impl GitlabClient {
             Err(_) => return Err(GitlabError::NetworkError),
         }
     }
+
+    pub fn get_token() -> Result<String, Box<dyn std::error::Error>> {
+        // Configuration du client OAuth2
+        let auth_url = AuthUrl::new(format!("{}/oauth/authorize", GITLAB_URL))?;
+        let token_url = TokenUrl::new(format!("{}/oauth/token", GITLAB_URL))?;
+
+        let client_id = ClientId::new(CLIENT_ID.to_string());
+        let client_secret = ClientSecret::new(CLIENT_SECRET.to_string());
+        let redirect_uri = RedirectUrl::new(REDIRECT_URI.to_string())?;
+
+        let client = BasicClient::new(client_id)
+            .set_client_secret(client_secret)
+            .set_auth_uri(auth_url)
+            .set_token_uri(token_url)
+            .set_redirect_uri(redirect_uri);
+
+        // Génération du challenge PKCE
+        let (pkce_challenge, pkce_verifier) =
+            PkceCodeChallenge::new_random_sha256();
+
+        // Génération de l'URL d'autorisation
+        let (authorize_url, csrf_state) = client
+            .authorize_url(CsrfToken::new_random)
+            .add_scope(Scope::new("api".to_string()))
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+
+        // Ouverture de l'URL dans le navigateur par défaut
+        let _ = open_authorization_url(&authorize_url.to_string());
+
+        // Démarrage d'un serveur local pour écouter la redirection
+        let listener = TcpListener::bind("127.0.0.1:8080")?;
+        let (code, state) = listen_for_code(&listener)?;
+
+        // Vérification de l'état CSRF
+        if &state != csrf_state.secret() {
+            return Err("État CSRF non valide".into());
+        }
+
+        // Échange du code d'autorisation contre un token d'accès
+        let token_result = client
+            .exchange_code(AuthorizationCode::new(code))
+            .set_pkce_verifier(pkce_verifier)
+            .request(&Client::new())?;
+
+        Ok(token_result.access_token().secret().clone())
+    }
+}
+
+fn open_authorization_url(auth_url: &str) -> Result<(), GitlabError> {
+    match webbrowser::open(auth_url) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(GitlabError::NoWebBrowser),
+    }
+}
+
+fn listen_for_code(
+    listener: &TcpListener,
+) -> Result<(String, String), Box<dyn std::error::Error>> {
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        let mut reader = std::io::BufReader::new(&stream);
+        let mut request_line = String::new();
+        reader.read_line(&mut request_line)?;
+
+        // Extraction du code d'autorisation et de l'état CSRF de l'URL
+        if let Some(code) = request_line.split_whitespace().nth(1) {
+            let url = Url::parse(&format!("http://localhost{}", code))?;
+            let code = url
+                .query_pairs()
+                .find(|(key, _)| key == "code")
+                .map(|(_, value)| value.into_owned())
+                .ok_or("Code d'autorisation non trouvé")?;
+            let state = url
+                .query_pairs()
+                .find(|(key, _)| key == "state")
+                .map(|(_, value)| value.into_owned())
+                .ok_or("État CSRF non trouvé")?;
+
+            // Réponse HTTP simple pour indiquer la réussite
+            let response = "HTTP/1.1 200 OK\r\n\r\nAuthentification réussie. Vous pouvez fermer cette fenêtre.";
+
+            stream.write_all(response.as_bytes())?;
+            stream.flush()?;
+            return Ok((code, state));
+        }
+    }
+    Err("Impossible d'obtenir le code d'autorisation".into())
 }
