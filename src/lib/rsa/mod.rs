@@ -119,17 +119,31 @@ impl KeyPair {
         Ok(m.modpow(&self.d, &self.n))
     }
 
+    // Concatenate packet of the public key with packet of user id
+    // does the crc24
+    // encodes everything in base64
+    // puts it in format with header of gpg (ASCII ARMOR)
+
+    //Like this :
+    /* I took out the version because i still don't know if we should put it early on
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    ...
+    =CRC
+    -----END PGP PUBLIC KEY BLOCK-----
+    */
+
     pub fn pub_to_pem(&self, user_id: &str) -> String {
         let public_packet = self.publickeypacket();
         let uid_packet = uidpacket(user_id);
-        // HERE WE NEED TO ADD SIGNATURE PACKET
-        // let signature_packet = self.signaturepacket();
-        //let signature_packet = self.signaturepacket(user_id);
+        let mut signed_data = Vec::new();
+        signed_data.extend(&public_packet);
+        signed_data.extend(&uid_packet);
+        let signature_packet = self.signature_packet(&signed_data);
 
         let mut full = vec![];
         full.extend(public_packet);
         full.extend(uid_packet);
-        //full.extend(signature_packet);
+        full.extend(signature_packet);
 
         // let b64 = base64::encode(&full);
         let b64 = STANDARD.encode(&full);
@@ -250,8 +264,36 @@ impl KeyPair {
 
         packet
     }
-    fn signaturepacket(&self, user_id: &str) -> Vec<u8> {
-        todo!();
+    // this function returns the signature packet,
+    // it's a packet that we will use in the publickey to pem
+    // and it is a "certification signature" over the public key packet
+    // and the uid packet
+    // It is a direct link between the user that corresponds to this uid
+    // ,the signature and the public key
+
+    // Contains the metadata : version, type, algorithm, hash (in order)
+    // that we push at the beginning, type and hash are the one we use
+    // so respectively 0x13 -> RSA and 0x08 -> sha256
+    // Also contains prefixes (empty and first 2 bytes hash prefix)
+    // At last, contains the body (mpi encoded)
+
+    pub fn signature_packet(&self, signed_data: &[u8]) -> Vec<u8> {
+        let hash = sha256(signed_data.to_vec());
+        let m = BigUint::from_bytes_be(&hash);
+        let signature = m.modpow(&self.d, &self.n);
+        let mpi = encode_n_e(&signature);
+        let mut body = Vec::new();
+        body.push(0x04);
+        body.push(0x13);
+        body.push(0x01);
+        body.push(0x08);
+        body.extend_from_slice(&[0x00, 0x00]);
+        body.extend_from_slice(&hash[..2]);
+        body.extend(mpi);
+        let mut packet = vec![0xc0 | 2]; // Packet tag 2 = signature
+        packet.extend(encode_length(body.len()));
+        packet.extend(body);
+        packet
     }
 }
 
@@ -328,19 +370,6 @@ fn crc24(data: &[u8]) -> u32 {
     }
     crc & 0xFFFFFF
 }
-
-// Concatenate packet of the public key with packet of user id
-// does the crc24
-// encodes everything in base64
-// puts it in format with header of gpg (ASCII ARMOR)
-
-//Like this :
-/* I took out the version because i still don't know if we should put it early on
------BEGIN PGP PUBLIC KEY BLOCK-----
-...
-=CRC
------END PGP PUBLIC KEY BLOCK-----
-*/
 
 impl std::fmt::Debug for KeyPair {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
