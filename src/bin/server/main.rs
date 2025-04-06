@@ -38,20 +38,17 @@ fn main() {
     let config = Config::from_file(&config_path);
 
     // Creating the gitlab API client
-    let _gitlab_client = GitlabClient::new(config.gitlab_token.clone());
+    let gitlab_client = GitlabClient::new(config.gitlab_token.clone());
 
-    let _keypair = KeyPair::generate(2048);
+    let keypair = KeyPair::generate(2048);
 
-    /*
-    let pub_pem = keypair.priv_to_pem();
+    let pub_pem = keypair.pub_to_pem(&config.user_login);
 
     match gitlab_client.add_gpg_key(&pub_pem) {
         Ok(_) => println!("GPG key added successfully"),
         Err(e) => println!("Failed to add GPG key: {:?}", e),
-
     }
     println!("Public key:\n{}", pub_pem);
-    */
 
     return;
 }
