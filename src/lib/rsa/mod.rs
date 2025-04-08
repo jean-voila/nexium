@@ -30,6 +30,7 @@ pub struct KeyPair {
     p: BigUint,
     q: BigUint,
     timestamp: u32,
+    user_id: String,
 }
 
 struct _ASN1Key {
@@ -37,7 +38,7 @@ struct _ASN1Key {
 }
 
 impl KeyPair {
-    pub fn generate(bit_length: usize) -> KeyPair {
+    pub fn generate(bit_length: usize, user_id: &str) -> KeyPair {
         // I've only found this ugly way to convert the BigUint... sorry
         let p_prime: num_primes::BigUint = Generator::new_prime(bit_length / 2);
         let p: BigUint =
@@ -69,6 +70,7 @@ impl KeyPair {
             p: p,
             q: q,
             timestamp: timestamp,
+            user_id: user_id.to_string(),
         };
     }
 
@@ -142,12 +144,11 @@ impl KeyPair {
     -----END PGP PUBLIC KEY BLOCK-----
     */
 
-    pub fn pub_to_pem(&self, user_id: &str) -> String {
+    pub fn pub_to_pem(&self) -> String {
         let pub_packet = self.publickeypacket();
-        let formatted_uid = format_user_id(user_id);
+        let formatted_uid = format_user_id(&self.user_id);
         let uid_packet = uidpacket(&formatted_uid);
-        let signature_packet =
-            self.signaturepacket(&pub_packet, &formatted_uid);
+        let signature_packet = self.signaturepacket(&formatted_uid);
         let mut full = vec![];
         full.extend(&pub_packet);
         full.extend(&uid_packet);
@@ -169,12 +170,11 @@ impl KeyPair {
         out
     }
 
-    pub fn priv_to_pem(&self, user_id: &str, password: &str) -> String {
+    pub fn priv_to_pem(&self, password: &str) -> String {
         let priv_packet = self.privatepacket(password);
-        let formatted_uid = format_user_id(user_id);
+        let formatted_uid = format_user_id(&self.user_id);
         let uid_packet = uidpacket(&formatted_uid);
-        let sig_packet =
-            self.signaturepacket(&self.publickeypacket(), &formatted_uid);
+        let sig_packet = self.signaturepacket(&formatted_uid);
         let mut full = Vec::new();
         full.extend(&priv_packet);
         full.extend(&uid_packet);
@@ -207,7 +207,10 @@ impl KeyPair {
     // We have the same start for both,
     // we strip the pem format out of the file to keep only encoded data
 
-    pub fn pub_from_pem(_pem: &str) -> Result<KeyPair, RSAError> {
+    pub fn pub_from_pem(
+        _pem: &str,
+        user_id: &str,
+    ) -> Result<KeyPair, RSAError> {
         let content: String = _pem
             .lines()
             .filter(|line| {
@@ -246,7 +249,6 @@ impl KeyPair {
             };
             i += len_bytes;
             if tag == 6 {
-                let version = decoded[i];
                 i += 1;
                 let timestamp =
                     u32::from_be_bytes(decoded[i..i + 4].try_into().unwrap());
@@ -262,6 +264,7 @@ impl KeyPair {
                     p: BigUint::default(),
                     q: BigUint::default(),
                     timestamp,
+                    user_id: user_id.to_string(),
                 });
             } else {
                 i += length;
@@ -273,6 +276,7 @@ impl KeyPair {
     pub fn priv_from_pem(
         pem: &str,
         password: &str,
+        user_id: &str,
     ) -> Result<KeyPair, RSAError> {
         let content: String = pem
             .lines()
@@ -313,7 +317,6 @@ impl KeyPair {
             i += len_size;
             if tag_type == 5 {
                 let start = i;
-                let version = decoded[i];
                 i += 1;
                 let timestamp = u32::from_be_bytes([
                     decoded[i],
@@ -322,7 +325,6 @@ impl KeyPair {
                     decoded[i + 3],
                 ]);
                 i += 4;
-                let algo = decoded[i];
                 i += 1;
                 let n = parse_mpi(&decoded, &mut i);
                 let e = parse_mpi(&decoded, &mut i);
@@ -370,6 +372,7 @@ impl KeyPair {
                     p,
                     q,
                     timestamp,
+                    user_id: user_id.to_string(),
                 });
             }
             i += len;
@@ -414,8 +417,8 @@ impl KeyPair {
         hasher.update(&mpis);
         let hash = hasher.finalize();
         mpis.extend(&hash);
-        let mut rng = rand::thread_rng();
-        let salt: [u8; 8] = rng.gen();
+        let mut rng = rand::rng();
+        let salt: [u8; 8] = rng.random();
         let count_byte = 0x60;
         let iter_count = (16 + (count_byte & 15)) << ((count_byte >> 4) + 6);
         let mut s2k_input = Vec::new();
@@ -427,7 +430,7 @@ impl KeyPair {
         let key = &digest[..16];
         let key_array: &[u8; 16] =
             key.try_into().expect("Key must be 16 bytes");
-        let iv: [u8; 16] = rng.gen();
+        let iv: [u8; 16] = rng.random();
         let cipher = Cipher::new_128(key_array);
         let encrypted = cipher.cfb128_encrypt(&iv, &mpis);
         let mut body = Vec::new();
@@ -463,11 +466,7 @@ impl KeyPair {
     // Also contains prefixes (empty and first 2 bytes hash prefix)
     // At last, contains the body (mpi encoded)
 
-    pub fn signaturepacket(
-        &self,
-        pub_packet: &[u8],
-        raw_user_id: &str,
-    ) -> Vec<u8> {
+    pub fn signaturepacket(&self, raw_user_id: &str) -> Vec<u8> {
         fn encode_subpacket(subpacket_type: u8, content: &[u8]) -> Vec<u8> {
             let mut packet = Vec::new();
             let length = content.len() + 1;
@@ -546,34 +545,6 @@ impl KeyPair {
 }
 
 // This one is used in from pem functions
-
-fn parse_packet_length(data: &[u8]) -> Result<(usize, usize), RSAError> {
-    if data.is_empty() {
-        return Err(RSAError::BadPEMFormat);
-    }
-    let first = data[0];
-    if first < 192 {
-        Ok((first as usize, 1))
-    } else if first <= 223 {
-        if data.len() < 2 {
-            return Err(RSAError::BadPEMFormat);
-        }
-        let b1 = first as usize;
-        let b2 = data[1] as usize;
-        Ok((((b1 - 192) << 8) + b2 + 192, 2))
-    } else if first == 255 {
-        if data.len() < 5 {
-            return Err(RSAError::BadPEMFormat);
-        }
-        let length = ((data[1] as usize) << 24)
-            | ((data[2] as usize) << 16)
-            | ((data[3] as usize) << 8)
-            | (data[4] as usize);
-        Ok((length, 5))
-    } else {
-        Err(RSAError::BadPEMFormat)
-    }
-}
 
 // this function encodes a biguint to the mpi format
 //(multi-precision-integer) used in openpgp

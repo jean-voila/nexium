@@ -32,9 +32,9 @@ pub enum GitlabError {
     NetworkError,
     UserNotFound,
     UnknownError,
-    NoGPGKeys,
     BadGPGFormat,
     NoWebBrowser,
+    AbortedLogin,
 }
 
 impl GitlabClient {
@@ -71,9 +71,6 @@ impl GitlabClient {
                 let gpg_keys = self.get_user_gpg_keys_by_id(id);
                 match gpg_keys {
                     Ok(keys) => {
-                        if keys.is_empty() {
-                            return Err(GitlabError::NoGPGKeys);
-                        }
                         return Ok(keys);
                     }
                     Err(e) => Err(e),
@@ -205,7 +202,13 @@ impl GitlabClient {
 
         // Démarrage d'un serveur local pour écouter la redirection
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-        let (code, state) = listen_for_code(&listener).unwrap();
+
+        let (code, state) = match listen_for_code(&listener) {
+            Ok((code, state)) => (code, state),
+            Err(_) => {
+                return Err(GitlabError::AbortedLogin);
+            }
+        };
 
         // Vérification de l'état CSRF
         if &state != csrf_state.secret() {
@@ -254,7 +257,7 @@ fn listen_for_code(
                 .ok_or("État CSRF non trouvé")?;
 
             // Réponse HTTP simple pour indiquer la réussite
-            let response = "HTTP/1.1 200 OK\r\n\r\nAuthentification réussie. Vous pouvez fermer cette fenêtre.";
+            let response = "HTTP/1.1 200 OK\r\n\r\nYour Nexium app is successfully logged to Gitlab.";
 
             stream.write_all(response.as_bytes())?;
             stream.flush()?;
