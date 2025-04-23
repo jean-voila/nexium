@@ -1,8 +1,0 @@
-{
-    "database": "blockchain.db",
-    "key": "private-key.pem",
-    "port": 4242,
-    "user_id": "jean.herail",
-    "gitlab_token": "YNuyXYPMrCMQ6XzcsvPu",
-    "gitlab_api_url": "https://gitlab.cri.epita.fr/api/v4"
-}

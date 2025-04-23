@@ -1,0 +1,24 @@
+[package]
+name = "nexium"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+json = "0.12.2"
+num-bigint = "0.4.6"
+num-primes = "0.3.0"
+base64 = "0.22.1"
+reqwest = { version = "0.12.15", features = ["json", "blocking"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+webbrowser = "1.0.4"
+touche = "0.0.15"
+url = "2.2"
+oauth2 = { version = "5.0.0", features = ["reqwest", "reqwest-blocking"] }
+num-traits = "0.2"
+sha1 = "0.10.6"
+rand = "0.9.0"
+libaes = "0.7.0"

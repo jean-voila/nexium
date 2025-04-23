@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'Inconsolata';
+    src: url('/fonts/Inconsolata-VariableFont.ttf') format('truetype');
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/fonts/Inter-VariableFont_opsz.ttf') format('truetype');
+    font-style: normal;
+    font-display: swap;
+}
+
+
+@font-face {
+    font-family: 'Open Runde Bold';
+    src: url('/fonts/OpenRunde-Bold.woff2') format('woff2');
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Work Sans';
+    src: url('/fonts/WorkSans-VariableFont_wght.ttf') format('woff2');
+    font-style: normal;
+    font-display: swap;
+}
+
+
+:root {
+    --blanc-primaire: #FBFBF7;
+    --blanc-secondaire: #FEFEFE;
+    --blanc-tertiaire: #CECECE;
+    --gris-primaire: #616161;
+    --noir-primaire: #121413;
+    --noir-secondaire: #2B2B2B;
+    --noir-tertiaire: #444448;
+    --bleu-primaire: #3291FF;
+    --bleu-secondaire: #3276FF;
+}
+
+body {
+    background-color: var(--blanc-primaire);
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+
+.texte-bouton {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 800;
+    font-size: 21px;
+}
+
+.pillule-bouton-principal {
+    background-color: var(--noir-primaire);
+    color: var(--blanc-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.pillule-bouton-principal:hover {
+    background-color: var(--noir-tertiaire);
+
+    transition: all 0.1s ease-in-out;
+}
+
+.pillule-bouton-secondaire {
+    background-color: var(--blanc-primaire);
+    color: var(--noir-primaire);
+    border: 4px solid var(--noir-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.pillule-bouton-secondaire:hover {
+    color: var(--gris-primaire);
+    transform: scale(96%);
+    border: 4px solid var(--gris-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+
+.bouton {
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton:hover {
+    transform: scale(95%);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton:active {
+    transform: scale(90%);
+    transition: all 0.1s ease-in-out;
+}
+
+
+.icone-bouton {
+    width: 1.4em;
+    height: 1.4em;
+}
+
+.bouton-action {
+    color: var(--gris-primaire);
+}
+
+.bouton-action:hover {
+    color: var(--noir-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-action:active {
+    transform: scale(93%);
+    transition: all 0.1s ease-in-out;
+}
+
+.prenom {
+    font-family: 'Gotham', sans-serif;
+    font-weight: 900;
+    font-size: 53px;
+    color: var(--noir-primaire);
+    line-height: 44px;
+}
+
+.nom {
+    font-family: 'Gotham', sans-serif;
+    font-weight: 590;
+    font-size: 20px;
+    color: var(--noir-primaire);
+    line-height: 18px;
+}
+
+.cercle {
+    background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, hsl(295, 100%, 48%), #dd00f3);
+    background-size: 360% 360%;
+    box-shadow: inset 0px 0px 14px 22px rgba(0, 0, 0, 0.63);
+    -webkit-animation: rainbow 18s ease infinite;
+    -z-animation: rainbow 18s ease infinite;
+    -o-animation: rainbow 18s ease infinite;
+    animation: rainbow 18s ease infinite;
+}
+
+@-webkit-keyframes rainbow {
+    0%{background-position:0% 82%}
+    50%{background-position:100% 19%}
+    100%{background-position:0% 82%}
+}
+@-moz-keyframes rainbow {
+    0%{background-position:0% 82%}
+    50%{background-position:100% 19%}
+    100%{background-position:0% 82%}
+}
+@-o-keyframes rainbow {
+    0%{background-position:0% 82%}
+    50%{background-position:100% 19%}
+    100%{background-position:0% 82%}
+}
+@keyframes rainbow { 
+    0%{background-position:0% 82%}
+    50%{background-position:100% 19%}
+    100%{background-position:0% 82%}
+}
+
+.cercle-gris {
+    fill: linear-gradient(90deg, var(--noir-primaire), var(--noir-secondaire));
+    box-shadow: 0px 0px 15px 5px rgba(0, 0, 0, 0.47);
+
+}
+
+.solde {
+    font-family: 'Open Runde Bold', sans-serif;
+    font-weight: 800;
+    color: var(--blanc-primaire);
+}
+
+.solde-unit {
+    font-size: 59px;
+}
+
+.solde-deci {
+    font-size: 22px;
+}
+
+.sous-titre {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    color: var(--blanc-tertiaire);
+    letter-spacing: 0.8em;
+}

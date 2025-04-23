@@ -1,0 +1,15 @@
+[package]
+name = "nexium-server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "nexium-server"
+path = "src/main.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+colored = "3"
+json = "0.12.2"
+
+nexium = { workspace = true }
