@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../build",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "npm i && npm run dev",
+    "beforeBuildCommand": "npm i && npm run build"
   },
   "app": {
     "windows": [
