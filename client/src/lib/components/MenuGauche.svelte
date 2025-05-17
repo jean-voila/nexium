@@ -5,6 +5,9 @@
     import { QrCode } from 'lucide-svelte';
     import { Share2 } from 'lucide-svelte';
     import { Copy } from 'lucide-svelte';
+
+
+
 </script>
 
 
@@ -12,8 +15,8 @@
 
     <div class="flex flex-col gap-2">
         <div class="flex flex-col">
-            <div class="prenom">Valentina</div>
-            <div class="nom">Duretz</div>
+            <div class="prenom">Jean</div>
+            <div class="nom">Herail</div>
         </div>
         <div class="flex gap-1">
             <button>
@@ -31,8 +34,16 @@
     </div>
 
     <div class="flex flex-col gap-2">
-        <Bouton label="Transférer" Icon={SendHorizontal}/>
-        <Bouton label="Facturer" type="secondaire" Icon={HandCoins}/>
+        <button>
+            <Bouton label="Riche stp" Icon={SendHorizontal} />
+        </button>
+        
+        <button>
+            <Bouton label="Facturer" type="secondaire" Icon={HandCoins}/>
+        </button>
     </div>
+
+    
+
 
 </div>

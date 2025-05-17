@@ -98,7 +98,6 @@ impl KeyPair {
         }
         let hash_verif = sha256(message);
         let m = BigUint::from_bytes_be(&hash_verif);
-
         let decrypted_signature = signature.modpow(&self.e, &self.n);
 
         Ok(decrypted_signature == m)
