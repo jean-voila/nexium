@@ -108,7 +108,7 @@ impl Config {
             }
         };
 
-        // Check if user_login is valid login (prenom.nom)
+        // Check if  user_login is valid login (prenom.nom)
         let parts: Vec<&str> = login.split('.').collect();
         if parts.len() != 2 {
             return Err(ConfigError::InvalidLogin);
