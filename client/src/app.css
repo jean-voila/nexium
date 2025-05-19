@@ -128,7 +128,7 @@ body {
 }
 
 .prenom {
-    font-family: 'Gotham', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: 900;
     font-size: 53px;
     color: var(--color-noir-primaire);
@@ -136,7 +136,7 @@ body {
 }
 
 .nom {
-    font-family: 'Gotham', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: 590;
     font-size: 20px;
     color: var(--color-noir-primaire);
@@ -236,8 +236,8 @@ body {
 }
 
 .settings-titre {
-    font-family: 'Gotham', sans-serif;
-    font-weight: 400;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 800;
     font-size: 30px;
     color: var(--color-noir-primaire);
 }

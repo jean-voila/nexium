@@ -35,11 +35,11 @@
 
     <div class="flex flex-col gap-2">
         <button>
-            <Bouton label="Riche stp" Icon={SendHorizontal} />
+            <Bouton label="Envoyer" Icon={SendHorizontal} />
         </button>
         
         <button>
-            <Bouton label="Facturer" type="secondaire" Icon={HandCoins}/>
+            <Bouton label="Recevoir" type="secondaire" Icon={HandCoins}/>
         </button>
     </div>
 
