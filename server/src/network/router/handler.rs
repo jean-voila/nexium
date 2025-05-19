@@ -26,29 +26,32 @@ pub fn handler(stream: &mut TcpStream) {
 
     println!("------------------");
 
-    match req.path.as_str() {
-        "/" => (),
-        "/ping" => {
+    match (req.method.as_str(), req.path.as_str()) {
+        ("GET", "/ping") => {
             ping::handler(stream, &req);
-            return;
         }
         _ => {
             let res = Response::new(Status::NotFound, "");
             stream.write_all(res.to_string().as_bytes());
             stream.flush();
-            return;
         }
-    }
+    };
 
-    let mut res = Response::new(Status::BadRequest, "");
+    // let mut res = Response::new(Status::BadRequest, "");
+
+    //
+
     // let json = json::object! {
     //     "n": 1,
     //     "oidfh": "jbsdf"
     // };
     // let mut res = Response::new(Status::BadRequest, json.dump());
     // res.set_code(200);
-    res.set_header("Content-Type", "text/plain");
-    res.set_header("Content-Size", "1623");
-    stream.write_all(res.to_string().as_bytes());
-    stream.flush();
+
+    //
+
+    // res.set_header("Content-Type", "text/plain");
+    // res.set_header("Content-Size", "1623");
+    // stream.write_all(res.to_string().as_bytes());
+    // stream.flush();
 }
