@@ -1,6 +1,6 @@
 use super::{
     http::{request::Request, response::Response, status::Status},
-    routes::ping,
+    routes::{get_balance, get_transactions, new_transaction, ping},
 };
 use std::{io::Write, net::TcpStream};
 
@@ -19,16 +19,34 @@ pub fn handler(stream: &mut TcpStream) {
 
     println!("method: {}", req.method);
     println!("path: {}", req.path);
+    println!("path_query: {}", req.path_query);
+    println!("query:");
+    for (key, val) in req.query.iter() {
+        println!("'{key}': '{val}'");
+    }
+    println!("------------------");
     println!("header:");
     for (key, val) in req.headers.iter() {
         println!("'{key}': '{val}'");
     }
+    println!("------------------");
+    println!("body length: {}", req.body.len());
+    println!("body: {}", req.body);
 
     println!("------------------");
 
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/ping") => {
             ping::handler(stream, &req);
+        }
+        (method, path) if method == "GET" && path.starts_with("/balance/") => {
+            get_balance::handler(stream, &req);
+        }
+        ("GET", "/transactions") => {
+            get_transactions::handler(stream, &req);
+        }
+        ("POST", "/transaction") => {
+            new_transaction::handler(stream, &req);
         }
         _ => {
             let res = Response::new(Status::NotFound, "");
