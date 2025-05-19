@@ -9,8 +9,6 @@ pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 #[derive(Clone, PartialEq)]
 pub struct Transaction {
     pub transaction_header: TransactionHeader,
-    // data: [u8],
-    // data: &[u8],
     pub data: Vec<u8>,
     pub signature: SIGNATURE,
 }
