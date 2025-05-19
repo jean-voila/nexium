@@ -13,7 +13,8 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:e2e": "playwright test",
-		"test": "npm run test:e2e"
+		"test": "npm run test:e2e",
+		"tauri": "tauri"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -27,6 +28,7 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.1.4",
+		"@tauri-apps/cli": "^2.5.0",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -43,7 +45,7 @@
 		"vite": "^6.2.5"
 	},
 	"dependencies": {
-		"@tauri-apps/api": "^1.6.0",
+		"@tauri-apps/api": "^2.5.0",
 		"lucide-svelte": "^0.501.0"
 	}
 }

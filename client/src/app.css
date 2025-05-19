@@ -117,6 +117,12 @@ body {
     height: 1.4em;
 }
 
+.icone-bouton-sauvercharger {
+    width: 1em;
+    height: 1em;
+    color: var(--color-noir-primaire);
+}
+
 .bouton-action {
     color: var(--color-gris-primaire);
 }
@@ -245,6 +251,17 @@ body {
     margin-top: 1rem;
 }
 
+.bouton-settings:disabled {
+    background-color: var(--color-blanc-secondaire);
+    color: var(--color-noir-primaire);
+
+    cursor: not-allowed;
+}
+
+.bouton-settings:hover:disabled {
+    transform: scale(100%);
+}
+
 .settings-modal {
     position: fixed;
     inset: 0;
@@ -285,12 +302,19 @@ body {
 }
 
 
-
 .texte-bouton-settings {
     font-family: 'Work Sans', sans-serif;
     font-weight: 600;
     font-size: 17px;
     padding: 0.4rem 1rem;
+    /* équivalent à px-4 py-2 */
+}
+
+.texte-bouton-sauvercharger {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-noir-primaire);
     /* équivalent à px-4 py-2 */
 }
 
@@ -380,4 +404,13 @@ body {
 .settings-item {
     padding: 0.5rem;
     border-bottom: 0px solid var(--color-blanc-tertiaire);
+}
+
+.pillule-bouton-sauvercharger {
+    background-color: var(--color-blanc-tertiaire);
+    color: var(--color-blanc-primaire);
+    transition: all 0.1s ease-in-out;
+    border-radius: 0.6rem;
+    /* équivalent à rounded-3xl */
+
 }

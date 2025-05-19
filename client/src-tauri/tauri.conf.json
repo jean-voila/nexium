@@ -10,7 +10,8 @@
     "beforeBuildCommand": "npm i && npm run build"
   },
   "app": {
-    "macOSPrivateApi": true,
+    "withGlobalTauri": true,
+    "macOSPrivateApi": false,
     "windows": [
       {
         "title": "Nexium",
@@ -38,5 +39,4 @@
       "icons/icon.ico"
     ]
   }
-
 }

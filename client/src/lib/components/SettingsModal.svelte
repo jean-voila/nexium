@@ -2,22 +2,64 @@
 	export let showSettingsModal = false;
 
 	import { blur } from 'svelte/transition';
-	import { globalPort, globalUrl, globalLogin, globalGitlabToken } from '$lib/stores/settings.js';
+	import { Download } from 'lucide-svelte';
+	import { Upload } from 'lucide-svelte';
+	import {
+		globalPort,
+		globalUrl,
+		globalLogin,
+		globalGitlabToken,
+		globalPubKey,
+		globalPrivKey
+	} from '$lib/stores/settings.js';
 
+	import { invoke } from '@tauri-apps/api/core';
+	import { error } from '@sveltejs/kit';
+
+	let port = 0;
 	let url = '';
-	let port = '';
 	let login = '';
-	let gitlab_token = '';
+	let gitlabtoken = '';
+	let pub_key = '';
+	let priv_key = '';
+
+	let errorMessage = '';
+	let isSettingsValid = false;
+
+	async function validateSettings() {
+		//if (pub_key === '' || priv_key === '') {
+		//	errorMessage = 'KeyPairError';
+		//	return false;
+		//}
+
+		try {
+			const response = await invoke('check_config_values', {
+				port,
+				url,
+				login,
+				gitlabtoken
+			});
+			errorMessage = '';
+			return true;
+		} catch (error) {
+			errorMessage = String(error);
+			return false;
+		}
+	}
+
+	$: validateOnChange();
+	async function validateOnChange() {
+		console.log('Validating settings...');
+		isSettingsValid = await validateSettings();
+	}
 
 	function saveSettings() {
 		globalPort.set(port);
 		globalUrl.set(url);
 		globalLogin.set(login);
-		globalGitlabToken.set(gitlab_token);
-	}
-
-	function keyPairDefined() {
-		return false;
+		globalGitlabToken.set(gitlabtoken);
+		globalPubKey.set(pub_key);
+		globalPrivKey.set(priv_key);
 	}
 </script>
 
@@ -28,7 +70,6 @@
 			<h2 class="settings-titre">Paramètres</h2>
 
 			<!-- Liste des paramètres -->
-
 			<div class=" settings-item settings-row flex gap-4">
 				<div class=" flex-1">
 					<label for="server-port" class="nom-parametre">Port</label>
@@ -68,7 +109,7 @@
 				<input
 					id="gitlab-token"
 					type="text"
-					bind:value={gitlab_token}
+					bind:value={gitlabtoken}
 					class="input-field"
 					placeholder="•••••"
 				/>
@@ -78,7 +119,7 @@
 				<label for="key_pair" class="nom-parametre">Paire de clés</label>
 				<!-- If key_pair defined, green check and "Clé définie" + button for "Générer une clé"
                     else, red cross and "Clé non définie" + button for "Changer la clé" -->
-				{#if keyPairDefined()}
+				{#if pub_key !== '' && priv_key !== ''}
 					<div class="flex items-center gap-2">
 						<span class="keypair-status text-green-500">✔️</span>
 						<span class="keypair-status text-green-500">Clé définie</span>
@@ -102,31 +143,50 @@
 			<div class="mt-6 flex items-center justify-between">
 				<div class="flex gap-2">
 					<button
-						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
-							/* Ajoute ici la logique pour charger les paramètres */
+							saveSettings();
 						}}
 					>
-						<span class="texte-bouton-settings">Charger</span>
+						<Upload strokeWidth={3} class="icone-bouton-sauvercharger m-1" />
+						<span class="texte-bouton-sauvercharger">Charger</span>
 					</button>
+
 					<button
-						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
-							/* Ajoute ici la logique pour sauvegarder les paramètres */ saveSettings();
+							saveSettings();
 						}}
 					>
-						<span class="texte-bouton-settings">Sauvegarder</span>
+						<Download strokeWidth={3} class="icone-bouton-sauvercharger m-1" />
 					</button>
 				</div>
-				<button
-					on:click={() => {
-						showSettingsModal = false;
-						saveSettings();
-					}}
-					class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
-				>
-					<span class="texte-bouton-settings">Terminé</span>
-				</button>
+				<div class="flex flex-col items-end">
+					<button
+						on:click={() => {
+							validateOnChange();
+						}}
+						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+					>
+						<span class="texte-bouton-settings">Check</span>
+					</button>
+				</div>
+
+				<div class="flex flex-col items-end">
+					<button
+						on:click={() => {
+							saveSettings();
+							showSettingsModal = false;
+						}}
+						disabled={!isSettingsValid}
+						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+					>
+						<span class="texte-bouton-settings">Terminé</span>
+					</button>
+					{#if errorMessage !== ''}
+						<div class="error-message">{errorMessage}</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>

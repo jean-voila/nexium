@@ -1,9 +1,7 @@
 use json;
+use nexium::gitlab::*;
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::fs;
-use std::io;
-use std::io::Write;
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,9 +14,15 @@ pub struct Config {
     pub gitlab_token: String,
 }
 
+#[derive(Debug)]
 pub enum ConfigError {
     FileNotFound,
     InvalidFields,
+    InvalidLogin,
+    InvalidURL,
+    InvalidPort,
+    InvalidGitlabToken,
+    NetworkError,
 }
 
 const CONFIG_FILE_PATH: &str = "config_client.json";
@@ -59,35 +63,60 @@ impl Config {
     /// Write the Config object to a json filepriv_keyb fn to_filriv&self, path: &Path)
     pub fn to_file(&self, path: &Path) {
         let mut config_obj = json::JsonValue::new_object();
+        config_obj["url_server"] = self.url_server.to_string().into();
+        config_obj["port"] = self.port.into();
+        config_obj["user_login"] = self.user_login.to_string().into();
         config_obj["pub_key"] = self.pub_key.to_string().into();
         config_obj["priv_key"] = self.priv_key.to_string().into();
-        config_obj["port"] = self.port.into();
-        config_obj["user_first_name"] = self.user_login.to_string().into();
         config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
         fs::write(path, config_obj.pretty(4).as_bytes())
             .expect("Error writing config file");
     }
-}
 
-fn ask(ask: &str) -> String {
-    print!("{}", ask);
-    io::stdout().flush().unwrap();
+    pub fn check_values(
+        port: u16,
+        url: String,
+        login: String,
+        gitlab_token: String,
+    ) -> Result<(), ConfigError> {
+        // Check if port is valid port
 
-    let mut line = String::new();
-    io::stdin()
-        .read_line(&mut line)
-        .expect("Error reading line");
+        if port < 1 {
+            return Err(ConfigError::InvalidPort);
+        }
 
-    return line.trim().to_string();
-}
+        // Check if url_server is valid url
+        if url.contains(" ")
+            || url.contains("\n")
+            || url.contains("..")
+            || url.ends_with(".")
+            || url.starts_with(".")
+        {
+            return Err(ConfigError::InvalidURL);
+        }
 
-fn _check_login_syntax(login: String) -> bool {
-    let parts: Vec<&str> = login.split('.').collect();
-    if parts.len() != 2 {
-        return false;
+        // Check if gitlab_token is valid token
+        let gitlab_client = GitlabClient::new(gitlab_token.clone());
+        match gitlab_client.check_token() {
+            Ok(valid) => {
+                if !valid {
+                    return Err(ConfigError::InvalidGitlabToken);
+                }
+            }
+            Err(_) => {
+                return Err(ConfigError::NetworkError);
+            }
+        };
+
+        // Check if user_login is valid login (prenom.nom)
+        let parts: Vec<&str> = login.split('.').collect();
+        if parts.len() != 2 {
+            return Err(ConfigError::InvalidLogin);
+        }
+        if parts[0].len() == 0 || parts[1].len() == 0 {
+            return Err(ConfigError::InvalidLogin);
+        }
+
+        return Ok(());
     }
-    if parts[0].len() == 0 || parts[1].len() == 0 {
-        return false;
-    }
-    return true;
 }
