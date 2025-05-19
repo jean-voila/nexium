@@ -5,7 +5,7 @@ pub enum Status {
     Ok,
     BadRequest,
     NotFound,
-    ServerError,
+    InternalError,
 }
 
 impl Status {
@@ -14,7 +14,7 @@ impl Status {
             Self::Ok => 200,
             Self::BadRequest => 400,
             Self::NotFound => 404,
-            Self::ServerError => 505,
+            Self::InternalError => 505,
         }
     }
 
@@ -23,7 +23,7 @@ impl Status {
             Self::Ok => "OK",
             Self::BadRequest => "Bad Request",
             Self::NotFound => "Not Found",
-            Self::ServerError => "Internal Server Error",
+            Self::InternalError => "Internal Server Error",
         }
     }
 }

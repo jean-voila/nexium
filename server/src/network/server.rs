@@ -3,7 +3,6 @@ use std::net::{TcpListener, ToSocketAddrs};
 
 #[derive(Default)]
 pub struct Server {
-    // port: u16,
     // addr: ToSocketAddrs
     // listener: TcpListener,
 }
@@ -18,8 +17,6 @@ impl Server {
     where
         A: ToSocketAddrs,
     {
-        // self.port = port;
-        // let addr = format!("127.0.0.1:{}", port);
         // self.listener = TcpListener::bind(addr).expect("Failed to {addr}");
         let listener = TcpListener::bind(addr).expect("Failed to {addr}");
         // println!("Server listening on port {}", port);
@@ -27,7 +24,7 @@ impl Server {
         // for s in self.listener.incoming() {
         for s in listener.incoming() {
             match s {
-                Ok(stream) => handler(&stream),
+                Ok(mut stream) => handler(&mut stream),
                 Err(e) => {
                     eprintln!("Failed to accept connection: {}", e);
                 }
