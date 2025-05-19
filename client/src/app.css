@@ -50,13 +50,17 @@ body {
     background-color: var(--color-blanc-primaire);
 
     user-select: none;
-    -ms-user-select: none; /* IE 10 and IE 11 */
-    -moz-user-select: none; /* Firefox */
-    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none;
+    /* IE 10 and IE 11 */
+    -moz-user-select: none;
+    /* Firefox */
+    -webkit-user-select: none;
+    /* Safari */
 
     -webkit-app-region: no-drag;
     -webkit-user-drag: none;
-    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-touch-callout: none;
+    /* iOS Safari */
 }
 
 
@@ -154,24 +158,59 @@ body {
 }
 
 @-webkit-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+
+    50% {
+        background-position: 100% 19%
+    }
+
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-moz-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+
+    50% {
+        background-position: 100% 19%
+    }
+
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-o-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+
+    50% {
+        background-position: 100% 19%
+    }
+
+    100% {
+        background-position: 0% 82%
+    }
 }
-@keyframes rainbow { 
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+
+@keyframes rainbow {
+    0% {
+        background-position: 0% 82%
+    }
+
+    50% {
+        background-position: 100% 19%
+    }
+
+    100% {
+        background-position: 0% 82%
+    }
 }
 
 .cercle-gris {
@@ -202,20 +241,10 @@ body {
     letter-spacing: 0.8em;
 }
 
-
 .bouton-settings {
-    color: var(--color-noir-tertiaire);
+    margin-top: 1rem;
 }
 
-.bouton-settings:hover {
-    color: var(--color-noir-primaire);
-    transition: all 0.1s ease-in-out;
-}
-
-.bouton-settings:active {
-    transform: scale(93%);
-    transition: all 0.1s ease-in-out;
-}
 .settings-modal {
     position: fixed;
     inset: 0;
@@ -229,16 +258,20 @@ body {
 
 .settings-modal-content {
     background-color: var(--color-blanc-primaire);
-    border-radius: 1.5rem; /* équivalent à rounded-3xl */
-    padding: 2rem; /* équivalent à p-8 */
-    max-width: 40rem; /* équivalent à max-w-md */
-    width: 100%; /* équivalent à w-full */
+    border-radius: 1.5rem;
+    /* équivalent à rounded-3xl */
+    padding: 2rem;
+    /* équivalent à p-8 */
+    max-width: 40rem;
+    /* équivalent à max-w-md */
+    width: 100%;
+    /* équivalent à w-full */
 }
 
 .settings-titre {
     font-family: 'Work Sans', sans-serif;
-    font-weight: 800;
-    font-size: 30px;
+    font-weight: 850;
+    font-size: 40px;
     color: var(--color-noir-primaire);
 }
 
@@ -246,14 +279,19 @@ body {
     background-color: var(--color-noir-primaire);
     color: var(--color-blanc-primaire);
     transition: all 0.1s ease-in-out;
-    border-radius: 0.6rem; /* équivalent à rounded-3xl */
+    border-radius: 0.6rem;
+    /* équivalent à rounded-3xl */
+
 }
+
+
 
 .texte-bouton-settings {
     font-family: 'Work Sans', sans-serif;
     font-weight: 600;
     font-size: 17px;
-    padding: 0.4rem 1rem; /* équivalent à px-4 py-2 */
+    padding: 0.4rem 1rem;
+    /* équivalent à px-4 py-2 */
 }
 
 .server-url-container {
@@ -284,17 +322,62 @@ body {
 }
 
 .input-field {
-    width: 100%; /* w-full */
-    padding: 0.7rem; /* p-2 */
+    width: 100%;
+    /* w-full */
+    padding: 0.7rem;
+    /* p-2 */
     background-color: #e8e8e8;
-    border-radius: 1rem; /* rounded-md */
+    border-radius: 1rem;
+    /* rounded-md */
     font-weight: 600;
     font-size: 15px;
 }
 
 .nom-parametre {
-    font-family: 'Work Sans', sans-serif;
-    font-weight: 600;
+    font-family: 'Open Runde Bold', sans-serif;
+    font-weight: 700;
     font-size: 15px;
     color: var(--color-noir-primaire);
+}
+
+
+.keypair-status {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+}
+
+.pillule-bouton-keypair {
+    transition: all 0.1s ease-in-out;
+    border-radius: 1.5rem;
+    border-color: var(--color-noir-primaire);
+}
+
+.texte-bouton-keypair {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 0.2rem 0.5rem;
+    /* équivalent à px-4 py-2 */
+}
+
+.bouton-keypair {
+    background-color: var(--color-blanc-tertiaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-keypair:hover {
+    background-color: var(--color-noir-tertiaire);
+    color: var(--color-blanc-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-keypair:active {
+    transition: all 0.1s ease-in-out;
+    background-color: var(--color-noir-primaire);
+}
+
+.settings-item {
+    padding: 0.5rem;
+    border-bottom: 0px solid var(--color-blanc-tertiaire);
 }

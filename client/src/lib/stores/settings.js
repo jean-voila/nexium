@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
 
-export const serverUrl = writable('');
-export const serverPort = writable();
+export const globalUrl = writable('');
+export const globalPort = writable();
+export const globalLogin = writable('');
+export const globalGitlabToken = writable('');

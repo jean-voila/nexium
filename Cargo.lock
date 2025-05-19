@@ -2186,6 +2186,7 @@ dependencies = [
 name = "nexium-client"
 version = "0.1.0"
 dependencies = [
+ "json",
  "log",
  "nexium",
  "serde",
