@@ -291,42 +291,45 @@
 			<div class="settings-item flex-1">
 				<label for="key_pair" class="nom-parametre">Paire de clés</label>
 
-				<div class="flex items-center gap-2">
-					{#if pub_key !== '' && priv_key !== ''}
-						<CheckCheck strokeWidth={3.5} class="green-icon m-1" />
-						<span class="keypair-status text-green-500">Clé définie</span>
-					{:else}
-						<CircleOff strokeWidth={3.5} class="red-icon m-1" />
-						<span class="keypair-status text-red-500">Clé non définie</span>
-					{/if}
+				<div class="flex items-center gap-4">
+					<div class="flex items-center gap-2">
+						{#if pub_key !== '' && priv_key !== ''}
+							<CheckCheck strokeWidth={3.5} class="green-icon m-1" />
+							<span class="keypair-status text-green-500">Clé définie</span>
+						{:else}
+							<CircleOff strokeWidth={3.5} class="red-icon m-1" />
+							<span class="keypair-status text-red-500">Clé non définie</span>
+						{/if}
 
-					<button
-						class="pillule-bouton-keypair bouton-keypair flex items-center transition"
-						on:click={handleKeyGeneration}
-						disabled={(gitlab_oauth_token === '' && gitlab_classic_token === '') ||
-							isGenerating ||
-							(pub_key !== '' && priv_key !== '')}
-					>
-						<span class="texte-bouton-keypair">Générer une clé</span>
-					</button>
-				</div>
-
-				{#if isGenerating}
-					<div class="mt-4 flex items-center gap-2 text-sm text-gray-700">
-						<svg class="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-						</svg>
-						<span>{generationMessage}</span>
+						<button
+							class="pillule-bouton-keypair bouton-keypair flex items-center transition"
+							on:click={handleKeyGeneration}
+							disabled={(gitlab_oauth_token === '' && gitlab_classic_token === '') ||
+								isGenerating ||
+								(pub_key !== '' && priv_key !== '') ||
+								login.trim() === ''}
+						>
+							<span class="texte-bouton-keypair">Générer une clé</span>
+						</button>
 					</div>
-				{/if}
+
+					{#if isGenerating}
+						<div class="flex items-center gap-2 text-sm text-gray-700">
+							<svg class="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+							</svg>
+							<span>{generationMessage}</span>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Bouton Terminé -->

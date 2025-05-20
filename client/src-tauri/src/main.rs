@@ -3,10 +3,10 @@
 mod config;
 use config::Config;
 use config::ConfigError;
-use nexium::gitlab;
+
 use nexium::{gitlab::*, rsa::*};
 // use sleep
-use std::{f32::consts::E, path::Path};
+use std::path::Path;
 
 const DEFAULT_KEY_BITLENGTH: usize = 2048;
 
@@ -25,24 +25,27 @@ fn check_config_values(
     }
 }
 #[tauri::command]
-fn load_config_from_file(path_string: String) -> Result<Config, String> {
-    // check if file exists
-    if Path::new(&path_string).exists() == false {
-        //fmt is implemented for ConfigError (enum)
-        // so we can use format! macro to create a string
-        // with the error message
-        return Err(format!("{}", ConfigError::FileNotFound));
-    }
+async fn load_config_from_file(path_string: String) -> Result<Config, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        if Path::new(&path_string).exists() == false {
+            return Err(format!("{}", ConfigError::FileNotFound));
+        }
+        let path = Path::new(&path_string);
+        match Config::from_file(path) {
+            Ok(config) => Ok(config),
+            Err(e) => Err(format!("{}", e)),
+        }
+    })
+    .await;
 
-    let path = Path::new(&path_string);
-    match Config::from_file(path) {
-        Ok(config) => Ok(config),
-        Err(e) => Err(format!("{}", e)),
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Erreur lors du chargement du fichier".into()),
     }
 }
 
 #[tauri::command]
-fn save_config_to_file(
+async fn save_config_to_file(
     path_string: String,
     port: u16,
     url: String,
@@ -51,60 +54,93 @@ fn save_config_to_file(
     pub_key: String,
     priv_key: String,
 ) -> Result<String, String> {
-    let path = Path::new(&path_string);
-    let config = config::Config {
-        port: port,
-        url_server: url,
-        user_login: login,
-        gitlab_token: gitlab_token,
-        pub_key: pub_key,
-        priv_key: priv_key,
-    };
-    match Config::to_file(&config, path) {
-        Ok(_) => Ok("".to_string()),
-        Err(e) => Err(format!("{}", e)),
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&path_string);
+        let config = config::Config {
+            port,
+            url_server: url,
+            user_login: login,
+            gitlab_token,
+            pub_key,
+            priv_key,
+        };
+        match Config::to_file(&config, path) {
+            Ok(_) => Ok("".to_string()),
+            Err(e) => Err(format!("{}", e)),
+        }
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Erreur lors de la sauvegarde du fichier".into()),
     }
 }
 
 #[tauri::command]
-fn keypair_generation(
+async fn keypair_generation(
     login: String,
     password: String,
 ) -> Result<(String, String), String> {
-    let keypair = KeyPair::generate(DEFAULT_KEY_BITLENGTH, &login);
-    let pub_key = KeyPair::pub_to_pem(&keypair);
-    let priv_key = KeyPair::priv_to_pem(&keypair, &password);
-    if pub_key == "" || priv_key == "" {
-        return Err(format!("{}", ConfigError::KeyGenerationError));
+    // Utilise spawn_blocking pour éviter de bloquer le thread principal
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let keypair = KeyPair::generate(DEFAULT_KEY_BITLENGTH, &login);
+        let pub_key = KeyPair::pub_to_pem(&keypair);
+        let priv_key = KeyPair::priv_to_pem(&keypair, &password);
+
+        if pub_key.is_empty() || priv_key.is_empty() {
+            Err(format!("{}", ConfigError::KeyGenerationError))
+        } else {
+            Ok((pub_key, priv_key))
+        }
+    })
+    .await;
+
+    match result {
+        Ok(ok) => ok,
+        Err(_) => Err("Erreur interne de génération".into()),
     }
-    Ok((pub_key, priv_key))
 }
 
 #[tauri::command]
-fn send_gpg_key(
+async fn send_gpg_key(
     tokentypestring: String,
     gitlab_token: String,
     pub_key: String,
 ) -> Result<String, String> {
-    let tokentype = match tokentypestring.as_str() {
-        "classic" => TokenType::Classic,
-        "oauth" => TokenType::OAuth,
-        _ => {
-            return Err(format!("{}", ConfigError::InternalError));
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let tokentype = match tokentypestring.as_str() {
+            "classic" => TokenType::Classic,
+            "oauth" => TokenType::OAuth,
+            _ => return Err(format!("{}", ConfigError::InternalError)),
+        };
+        let gitlab_client = GitlabClient::new(gitlab_token, tokentype);
+        match gitlab_client.add_gpg_key(&pub_key) {
+            Ok(_) => Ok("".to_string()),
+            Err(e) => Err(format!("{}", e)),
         }
-    };
-    let gitlab_client = GitlabClient::new(gitlab_token, tokentype);
-    match gitlab_client.add_gpg_key(&pub_key) {
-        Ok(_) => Ok(("").to_string()),
-        Err(e) => Err(format!("{}", e)),
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Erreur lors de l’envoi de la clé".into()),
     }
 }
 
 #[tauri::command]
-fn get_gitlab_oauth_token() -> Result<String, String> {
-    match GitlabClient::get_token() {
-        Ok(token) => Ok(token),
-        Err(e) => Err(format!("{:?}", e)),
+async fn get_gitlab_oauth_token() -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        match GitlabClient::get_token() {
+            Ok(token) => Ok(token),
+            Err(e) => Err(format!("{:?}", e)),
+        }
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Erreur interne OAuth".into()),
     }
 }
 
