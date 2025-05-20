@@ -1,6 +1,8 @@
 use super::{
     http::{request::Request, response::Response, status::Status},
-    routes::{get_balance, get_transactions, new_transaction, ping},
+    routes::{
+        check_nexium, get_balance, get_transactions, new_transaction, ping,
+    },
 };
 use std::{io::Write, net::TcpStream};
 
@@ -11,8 +13,8 @@ pub fn handler(stream: &mut TcpStream) {
         Ok(r) => r,
         Err(e) => {
             let res = Response::new(Status::BadRequest, e);
-            stream.write_all(res.to_string().as_bytes());
-            stream.flush();
+            let _ = stream.write_all(res.to_string().as_bytes());
+            let _ = stream.flush();
             return;
         }
     };
@@ -37,7 +39,10 @@ pub fn handler(stream: &mut TcpStream) {
 
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/ping") => {
-            ping::handler(stream, &req);
+            ping::handler(stream);
+        }
+        ("GET", "/nexium") => {
+            check_nexium::handler(stream);
         }
         (method, path) if method == "GET" && path.starts_with("/balance/") => {
             get_balance::handler(stream, &req);
@@ -50,8 +55,8 @@ pub fn handler(stream: &mut TcpStream) {
         }
         _ => {
             let res = Response::new(Status::NotFound, "");
-            stream.write_all(res.to_string().as_bytes());
-            stream.flush();
+            let _ = stream.write_all(res.to_string().as_bytes());
+            let _ = stream.flush();
         }
     };
 

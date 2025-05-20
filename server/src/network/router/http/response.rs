@@ -26,7 +26,7 @@ impl Response {
         self.headers.push(format!("{name}:{value}"));
     }
 
-    pub fn to_string<'a>(&self) -> String {
+    pub fn to_string(&self) -> String {
         if self.headers.len() == 0 {
             format!("HTTP/1.1 {}\r\n\r\n{}", self.status, self.body)
         } else {
