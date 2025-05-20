@@ -67,8 +67,6 @@ impl Config {
             }
         };
 
-        println!("Config read: {}", content);
-
         let parsed = match json::parse(content.as_str()) {
             Ok(p) => p,
             Err(_) => {
