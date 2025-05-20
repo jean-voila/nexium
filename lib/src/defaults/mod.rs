@@ -1,3 +1,14 @@
-// Constantes de Nexium
-pub const DEFAULT_GITLAB_API_URL: &str = "https://gitlab.cri.epita.fr/api/v4";
+pub const GITLAB_API_ENDPOINT: &str = "/api/v4";
 pub const NEXIUM_HOME: &str = ".nexiumlocal";
+
+pub const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";
+
+pub const DEFAULT_PORT: u16 = 4242;
+pub const DEFAULT_DB_FILE: &str = "blockchain.db";
+pub const DEFAULT_KEY_PATH: &str = "private-key.pem";
+
+pub const CLIENT_ID: &str =
+    "f180d1cbd126017dcc20629aee0af5dd229dc5fd13d19c6a9ace1361e2039c59";
+pub const CLIENT_SECRET: &str =
+    "gloas-83e39025a820061c0744402c93a5915c5dc1bdb30ac2d23df3b68485b044545c";
+pub const REDIRECT_URI: &str = "http://localhost:8080/callback";

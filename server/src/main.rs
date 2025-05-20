@@ -3,18 +3,15 @@ mod config;
 use chrono::Utc;
 use colored::Colorize;
 use config::Config;
+use nexium::defaults::*;
 use nexium::gitlab::*;
 use nexium::rsa::KeyPair;
 use nexium::sha256::sha256;
 use std::io::{self, Write};
 use std::{env, path::Path, thread, time};
 
-/// Default path to the Nexium home directory
-const NEXIUM_HOME: &str = ".nexiumlocal";
-/// Default path to the configuration file, relative Nxm home
-const DEFAULT_CONFIG_NAME: &str = "config.json";
-/// Argument to pass to the program to generate the config file
 const GEN_CONFIG_ARG: &str = "--generate-config";
+const DEFAULT_CONFIG_NAME: &str = "config.json";
 
 fn main() {
     let wait_time = time::Duration::from_millis(0);

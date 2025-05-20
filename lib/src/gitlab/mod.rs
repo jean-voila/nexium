@@ -5,20 +5,14 @@ use oauth2::{
 use reqwest::blocking::Client;
 use serde_json;
 
+use super::defaults::*;
+
 use std::io::{BufRead, Write};
 use std::net::TcpListener;
-
 use url::Url;
 use webbrowser;
 
 /// Default path to the Gitlab API URL
-const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";
-
-const CLIENT_ID: &str =
-    "f180d1cbd126017dcc20629aee0af5dd229dc5fd13d19c6a9ace1361e2039c59";
-const CLIENT_SECRET: &str =
-    "gloas-83e39025a820061c0744402c93a5915c5dc1bdb30ac2d23df3b68485b044545c";
-const REDIRECT_URI: &str = "http://localhost:8080/callback";
 
 #[derive(Default, Debug)]
 pub enum TokenType {

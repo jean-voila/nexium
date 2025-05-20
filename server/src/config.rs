@@ -1,18 +1,10 @@
 use json;
+use nexium::defaults::*;
 use std::env;
 use std::fs;
 use std::io;
 use std::io::Write;
 use std::path::Path;
-
-/// Default port to listen on
-const DEFAULT_PORT: u16 = 4242;
-/// Default path to database file
-const DEFAULT_DB_FILE: &str = "blockchain.db";
-/// Default path to key file
-const DEFAULT_KEY_PATH: &str = "private-key.pem";
-/// Default path to the Gitlab API URL
-const DEFAULT_GITLAB_API_URL: &str = "https://gitlab.cri.epita.fr/api/v4";
 
 /// Config struct to hold the configuration of the server
 
@@ -93,13 +85,13 @@ impl Config {
 
         let gitlab_api_url = match ask(&format!(
             "Enter Gitlab API URL (default: {}): ",
-            DEFAULT_GITLAB_API_URL
+            get_gitlab_api_url()
         ))
         .as_str()
         {
             "" => {
                 println!("Empty path, using default");
-                String::from(DEFAULT_GITLAB_API_URL)
+                String::from(get_gitlab_api_url())
             }
             s => s.to_string(),
         };
@@ -194,4 +186,8 @@ fn _check_login_syntax(login: String) -> bool {
         return false;
     }
     return true;
+}
+
+fn get_gitlab_api_url() -> String {
+    return format!("{}{}", GITLAB_URL, GITLAB_API_ENDPOINT);
 }
