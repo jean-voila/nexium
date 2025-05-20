@@ -129,15 +129,22 @@ async fn send_gpg_key(
 }
 
 #[tauri::command]
-async fn get_gitlab_oauth_token() -> Result<String, String> {
+async fn get_gitlab_oauth_token() -> Result<serde_json::Value, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         match GitlabClient::get_token() {
-            Ok(token) => Ok(token),
-            Err(e) => Err(format!("{:?}", e)),
+            Ok(token) => {
+                /*
+                let login = GitlabClient::get_login(&token)
+                    .unwrap_or_else(|_| "".to_string());
+
+                Ok(serde_json::json!({ "token": token, "login": login }))
+                */
+                Ok(serde_json::json!({ "token": token }))
+            }
+            Err(e) => Err(format!("{}", e)),
         }
     })
     .await;
-
     match result {
         Ok(r) => r,
         Err(_) => Err("Erreur interne OAuth".into()),

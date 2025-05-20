@@ -46,9 +46,17 @@
 	async function getGitlabOauthToken() {
 		try {
 			gitlab_classic_token = '';
-			const response = await invoke('get_gitlab_oauth_token');
-			gitlab_oauth_token = response;
-			oauth_connected = true;
+			// a supprimer apres avoir mis en place le code qui donne le login utilisateur en dessous
+			const response = await invoke('get_gitlab_oauth_url');
+			/*
+			const response: { token: string; login?: string } = await invoke('get_gitlab_oauth_token');
+			gitlab_oauth_token = response.token;
+			if (response.login !== undefined) {
+				login = response.login;
+				oauth_connected = true;
+			}
+			*/
+			oauth_connected = true; // a supprimer apres avoir mis en place le code qui donne le login utilisateur
 		} catch (error) {
 			errorMessage = String(error);
 		}
@@ -248,18 +256,15 @@
 				</div>
 			</div>
 
-			<div class="settings-item flex-1">
-				<input
-					id="user-login"
-					type="text"
-					bind:value={login}
-					class="input-field"
-					placeholder="Login (prenom.nom)"
-				/>
-			</div>
-
-			<div class="settings-item settings-row flex items-center gap-4">
-				<div class="flex-[4]">
+			<div class="settings-item flex items-center justify-between gap-4">
+				<div class="flex w-full max-w-xl flex-col gap-2">
+					<input
+						id="user-login"
+						type="text"
+						bind:value={login}
+						class="input-field"
+						placeholder="Login (prenom.nom)"
+					/>
 					<input
 						id="gitlab-token"
 						type="text"
@@ -268,8 +273,9 @@
 						placeholder="Token Gitlab"
 					/>
 				</div>
-				ou
-				<div class="align-items-center flex items-center justify-center">
+
+				<div class="flex flex-col items-center">
+					<span class="mb-1 text-sm text-gray-500">ou</span>
 					<button
 						on:click={() => getGitlabOauthToken()}
 						class="bouton bouton-gitlab flex items-center gap-2 px-4 py-2 transition {oauth_connected
