@@ -284,7 +284,7 @@
 								getGitlabOauthToken();
 							}
 						}}
-						class="bouton bouton-gitlab group flex items-center gap-2 px-4 py-2 pl-2 transition {oauth_connected
+						class="bouton bouton-gitlab group flex items-center gap-1 px-4 py-2 pl-3 transition {oauth_connected
 							? 'pillule-bouton-gitlab-checked'
 							: 'pillule-bouton-gitlab'}"
 					>
@@ -295,19 +295,19 @@
 								<span
 									class="absolute inset-0 flex items-center justify-center gap-2 opacity-100 transition-opacity duration-300 group-hover:opacity-0"
 								>
-									<CheckCheck strokeWidth={3} class="icone-gitlab m-1" />
+									<CheckCheck strokeWidth={3} class="icone-gitlab" />
 									<span class="texte-bouton-gitlab">Connecté</span>
 								</span>
 								<span
 									class="absolute inset-0 flex items-center justify-center gap-2 text-black opacity-0 transition-opacity duration-300 group-hover:opacity-100"
 								>
-									<Unplug strokeWidth={3} class="icone-gitlab-deco m-1" />
+									<Unplug strokeWidth={3} class="icone-gitlab-deco" />
 									<span class="texte-bouton-gitlab">Déconnexion</span>
 								</span>
 							</span>
 						{:else}
-							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab ml-[-2px]" />
-							<span class="texte-bouton-gitlab ml-1">Connexion</span>
+							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab" />
+							<span class="texte-bouton-gitlab">Connexion</span>
 						{/if}
 					</button>
 				</div>

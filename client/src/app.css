@@ -459,7 +459,7 @@ body {
     font-size: 15px;
     padding: 0rem 0.3rem;
     white-space: nowrap;
-    /* équivalent à px-4 py-2 */
+    padding-right: 1rem;
 }
 
 /* Icone gitlab, contenu dans un bouton, doit s'adapter à la taille du bouton */
