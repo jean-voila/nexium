@@ -1,4 +1,4 @@
-use crate::utils::time::current_time;
+use nexium::utils::time::current_time;
 
 use super::consts::{
     BLOCK_HEADER_SIZE, HEADER_MERKLE_ROOT_SIZE,

@@ -1,11 +1,9 @@
 use super::structure::{
     block::Block,
-    consts::{
-        HEADER_MERKLE_ROOT_SIZE, HEADER_PREVIOUS_BLOCK_HASH_SIZE,
-        SIGNATURE_SIZE,
-    },
-    data_type::DataType,
-    transaction::Transaction,
+    consts::{HEADER_MERKLE_ROOT_SIZE, HEADER_PREVIOUS_BLOCK_HASH_SIZE},
+};
+use nexium::blockchain::{
+    consts::SIGNATURE_SIZE, data_type::DataType, transaction::Transaction,
 };
 
 pub fn main() {

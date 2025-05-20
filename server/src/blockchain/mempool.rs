@@ -1,5 +1,6 @@
-use super::structure::{block::Block, transaction::Transaction};
+use super::structure::block::Block;
 use lazy_static::lazy_static;
+use nexium::blockchain::transaction::Transaction;
 use std::sync::Mutex;
 
 lazy_static! {

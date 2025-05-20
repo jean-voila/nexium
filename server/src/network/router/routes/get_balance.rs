@@ -1,7 +1,9 @@
-use nexium::{gitlab::GitlabClient, rsa::KeyPair};
-
 use super::super::http::{
     request::Request, response::Response, status::Status,
+};
+use nexium::{
+    gitlab::{GitlabClient, TokenType},
+    rsa::KeyPair,
 };
 use std::{io::Write, net::TcpStream};
 
@@ -21,7 +23,7 @@ pub fn handler(stream: &mut TcpStream, req: &Request) {
         "balance"=> 1000
     };
 
-    let gitlab = GitlabClient::new(String::new());
+    let gitlab = GitlabClient::new(String::new(), TokenType::Classic);
     let gitlab_keys = match gitlab.get_gpg_keys(user) {
         Ok(keys) => keys,
         Err(e) => {

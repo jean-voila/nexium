@@ -1,8 +1,8 @@
 use super::{
     block_header::{BlockHeader, HeaderMerkleRoot, HeaderPreviousBlockHash},
     consts::BLOCK_HEADER_SIZE,
-    transaction::{transaction_vec_size, Transaction},
 };
+use nexium::blockchain::transaction::{transaction_vec_size, Transaction};
 
 #[derive(Default, Clone, PartialEq)]
 pub struct Block {
