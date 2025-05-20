@@ -2341,6 +2341,8 @@ dependencies = [
  "json",
  "lazy_static",
  "nexium",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,17 +1,18 @@
-use crate::utils::time::current_time;
-
 use super::{
     consts::{TRANSACTION_EMITTER, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
 };
+use crate::utils::time::current_time;
+use serde::{Deserialize, Serialize};
 
 pub type EMITTER = [u8; TRANSACTION_EMITTER];
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct TransactionHeader {
     pub transaction_size: u16,
     pub timestamp: u32,
     pub fees: u16,
+    #[serde(with = "serde_emitter")]
     pub emitter: EMITTER,
     pub data_type: DataType,
 }
@@ -95,5 +96,42 @@ impl core::fmt::Debug for TransactionHeader {
         // write!(f, "data_type: {},\n", self.data_type)?;
         write!(f, "}}")?;
         Ok(())
+    }
+}
+
+mod serde_emitter {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    use crate::blockchain::consts::TRANSACTION_EMITTER;
+
+    pub fn serialize<S>(
+        emitter: &[u8; TRANSACTION_EMITTER],
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Convert the emitter into a UTF-8 string, trimming null bytes
+        let s = match std::str::from_utf8(emitter) {
+            Ok(s) => s.trim_end_matches('\0'),
+            Err(_) => "",
+        };
+        serializer.serialize_str(s)
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<[u8; TRANSACTION_EMITTER], D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        let mut buf = [0u8; TRANSACTION_EMITTER];
+        let bytes = s.as_bytes();
+        if bytes.len() > TRANSACTION_EMITTER {
+            return Err(serde::de::Error::custom("Emitter string too long"));
+        }
+        buf[..bytes.len()].copy_from_slice(bytes);
+        Ok(buf)
     }
 }

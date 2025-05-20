@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
@@ -6,10 +8,11 @@ use super::{
 
 pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transaction {
     pub transaction_header: TransactionHeader,
     pub data: Vec<u8>,
+    #[serde(with = "serde_signature")]
     pub signature: SIGNATURE,
 }
 
@@ -102,4 +105,37 @@ impl core::fmt::Debug for Transaction {
 
 pub fn transaction_vec_size(transactions: &Vec<Transaction>) -> u32 {
     transactions.iter().fold(0, |acc, t| acc + t.size())
+}
+
+mod serde_signature {
+    use super::SIGNATURE;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(
+        sig: &SIGNATURE,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = match std::str::from_utf8(sig) {
+            Ok(s) => s.trim_end_matches('\0'),
+            Err(_) => "",
+        };
+        serializer.serialize_str(s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<SIGNATURE, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        let mut buf = [0u8; super::SIGNATURE_SIZE];
+        let bytes = s.as_bytes();
+        if bytes.len() > super::SIGNATURE_SIZE {
+            return Err(serde::de::Error::custom("Signature string too long"));
+        }
+        buf[..bytes.len()].copy_from_slice(bytes);
+        Ok(buf)
+    }
 }
