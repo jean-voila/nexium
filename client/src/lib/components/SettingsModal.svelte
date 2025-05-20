@@ -9,6 +9,7 @@
 	import { CircleAlert } from 'lucide-svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { save } from '@tauri-apps/plugin-dialog';
+	import { Unplug } from 'lucide-svelte';
 	import {
 		globalPort,
 		globalUrl,
@@ -47,15 +48,9 @@
 		try {
 			gitlab_classic_token = '';
 			// a supprimer apres avoir mis en place le code qui donne le login utilisateur en dessous
-			const response = await invoke('get_gitlab_oauth_url');
-			/*
-			const response: { token: string; login?: string } = await invoke('get_gitlab_oauth_token');
+			const response = await invoke('get_gitlab_oauth_token');
 			gitlab_oauth_token = response.token;
-			if (response.login !== undefined) {
-				login = response.login;
-				oauth_connected = true;
-			}
-			*/
+			// login = response.login || login;
 			oauth_connected = true; // a supprimer apres avoir mis en place le code qui donne le login utilisateur
 		} catch (error) {
 			errorMessage = String(error);
@@ -216,6 +211,11 @@
 		}
 	}
 
+	function disconnectGitlabOauth() {
+		gitlab_oauth_token = '';
+		oauth_connected = false;
+	}
+
 	function saveGlobalSettings() {
 		globalPort.set(port);
 		globalUrl.set(url);
@@ -277,18 +277,37 @@
 				<div class="flex flex-col items-center">
 					<span class="mb-1 text-sm text-gray-500">ou</span>
 					<button
-						on:click={() => getGitlabOauthToken()}
-						class="bouton bouton-gitlab flex items-center gap-2 px-4 py-2 transition {oauth_connected
+						on:click={() => {
+							if (oauth_connected) {
+								disconnectGitlabOauth();
+							} else {
+								getGitlabOauthToken();
+							}
+						}}
+						class="bouton bouton-gitlab group flex items-center gap-2 px-4 py-2 pl-2 transition {oauth_connected
 							? 'pillule-bouton-gitlab-checked'
 							: 'pillule-bouton-gitlab'}"
-						disabled={oauth_connected}
 					>
 						{#if oauth_connected}
-							<CheckCheck strokeWidth={3} class="icone-gitlab m-1" />
-							<span class="texte-bouton-gitlab">Connecté</span>
+							<span
+								class="relative flex h-[24px] w-[140px] items-center justify-center transition-all duration-300"
+							>
+								<span
+									class="absolute inset-0 flex items-center justify-center gap-2 opacity-100 transition-opacity duration-300 group-hover:opacity-0"
+								>
+									<CheckCheck strokeWidth={3} class="icone-gitlab m-1" />
+									<span class="texte-bouton-gitlab">Connecté</span>
+								</span>
+								<span
+									class="absolute inset-0 flex items-center justify-center gap-2 text-black opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+								>
+									<Unplug strokeWidth={3} class="icone-gitlab-deco m-1" />
+									<span class="texte-bouton-gitlab">Déconnexion</span>
+								</span>
+							</span>
 						{:else}
-							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab" />
-							<span class="texte-bouton-gitlab">Connexion</span>
+							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab ml-[-2px]" />
+							<span class="texte-bouton-gitlab ml-1">Connexion</span>
 						{/if}
 					</button>
 				</div>

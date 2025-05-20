@@ -457,8 +457,8 @@ body {
     font-family: 'Work Sans', sans-serif;
     font-weight: 600;
     font-size: 15px;
+    padding: 0rem 0.3rem;
     white-space: nowrap;
-
     /* équivalent à px-4 py-2 */
 }
 
@@ -467,6 +467,12 @@ body {
     width: 1.2em;
     height: 1.2em;
     color: var(--color-vert-primaire);
+}
+
+.icone-gitlab-deco {
+    width: 1.2em;
+    height: 1.2em;
+    color: var(--color-rouge-primaire);
 }
 
 .green-icon {
