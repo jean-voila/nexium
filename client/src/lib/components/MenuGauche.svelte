@@ -5,13 +5,37 @@
 	import { QrCode } from 'lucide-svelte';
 	import { Share2 } from 'lucide-svelte';
 	import { Copy } from 'lucide-svelte';
+
+	import {
+		globalPort,
+		globalUrl,
+		globalLogin,
+		globalGitlabToken,
+		globalPubKey,
+		globalPrivKey
+	} from '$lib/stores/settings.js';
+
+	let firstName = '';
+	let lastName = '';
+
+	$: {
+		const login = $globalLogin || '';
+		const parts = login.split('.');
+		firstName = parts[0] || '';
+		lastName = parts[1] || '';
+
+		if (firstName && lastName) {
+			firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+			lastName = lastName.charAt(0).toUpperCase() + lastName.slice(1);
+		}
+	}
 </script>
 
 <div class="flex flex-col justify-center gap-14">
 	<div class="flex flex-col gap-2">
 		<div class="flex flex-col">
-			<div class="prenom">Jean</div>
-			<div class="nom">Herail</div>
+			<div class="prenom">{firstName}</div>
+			<div class="nom">{lastName}</div>
 		</div>
 		<div class="flex gap-1">
 			<button>
