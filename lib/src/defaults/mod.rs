@@ -1,10 +1,11 @@
 pub const GITLAB_API_ENDPOINT: &str = "/api/v4";
 pub const NEXIUM_HOME: &str = ".nexiumlocal";
+pub const INITIAL_BALANCE: u32 = 5000;
 
 pub const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";
 
+pub const DEFAULT_LISTEN: &str = "0.0.0.0";
 pub const DEFAULT_PORT: u16 = 4242;
-pub const DEFAULT_DB_FILE: &str = "blockchain.db";
 pub const DEFAULT_KEY_PATH: &str = "private-key.pem";
 
 pub const CLIENT_ID: &str =

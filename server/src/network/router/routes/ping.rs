@@ -1,9 +1,8 @@
 use super::super::http::{response::Response, status::Status};
-use std::{io::Write, net::TcpStream};
+use crate::network::router::http::request::Request;
 
-pub fn handler(stream: &mut TcpStream) {
+pub fn handler(req: &mut Request) {
     let mut res = Response::new(Status::Ok, "pong");
     res.set_header("content-type", "text/plain");
-    let _ = stream.write_all(res.to_string().as_bytes());
-    let _ = stream.flush();
+    let _ = req.send(&res);
 }

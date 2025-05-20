@@ -1,17 +1,24 @@
-use std::{collections::HashMap, io::Read, net::TcpStream};
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+    net::TcpStream,
+};
+
+use super::response::Response;
 
 const READ_SIZE: usize = 2048;
 
-pub struct Request {
+pub struct Request<'a> {
     pub method: String,
     pub path_query: String,
     pub path: String,
     pub query: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub body: String,
+    stream: &'a mut TcpStream,
 }
 
-impl Request {
+impl<'a> Request<'a> {
     fn parse_path_query(map: &mut HashMap<String, String>, query: &String) {
         for param in query.split("&") {
             let p: Vec<_> = param.split("=").collect();
@@ -34,7 +41,7 @@ impl Request {
         (v[0].to_string(), v[1].to_string())
     }
 
-    fn read_req(mut stream: &TcpStream) -> Result<String, String> {
+    fn read_req(mut stream: &mut TcpStream) -> Result<String, String> {
         let mut buff = [0; READ_SIZE];
         let mut res = String::new();
 
@@ -60,8 +67,8 @@ impl Request {
         return Ok(res);
     }
 
-    pub fn from_stream(stream: &TcpStream) -> Result<Self, String> {
-        let raw = match Request::read_req(&stream) {
+    pub fn from_stream(stream: &'a mut TcpStream) -> Result<Self, String> {
+        let raw = match Request::read_req(stream) {
             Ok(r) => r,
             Err(e) => return Err(e),
         };
@@ -86,6 +93,7 @@ impl Request {
             query: query_map,
             headers: HashMap::new(),
             body: String::new(),
+            stream,
         };
 
         while lines[0] != "" {
@@ -102,5 +110,20 @@ impl Request {
         };
 
         return Ok(req);
+    }
+
+    pub fn _send(stream: &mut TcpStream, res: &Response) -> Result<(), String> {
+        let buf = res.to_string();
+        match stream.write_all(buf.as_bytes()) {
+            Ok(()) => match stream.flush() {
+                Ok(()) => Ok(()),
+                Err(e) => Err(e.to_string()),
+            },
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    pub fn send(&mut self, res: &Response) -> Result<(), String> {
+        Request::_send(self.stream, res)
     }
 }

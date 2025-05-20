@@ -15,14 +15,14 @@ use webbrowser;
 
 /// Default path to the Gitlab API URL
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub enum TokenType {
     #[default]
     Classic,
     OAuth,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GitlabClient {
     api_url: String,
     token: String,

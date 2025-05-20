@@ -1,12 +1,11 @@
-use super::super::http::{
-    request::Request, response::Response, status::Status,
+use crate::network::{
+    router::http::{request::Request, response::Response, status::Status},
+    server::Server,
 };
-use std::{io::Write, net::TcpStream};
 
-pub fn handler(stream: &mut TcpStream, req: &Request) {
+pub fn handler(req: &mut Request, server: &Server) {
     // req.body
 
-    let mut res = Response::new(Status::Ok, "");
-    let _ = stream.write_all(res.to_string().as_bytes());
-    let _ = stream.flush();
+    let res = Response::new(Status::Ok, "");
+    let _ = req.send(&res);
 }

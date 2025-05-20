@@ -1,12 +1,12 @@
-use super::super::http::{response::Response, status::Status};
-use std::{io::Write, net::TcpStream};
+use super::super::http::{
+    request::Request, response::Response, status::Status,
+};
 
-pub fn handler(stream: &mut TcpStream) {
+pub fn handler(req: &mut Request) {
     let data = json::object! {
         version: 0,
     };
     let mut res = Response::new(Status::Ok, data.dump());
     res.set_header("content-type", "text/json");
-    let _ = stream.write_all(res.to_string().as_bytes());
-    let _ = stream.flush();
+    let _ = req.send(&res);
 }

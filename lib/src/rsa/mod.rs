@@ -23,6 +23,7 @@ pub enum PEMType {
     PrivateKey,
 }
 
+#[derive(Clone)]
 pub struct KeyPair {
     n: BigUint,
     e: BigUint,

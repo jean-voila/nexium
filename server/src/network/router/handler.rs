@@ -1,4 +1,5 @@
 use super::{
+    super::server::Server,
     http::{request::Request, response::Response, status::Status},
     routes::{
         check_nexium, get_balance, get_transactions, new_transaction, ping,
@@ -6,15 +7,14 @@ use super::{
 };
 use std::{io::Write, net::TcpStream};
 
-pub fn handler(stream: &mut TcpStream) {
+pub fn handler(server: &Server, stream: &mut TcpStream) {
     println!("New connection: {}", stream.peer_addr().unwrap());
 
-    let req = match Request::from_stream(stream) {
+    let mut req = match Request::from_stream(stream) {
         Ok(r) => r,
         Err(e) => {
             let res = Response::new(Status::BadRequest, e);
-            let _ = stream.write_all(res.to_string().as_bytes());
-            let _ = stream.flush();
+            let _ = Request::_send(stream, &res);
             return;
         }
     };
@@ -34,24 +34,23 @@ pub fn handler(stream: &mut TcpStream) {
     println!("------------------");
     println!("body length: {}", req.body.len());
     println!("body: {}", req.body);
-
     println!("------------------");
 
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/ping") => {
-            ping::handler(stream);
+            ping::handler(&mut req);
         }
         ("GET", "/nexium") => {
-            check_nexium::handler(stream);
+            check_nexium::handler(&mut req);
         }
         (method, path) if method == "GET" && path.starts_with("/balance/") => {
-            get_balance::handler(stream, &req);
+            get_balance::handler(&mut req, &server);
         }
         ("GET", "/transactions") => {
-            get_transactions::handler(stream, &req);
+            get_transactions::handler(&mut req, &server);
         }
         ("POST", "/transaction") => {
-            new_transaction::handler(stream, &req);
+            new_transaction::handler(&mut req, &server);
         }
         _ => {
             let res = Response::new(Status::NotFound, "");

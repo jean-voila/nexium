@@ -10,18 +10,16 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub struct Config {
-    /// Path to the database file
-    pub database_filepath: String,
     /// Path to the directory containing the key
     pub key_filepath: String,
+    /// Address on which the server will listen
+    pub listen: String,
     /// Port on which the server will listen
     pub port: u16,
     /// User login to use for the server
     pub user_login: String,
     /// Gitlab Token for the user
     pub gitlab_token: String,
-    /// Gitlab API URL
-    pub gitlab_api_url: String,
 }
 
 impl Config {
@@ -46,6 +44,19 @@ impl Config {
             },
         };
 
+        let listen: String = match ask(&format!(
+            "Enter address (default: {}): ",
+            DEFAULT_LISTEN
+        ))
+        .as_str()
+        {
+            "" => {
+                println!("Empty address, using default");
+                String::from(DEFAULT_LISTEN)
+            }
+            s => s.to_string(),
+        };
+
         let port: u16 =
             match ask(&format!("Enter port (default: {}): ", DEFAULT_PORT))
                 .parse()
@@ -56,19 +67,6 @@ impl Config {
                     DEFAULT_PORT
                 }
             };
-
-        let database_filepath = match ask(&format!(
-            "Enter database file path (default: {}): ",
-            DEFAULT_DB_FILE
-        ))
-        .as_str()
-        {
-            "" => {
-                println!("Empty path, using default");
-                String::from(DEFAULT_DB_FILE)
-            }
-            s => s.to_string(),
-        };
 
         let key_filepath = match ask(&format!(
             "Enter key directory path (default: {}): ",
@@ -83,26 +81,12 @@ impl Config {
             s => s.to_string(),
         };
 
-        let gitlab_api_url = match ask(&format!(
-            "Enter Gitlab API URL (default: {}): ",
-            get_gitlab_api_url()
-        ))
-        .as_str()
-        {
-            "" => {
-                println!("Empty path, using default");
-                String::from(get_gitlab_api_url())
-            }
-            s => s.to_string(),
-        };
-
         let res = Config {
-            database_filepath,
             key_filepath,
+            listen,
             port,
             user_login,
             gitlab_token,
-            gitlab_api_url,
         };
 
         res.to_file(path);
@@ -118,13 +102,12 @@ impl Config {
         };
 
         let parsed = json::parse(content.as_str()).unwrap();
-        if parsed["database"].is_null()
-            || parsed["key"].is_null()
+        if parsed["key"].is_null()
+            || parsed["listen"].is_null()
             || parsed["port"].is_null()
+            || !parsed["port"].is_number()
             || parsed["user_id"].is_null()
             || parsed["gitlab_token"].is_null()
-            || parsed["gitlab_api_url"].is_null()
-            || !parsed["port"].is_number()
         {
             panic!("Error parsing config file");
         }
@@ -134,32 +117,25 @@ impl Config {
             None => panic!("Error parsing gitlab token"),
         };
 
-        let gitlab_api_url = match parsed["gitlab_api_url"].as_str() {
-            Some(t) => t.to_string(),
-            None => panic!("Error parsing gitlab api url"),
-        };
-
         Config {
-            database_filepath: parsed["database"].to_string(),
             key_filepath: parsed["key"].to_string(),
+            listen: parsed["listen"].to_string(),
             port: parsed["port"]
                 .as_u16()
                 .expect("Config read: Port is not a number"),
             user_login: parsed["user_id"].to_string(),
             gitlab_token,
-            gitlab_api_url,
         }
     }
 
     /// Write the Config object to a json file
     pub fn to_file(&self, path: &Path) {
         let mut config_obj = json::JsonValue::new_object();
-        config_obj["database"] = self.database_filepath.to_string().into();
         config_obj["key"] = self.key_filepath.to_string().into();
+        config_obj["listen"] = self.listen.to_string().into();
         config_obj["port"] = self.port.into();
         config_obj["user_id"] = self.user_login.to_string().into();
         config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
-        config_obj["gitlab_api_url"] = self.gitlab_api_url.to_string().into();
         fs::write(path, config_obj.pretty(4).as_bytes())
             .expect("Error writing config file");
     }

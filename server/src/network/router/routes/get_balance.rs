@@ -1,46 +1,49 @@
-use super::super::http::{
-    request::Request, response::Response, status::Status,
+use crate::network::{
+    router::http::{request::Request, response::Response, status::Status},
+    server::Server,
 };
-use nexium::{
-    gitlab::{GitlabClient, TokenType},
-    rsa::KeyPair,
-};
-use std::{io::Write, net::TcpStream};
+use nexium::rsa::KeyPair;
 
-pub fn handler(stream: &mut TcpStream, req: &Request) {
+pub fn handler(req: &mut Request, server: &Server) {
     let sp: Vec<String> = req.path.split("/").map(|e| e.to_string()).collect();
-    let user = &sp[2];
+    let login = &sp[2];
 
-    if user.is_empty() {
+    if login.is_empty() {
         let res = Response::new(Status::BadRequest, "");
-        let _ = stream.write_all(res.to_string().as_bytes());
-        let _ = stream.flush();
+        let _ = req.send(&res);
         return;
     }
     // println!("user: {user}");
+
+    // let balance = match server.cache.get(login) {
+    //     Some(u) => u.balance,
+    //     None => {
+    //         let res = Response::new(Status::NotFound, "");
+    //         let _ = req.send(&res);
+    //         return;
+    //     }
+    // };
 
     let json = json::object! {
         "balance"=> 1000
     };
 
-    let gitlab = GitlabClient::new(String::new(), TokenType::Classic);
-    let gitlab_keys = match gitlab.get_gpg_keys(user) {
+    let gitlab_keys = match server.gitlab.get_gpg_keys(login) {
         Ok(keys) => keys,
         Err(e) => {
             let res = Response::new(Status::NotFound, "");
-            let _ = stream.write_all(res.to_string().as_bytes());
-            let _ = stream.flush();
+            let _ = req.send(&res);
             return;
         }
     };
+
     let pub_key = gitlab_keys[0].as_str();
 
-    let key = match KeyPair::pub_from_pem(pub_key, &user) {
+    let key = match KeyPair::pub_from_pem(pub_key, &login) {
         Ok(key) => key,
         Err(e) => {
             let res = Response::new(Status::InternalError, "");
-            let _ = stream.write_all(res.to_string().as_bytes());
-            let _ = stream.flush();
+            let _ = req.send(&res);
             return;
         }
     };
@@ -49,8 +52,7 @@ pub fn handler(stream: &mut TcpStream, req: &Request) {
         Ok(res) => res,
         Err(e) => {
             let res = Response::new(Status::InternalError, "");
-            let _ = stream.write_all(res.to_string().as_bytes());
-            let _ = stream.flush();
+            let _ = req.send(&res);
             return;
         }
     };
@@ -61,6 +63,5 @@ pub fn handler(stream: &mut TcpStream, req: &Request) {
     let mut res = Response::new(Status::Ok, json.dump());
     // res.set_header("content-type", "text/plain");
     res.set_header("content-type", "text/json");
-    let _ = stream.write_all(res.to_string().as_bytes());
-    let _ = stream.flush();
+    let _ = req.send(&res);
 }
