@@ -3,7 +3,7 @@ mod config;
 use chrono::Utc;
 use colored::Colorize;
 use config::Config;
-use nexium::gitlab::GitlabClient;
+use nexium::gitlab::*;
 use nexium::rsa::KeyPair;
 use nexium::sha256::sha256;
 use std::io::{self, Write};
@@ -73,7 +73,8 @@ fn main() {
     println!("{}", to_truncated_hash(&public_pem).yellow().bold());
     thread::sleep(wait_time);
 
-    let gitlab_client = GitlabClient::new(config.gitlab_token.clone());
+    let gitlab_client =
+        GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
     println!("Created the {}", "Gitlab client".bold());
     thread::sleep(wait_time);
     print_token(&config.gitlab_token);

@@ -1,6 +1,7 @@
 use json;
 use nexium::gitlab::*;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fs;
 use std::path::Path;
 
@@ -23,9 +24,38 @@ pub enum ConfigError {
     InvalidPort,
     InvalidGitlabToken,
     NetworkError,
+    InternalError,
+    FileFormatError,
+    FileWriteError,
 }
 
-const CONFIG_FILE_PATH: &str = "config_client.json";
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let msg = match self {
+            ConfigError::FileNotFound => "Configuration file not found.",
+            ConfigError::InvalidFields => {
+                "Configuration file contains invalid or missing fields."
+            }
+            ConfigError::InvalidLogin => {
+                "Invalid login format. Expected 'prenom.nom'."
+            }
+            ConfigError::InvalidURL => "Invalid server URL.",
+            ConfigError::InvalidPort => "Invalid port number.",
+            ConfigError::InvalidGitlabToken => "Invalid GitLab token.",
+            ConfigError::NetworkError => {
+                "Network error while validating GitLab token."
+            }
+            ConfigError::InternalError => "Internal error.",
+            ConfigError::FileFormatError => {
+                "Configuration file format is invalid."
+            }
+            ConfigError::FileWriteError => {
+                "Error writing to the configuration file."
+            }
+        };
+        write!(f, "{msg}")
+    }
+}
 
 impl Config {
     /// Create a new Config from a json file
@@ -37,7 +67,14 @@ impl Config {
             }
         };
 
-        let parsed = json::parse(content.as_str()).unwrap();
+        println!("Config read: {}", content);
+
+        let parsed = match json::parse(content.as_str()) {
+            Ok(p) => p,
+            Err(_) => {
+                return Err(ConfigError::FileFormatError);
+            }
+        };
         if parsed["url_server"].is_null()
             || parsed["port"].is_null()
             || parsed["user_login"].is_null()
@@ -61,7 +98,7 @@ impl Config {
     }
 
     /// Write the Config object to a json filepriv_keyb fn to_filriv&self, path: &Path)
-    pub fn to_file(&self, path: &Path) {
+    pub fn to_file(&self, path: &Path) -> Result<(), ConfigError> {
         let mut config_obj = json::JsonValue::new_object();
         config_obj["url_server"] = self.url_server.to_string().into();
         config_obj["port"] = self.port.into();
@@ -69,17 +106,27 @@ impl Config {
         config_obj["pub_key"] = self.pub_key.to_string().into();
         config_obj["priv_key"] = self.priv_key.to_string().into();
         config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
-        fs::write(path, config_obj.pretty(4).as_bytes())
-            .expect("Error writing config file");
+        match fs::write(path, config_obj.pretty(4).as_bytes()) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(ConfigError::FileWriteError),
+        }
     }
 
     pub fn check_values(
-        port: u16,
+        port: String,
         url: String,
         login: String,
         gitlab_token: String,
+        token_type_string: String,
     ) -> Result<(), ConfigError> {
         // Check if port is valid port
+
+        let port: u16 = match port.parse() {
+            Ok(p) => p,
+            Err(_) => {
+                return Err(ConfigError::InvalidPort);
+            }
+        };
 
         if port < 1 {
             return Err(ConfigError::InvalidPort);
@@ -91,20 +138,34 @@ impl Config {
             || url.contains("..")
             || url.ends_with(".")
             || url.starts_with(".")
+            || url == ""
         {
             return Err(ConfigError::InvalidURL);
         }
 
+        let token_type: TokenType = match token_type_string.as_str() {
+            "classic" => TokenType::Classic,
+            "oauth" => TokenType::OAuth,
+            _ => {
+                return Err(ConfigError::InternalError);
+            }
+        };
         // Check if gitlab_token is valid token
-        let gitlab_client = GitlabClient::new(gitlab_token.clone());
+        let gitlab_client = GitlabClient::new(gitlab_token.clone(), token_type);
         match gitlab_client.check_token() {
             Ok(valid) => {
                 if !valid {
                     return Err(ConfigError::InvalidGitlabToken);
                 }
             }
-            Err(_) => {
-                return Err(ConfigError::NetworkError);
+            Err(e) => {
+                return Err(match e {
+                    GitlabError::NetworkError => ConfigError::NetworkError,
+                    GitlabError::InvalidToken => {
+                        ConfigError::InvalidGitlabToken
+                    }
+                    _ => ConfigError::InternalError,
+                });
             }
         };
 

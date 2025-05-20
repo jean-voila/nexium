@@ -6,7 +6,7 @@
     "main"
   ],
   "permissions": [
-    "core:window:default"
-
+    "core:window:default",
+    "dialog:default"
   ]
 }

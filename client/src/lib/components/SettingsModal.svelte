@@ -2,8 +2,13 @@
 	export let showSettingsModal = false;
 
 	import { blur } from 'svelte/transition';
-	import { Download } from 'lucide-svelte';
+	import { Circle, Download } from 'lucide-svelte';
 	import { Upload } from 'lucide-svelte';
+	import { CheckCheck } from 'lucide-svelte';
+	import { CircleOff } from 'lucide-svelte';
+	import { CircleAlert } from 'lucide-svelte';
+	import { open } from '@tauri-apps/plugin-dialog';
+	import { save } from '@tauri-apps/plugin-dialog';
 	import {
 		globalPort,
 		globalUrl,
@@ -16,15 +21,31 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { error } from '@sveltejs/kit';
 
-	let port = 0;
+	let port = '';
 	let url = '';
 	let login = '';
-	let gitlabtoken = '';
+
+	let oauth_connected = false;
+
 	let pub_key = '';
 	let priv_key = '';
 
+	let gitlab_classic_token = '';
+	let gitlab_oauth_token = '';
+
 	let errorMessage = '';
-	let isSettingsValid = false;
+	let isValidating = false;
+
+	async function getGitlabOauthToken() {
+		try {
+			gitlab_classic_token = '';
+			const response = await invoke('get_gitlab_oauth_token');
+			gitlab_oauth_token = response;
+			oauth_connected = true;
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
 
 	async function validateSettings() {
 		//if (pub_key === '' || priv_key === '') {
@@ -32,12 +53,31 @@
 		//	return false;
 		//}
 
+		let sentToken = '';
+		let tokenType = '';
+
+		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
+			errorMessage = 'No Token.';
+			return false;
+		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+			oauth_connected = false;
+		} else if (gitlab_oauth_token !== '') {
+			sentToken = gitlab_oauth_token;
+			tokenType = 'oauth';
+		} else {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+		}
+
 		try {
 			const response = await invoke('check_config_values', {
-				port,
+				port: String(port),
 				url,
 				login,
-				gitlabtoken
+				gitlabtoken: sentToken,
+				tokentypestring: tokenType
 			});
 			errorMessage = '';
 			return true;
@@ -47,17 +87,65 @@
 		}
 	}
 
-	$: validateOnChange();
-	async function validateOnChange() {
-		console.log('Validating settings...');
-		isSettingsValid = await validateSettings();
+	async function loadConfigFromFile() {
+		const result = await open({
+			multiple: false,
+			directory: false,
+			title: 'Charger la configuration',
+			filters: [
+				{
+					name: 'JSON',
+					extensions: ['json']
+				}
+			]
+		});
+		if (result) {
+			try {
+				const response = await invoke('load_config_from_file', { pathString: result });
+
+				port = response.port;
+				url = response.url_server;
+				login = response.user_login;
+				pub_key = response.pub_key;
+				priv_key = response.priv_key;
+				gitlab_classic_token = response.gitlab_token;
+			} catch (error) {
+				errorMessage = String(error);
+			}
+		}
 	}
 
-	function saveSettings() {
+	async function saveConfigToFile() {
+		const path = await save({
+			filters: [
+				{
+					name: 'config',
+					extensions: ['json']
+				}
+			]
+		});
+		if (path) {
+			try {
+				await invoke('save_config_to_file', {
+					pathString: path,
+					port,
+					url: url,
+					login: login,
+					pubKey: pub_key,
+					privKey: priv_key,
+					gitlabToken: gitlab_classic_token
+				});
+			} catch (error) {
+				errorMessage = String(error);
+			}
+		}
+	}
+
+	function saveGlobalSettings() {
 		globalPort.set(port);
 		globalUrl.set(url);
 		globalLogin.set(login);
-		globalGitlabToken.set(gitlabtoken);
+		globalGitlabToken.set(gitlab_classic_token);
 		globalPubKey.set(pub_key);
 		globalPrivKey.set(priv_key);
 	}
@@ -94,25 +182,43 @@
 			</div>
 
 			<div class="settings-item flex-1">
-				<label for="user-login" class="nom-parametre">Login</label>
 				<input
 					id="user-login"
 					type="text"
 					bind:value={login}
 					class="input-field"
-					placeholder="prenom.nom"
+					placeholder="Login (prenom.nom)"
 				/>
 			</div>
 
-			<div class="settings-item flex-1">
-				<label for="gitlab-token" class="nom-parametre">Token Gitlab</label>
-				<input
-					id="gitlab-token"
-					type="text"
-					bind:value={gitlabtoken}
-					class="input-field"
-					placeholder="•••••"
-				/>
+			<div class="settings-item settings-row flex items-center gap-4">
+				<div class="flex-[4]">
+					<input
+						id="gitlab-token"
+						type="text"
+						bind:value={gitlab_classic_token}
+						class="input-field"
+						placeholder="Token Gitlab"
+					/>
+				</div>
+				ou
+				<div class="align-items-center flex items-center justify-center">
+					<button
+						on:click={() => getGitlabOauthToken()}
+						class="bouton bouton-gitlab flex items-center gap-2 px-4 py-2 transition {oauth_connected
+							? 'pillule-bouton-gitlab-checked'
+							: 'pillule-bouton-gitlab'}"
+						disabled={oauth_connected}
+					>
+						{#if oauth_connected}
+							<CheckCheck strokeWidth={3} class="icone-gitlab m-1" />
+							<span class="texte-bouton-gitlab">Connecté</span>
+						{:else}
+							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab" />
+							<span class="texte-bouton-gitlab">Connexion</span>
+						{/if}
+					</button>
+				</div>
 			</div>
 
 			<div class="settings-item flex-1">
@@ -121,7 +227,7 @@
                     else, red cross and "Clé non définie" + button for "Changer la clé" -->
 				{#if pub_key !== '' && priv_key !== ''}
 					<div class="flex items-center gap-2">
-						<span class="keypair-status text-green-500">✔️</span>
+						<CheckCheck strokeWidth={3.5} class="green-icon m-1" />
 						<span class="keypair-status text-green-500">Clé définie</span>
 						<button class="pillule-bouton-keypair bouton-keypair flex items-center transition">
 							<span class="texte-bouton-keypair">Changer la clé</span>
@@ -129,7 +235,7 @@
 					</div>
 				{:else}
 					<div class="flex items-center gap-2">
-						<span class="keypair-status text-red-500">❌</span>
+						<CircleOff strokeWidth={3.5} class="red-icon m-1" />
 						<span class="keypair-status text-red-500">Clé non définie</span>
 						<button class="pillule-bouton-keypair bouton-keypair flex items-center transition">
 							<span class="texte-bouton-keypair">Générer une clé</span>
@@ -145,7 +251,7 @@
 					<button
 						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
-							saveSettings();
+							loadConfigFromFile();
 						}}
 					>
 						<Upload strokeWidth={3} class="icone-bouton-sauvercharger m-1" />
@@ -155,36 +261,50 @@
 					<button
 						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
-							saveSettings();
+							saveConfigToFile();
 						}}
 					>
 						<Download strokeWidth={3} class="icone-bouton-sauvercharger m-1" />
-					</button>
-				</div>
-				<div class="flex flex-col items-end">
-					<button
-						on:click={() => {
-							validateOnChange();
-						}}
-						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
-					>
-						<span class="texte-bouton-settings">Check</span>
 					</button>
 				</div>
 
 				<div class="flex flex-col items-end">
 					<button
 						on:click={() => {
-							saveSettings();
-							showSettingsModal = false;
+							isValidating = true;
+
+							validateSettings().then((isValid) => {
+								isValidating = false;
+								if (isValid) {
+									saveGlobalSettings();
+									showSettingsModal = false;
+								}
+							});
 						}}
-						disabled={!isSettingsValid}
 						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+						disabled={isValidating}
 					>
 						<span class="texte-bouton-settings">Terminé</span>
 					</button>
-					{#if errorMessage !== ''}
-						<div class="error-message">{errorMessage}</div>
+					{#if isValidating}
+						<div class="mt-1 flex items-center">
+							<svg class="m-1 h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+							</svg>
+						</div>
+					{:else if errorMessage !== ''}
+						<div class="mt-1 flex items-center">
+							<CircleAlert strokeWidth={3.5} class="red-icon m-1" />
+							<span class="error-message centered-error">{errorMessage}</span>
+						</div>
 					{/if}
 				</div>
 			</div>

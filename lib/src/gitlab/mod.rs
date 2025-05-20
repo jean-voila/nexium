@@ -20,10 +20,18 @@ const CLIENT_SECRET: &str =
     "gloas-83e39025a820061c0744402c93a5915c5dc1bdb30ac2d23df3b68485b044545c";
 const REDIRECT_URI: &str = "http://localhost:8080/callback";
 
+#[derive(Default, Debug)]
+pub enum TokenType {
+    #[default]
+    Classic,
+    OAuth,
+}
+
 #[derive(Debug)]
 pub struct GitlabClient {
     api_url: String,
     token: String,
+    token_type: TokenType,
 }
 
 #[derive(Debug)]
@@ -38,26 +46,35 @@ pub enum GitlabError {
 }
 
 impl GitlabClient {
-    pub fn new(token: String) -> Self {
+    pub fn new(token: String, token_type: TokenType) -> Self {
         GitlabClient {
             api_url: format!("{}/api/v4", GITLAB_URL),
             token,
+            token_type,
         }
     }
     pub fn check_token(&self) -> Result<bool, GitlabError> {
         let url = format!("{}/user", self.api_url);
         let client = Client::new();
-        let response =
-            client.get(&url).header("PRIVATE-TOKEN", &self.token).send();
+        let request = client.get(&url);
+
+        let request = match self.token_type {
+            TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
+            TokenType::OAuth => request
+                .header("Authorization", format!("Bearer {}", &self.token)),
+        };
+
+        let response = request.send();
 
         match response {
             Ok(resp) => {
                 if resp.status().is_success() {
-                    return Ok(true);
+                    Ok(true)
+                } else {
+                    Err(GitlabError::InvalidToken)
                 }
-                return Err(GitlabError::InvalidToken);
             }
-            Err(_) => return Err(GitlabError::NetworkError),
+            Err(_) => Err(GitlabError::NetworkError),
         }
     }
 
@@ -83,11 +100,13 @@ impl GitlabClient {
     fn get_user_id(&self, login: &str) -> Result<u64, GitlabError> {
         let url = format!("{}/users", self.api_url);
         let client = Client::new();
-        let response = client
-            .get(&url)
-            .header("PRIVATE-TOKEN", &self.token)
-            .query(&[("username", login)])
-            .send();
+        let request = client.get(&url).query(&[("username", login)]);
+        let request = match self.token_type {
+            TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
+            TokenType::OAuth => request
+                .header("Authorization", format!("Bearer {}", &self.token)),
+        };
+        let response = request.send();
 
         match response {
             Ok(resp) => {
@@ -117,8 +136,15 @@ impl GitlabClient {
     ) -> Result<Vec<String>, GitlabError> {
         let url = format!("{}/users/{}/gpg_keys", self.api_url, user_id);
         let client = Client::new();
-        let response =
-            client.get(&url).header("PRIVATE-TOKEN", &self.token).send();
+        let request = client.get(&url);
+
+        let request = match self.token_type {
+            TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
+            TokenType::OAuth => request
+                .header("Authorization", format!("Bearer {}", &self.token)),
+        };
+
+        let response = request.send();
 
         match response {
             Ok(resp) => {
@@ -133,9 +159,10 @@ impl GitlabClient {
                             }
                         }
                     }
-                    return Ok(gpg_keys);
+                    Ok(gpg_keys)
+                } else {
+                    Err(GitlabError::InvalidToken)
                 }
-                Err(GitlabError::InvalidToken)
             }
             Err(_) => Err(GitlabError::NetworkError),
         }
@@ -146,14 +173,18 @@ impl GitlabClient {
 
         let client = reqwest::blocking::Client::new();
 
-        let response = client
+        let request = client
             .post(&url)
-            .header("PRIVATE-TOKEN", &self.token)
             .header("Content-Type", "application/json")
             .json(&serde_json::json!({
                 "key": gpg_key
-            }))
-            .send();
+            }));
+        let request = match self.token_type {
+            TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
+            TokenType::OAuth => request
+                .header("Authorization", format!("Bearer {}", &self.token)),
+        };
+        let response = request.send();
 
         match response {
             Ok(resp) => {
