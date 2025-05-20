@@ -27,6 +27,7 @@ pub enum ConfigError {
     InternalError,
     FileFormatError,
     FileWriteError,
+    KeyGenerationError,
 }
 
 impl fmt::Display for ConfigError {
@@ -52,6 +53,7 @@ impl fmt::Display for ConfigError {
             ConfigError::FileWriteError => {
                 "Error writing to the configuration file."
             }
+            ConfigError::KeyGenerationError => "Error generating key pair.",
         };
         write!(f, "{msg}")
     }

@@ -2,10 +2,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod config;
 use config::Config;
-use nexium::gitlab::*;
-
+use config::ConfigError;
+use nexium::gitlab;
+use nexium::{gitlab::*, rsa::*};
 // use sleep
-use std::path::Path;
+use std::{f32::consts::E, path::Path};
+
+const DEFAULT_KEY_BITLENGTH: usize = 2048;
 
 #[tauri::command]
 fn check_config_values(
@@ -25,7 +28,10 @@ fn check_config_values(
 fn load_config_from_file(path_string: String) -> Result<Config, String> {
     // check if file exists
     if Path::new(&path_string).exists() == false {
-        return Err("File does not exist".to_string());
+        //fmt is implemented for ConfigError (enum)
+        // so we can use format! macro to create a string
+        // with the error message
+        return Err(format!("{}", ConfigError::FileNotFound));
     }
 
     let path = Path::new(&path_string);
@@ -61,6 +67,40 @@ fn save_config_to_file(
 }
 
 #[tauri::command]
+fn keypair_generation(
+    login: String,
+    password: String,
+) -> Result<(String, String), String> {
+    let keypair = KeyPair::generate(DEFAULT_KEY_BITLENGTH, &login);
+    let pub_key = KeyPair::pub_to_pem(&keypair);
+    let priv_key = KeyPair::priv_to_pem(&keypair, &password);
+    if pub_key == "" || priv_key == "" {
+        return Err(format!("{}", ConfigError::KeyGenerationError));
+    }
+    Ok((pub_key, priv_key))
+}
+
+#[tauri::command]
+fn send_gpg_key(
+    tokentypestring: String,
+    gitlab_token: String,
+    pub_key: String,
+) -> Result<String, String> {
+    let tokentype = match tokentypestring.as_str() {
+        "classic" => TokenType::Classic,
+        "oauth" => TokenType::OAuth,
+        _ => {
+            return Err(format!("{}", ConfigError::InternalError));
+        }
+    };
+    let gitlab_client = GitlabClient::new(gitlab_token, tokentype);
+    match gitlab_client.add_gpg_key(&pub_key) {
+        Ok(_) => Ok(("").to_string()),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
+#[tauri::command]
 fn get_gitlab_oauth_token() -> Result<String, String> {
     match GitlabClient::get_token() {
         Ok(token) => Ok(token),
@@ -76,6 +116,8 @@ fn main() {
             get_gitlab_oauth_token,
             load_config_from_file,
             save_config_to_file,
+            keypair_generation,
+            send_gpg_key
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

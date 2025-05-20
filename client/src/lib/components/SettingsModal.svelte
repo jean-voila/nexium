@@ -36,6 +36,13 @@
 	let errorMessage = '';
 	let isValidating = false;
 
+	let isGenerating = false;
+	let generationMessage = '';
+
+	// Default password need to change it so the user can set it manually
+	// (use new modal to ask for password)
+	let password = '1234';
+
 	async function getGitlabOauthToken() {
 		try {
 			gitlab_classic_token = '';
@@ -48,10 +55,10 @@
 	}
 
 	async function validateSettings() {
-		//if (pub_key === '' || priv_key === '') {
-		//	errorMessage = 'KeyPairError';
-		//	return false;
-		//}
+		if (pub_key === '' || priv_key === '') {
+			errorMessage = 'KeyPairError';
+			return false;
+		}
 
 		let sentToken = '';
 		let tokenType = '';
@@ -141,6 +148,66 @@
 		}
 	}
 
+	async function generateKeyPair() {
+		try {
+			const [pubKey, privKey] = await invoke('keypair_generation', { login: login, password });
+			pub_key = pubKey;
+			priv_key = privKey;
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
+	async function sendGpgKey() {
+		let sentToken = '';
+		let tokenType = '';
+
+		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
+			errorMessage = 'No Token.';
+			return false;
+		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+			oauth_connected = false;
+		} else if (gitlab_oauth_token !== '') {
+			sentToken = gitlab_oauth_token;
+			tokenType = 'oauth';
+		} else {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+		}
+		try {
+			await invoke('send_gpg_key', {
+				tokentypestring: tokenType,
+				gitlabToken: sentToken,
+				pubKey: pub_key
+			});
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
+
+	async function handleKeyGeneration() {
+		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
+			errorMessage = 'Aucun token disponible.';
+			return;
+		}
+
+		isGenerating = true;
+		generationMessage = 'Génération de vos clés...';
+
+		try {
+			await generateKeyPair();
+			generationMessage = 'Communication de vos clés à GitLab...';
+			await sendGpgKey();
+			generationMessage = '';
+		} catch (e) {
+			errorMessage = String(e);
+			generationMessage = '';
+		} finally {
+			isGenerating = false;
+		}
+	}
+
 	function saveGlobalSettings() {
 		globalPort.set(port);
 		globalUrl.set(url);
@@ -223,23 +290,41 @@
 
 			<div class="settings-item flex-1">
 				<label for="key_pair" class="nom-parametre">Paire de clés</label>
-				<!-- If key_pair defined, green check and "Clé définie" + button for "Générer une clé"
-                    else, red cross and "Clé non définie" + button for "Changer la clé" -->
-				{#if pub_key !== '' && priv_key !== ''}
-					<div class="flex items-center gap-2">
+
+				<div class="flex items-center gap-2">
+					{#if pub_key !== '' && priv_key !== ''}
 						<CheckCheck strokeWidth={3.5} class="green-icon m-1" />
 						<span class="keypair-status text-green-500">Clé définie</span>
-						<button class="pillule-bouton-keypair bouton-keypair flex items-center transition">
-							<span class="texte-bouton-keypair">Changer la clé</span>
-						</button>
-					</div>
-				{:else}
-					<div class="flex items-center gap-2">
+					{:else}
 						<CircleOff strokeWidth={3.5} class="red-icon m-1" />
 						<span class="keypair-status text-red-500">Clé non définie</span>
-						<button class="pillule-bouton-keypair bouton-keypair flex items-center transition">
-							<span class="texte-bouton-keypair">Générer une clé</span>
-						</button>
+					{/if}
+
+					<button
+						class="pillule-bouton-keypair bouton-keypair flex items-center transition"
+						on:click={handleKeyGeneration}
+						disabled={(gitlab_oauth_token === '' && gitlab_classic_token === '') ||
+							isGenerating ||
+							(pub_key !== '' && priv_key !== '')}
+					>
+						<span class="texte-bouton-keypair">Générer une clé</span>
+					</button>
+				</div>
+
+				{#if isGenerating}
+					<div class="mt-4 flex items-center gap-2 text-sm text-gray-700">
+						<svg class="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+						</svg>
+						<span>{generationMessage}</span>
 					</div>
 				{/if}
 			</div>

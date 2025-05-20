@@ -7,6 +7,7 @@ use serde_json;
 
 use super::defaults::*;
 
+use core::fmt;
 use std::io::{BufRead, Write};
 use std::net::TcpListener;
 use url::Url;
@@ -37,6 +38,20 @@ pub enum GitlabError {
     BadGPGFormat,
     NoWebBrowser,
     AbortedLogin,
+}
+
+impl fmt::Display for GitlabError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GitlabError::InvalidToken => write!(f, "Invalid token"),
+            GitlabError::NetworkError => write!(f, "Network error"),
+            GitlabError::UserNotFound => write!(f, "User not found"),
+            GitlabError::UnknownError => write!(f, "Unknown error"),
+            GitlabError::BadGPGFormat => write!(f, "Bad GPG format"),
+            GitlabError::NoWebBrowser => write!(f, "No web browser found"),
+            GitlabError::AbortedLogin => write!(f, "Login aborted"),
+        }
+    }
 }
 
 impl GitlabClient {
