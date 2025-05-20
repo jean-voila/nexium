@@ -1,9 +1,6 @@
 use super::router::handler::handler;
 use crate::{blockchain::cache::cache::Cache, config::Config};
-use nexium::{
-    blockchain::transaction::Transaction,
-    gitlab::{GitlabClient, TokenType},
-};
+use nexium::{blockchain::transaction::Transaction, gitlab::GitlabClient};
 use std::{net::TcpListener, process};
 
 pub struct Server<'a> {
@@ -40,7 +37,7 @@ impl<'a> Server<'a> {
 
         for s in listener.incoming() {
             match s {
-                Ok(mut stream) => handler(&self, &mut stream),
+                Ok(mut stream) => handler(self, &mut stream),
                 Err(e) => {
                     eprintln!("Failed to accept connection: {}", e);
                 }

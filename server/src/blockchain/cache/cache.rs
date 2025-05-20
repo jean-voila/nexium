@@ -19,14 +19,14 @@ impl<'a> Cache<'a> {
         self.data.get(login).cloned()
     }
 
-    pub fn update_keys(&mut self, login: String) -> Result<(), String> {
+    pub fn update_keys(&mut self, login: &String) -> Result<(), String> {
         let keys = match self.gitlab.get_gpg_keys(login.as_str()) {
             Ok(keys) => keys,
             Err(e) => {
                 return Err(format!("Failed to get GPG keys: {}", e));
             }
         };
-        let mut user = match self.data.get(&login) {
+        let mut user = match self.data.get(login) {
             Some(u) => u.clone(),
             None => User::new(),
         };
@@ -40,18 +40,19 @@ impl<'a> Cache<'a> {
                 }
             })
             .collect();
-        self.data.insert(login, user);
+        self.data.insert(login.clone(), user);
         Ok(())
     }
 
-    pub fn update_balance(&mut self, login: String) {
-        let mut user = match self.data.get(&login) {
+    pub fn update_balance(&mut self, login: &String) -> u32 {
+        let mut user = match self.data.get(login) {
             Some(u) => u.clone(),
             None => User::new(),
         };
 
         let balance = INITIAL_BALANCE; //
         user.balance = Some(balance);
-        self.data.insert(login, user);
+        self.data.insert(login.clone(), user);
+        return balance;
     }
 }

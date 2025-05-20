@@ -1,10 +1,9 @@
+use super::response::Response;
 use std::{
     collections::HashMap,
     io::{Read, Write},
     net::TcpStream,
 };
-
-use super::response::Response;
 
 const READ_SIZE: usize = 2048;
 
@@ -28,7 +27,6 @@ impl<'a> Request<'a> {
         }
     }
 
-    // fn parse_info(line: &String) -> (String, String, HashMap<String, String>) {
     fn parse_info(line: &String) -> (String, String) {
         let info: Vec<&str> = line.split_ascii_whitespace().collect();
         let method = info[0].to_string();

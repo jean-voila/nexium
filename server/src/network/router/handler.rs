@@ -7,7 +7,7 @@ use super::{
 };
 use std::{io::Write, net::TcpStream};
 
-pub fn handler(server: &Server, stream: &mut TcpStream) {
+pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
     println!("New connection: {}", stream.peer_addr().unwrap());
 
     let mut req = match Request::from_stream(stream) {
@@ -44,9 +44,11 @@ pub fn handler(server: &Server, stream: &mut TcpStream) {
             check_nexium::handler(&mut req);
         }
         (method, path) if method == "GET" && path.starts_with("/balance/") => {
-            get_balance::handler(&mut req, &server);
+            get_balance::handler(&mut req, &mut server);
         }
-        ("GET", "/transactions") => {
+        (method, path)
+            if method == "GET" && path.starts_with("/transactions/") =>
+        {
             get_transactions::handler(&mut req, &server);
         }
         ("POST", "/transaction") => {
@@ -54,26 +56,7 @@ pub fn handler(server: &Server, stream: &mut TcpStream) {
         }
         _ => {
             let res = Response::new(Status::NotFound, "");
-            let _ = stream.write_all(res.to_string().as_bytes());
-            let _ = stream.flush();
+            let _ = req.send(&res);
         }
     };
-
-    // let mut res = Response::new(Status::BadRequest, "");
-
-    //
-
-    // let json = json::object! {
-    //     "n": 1,
-    //     "oidfh": "jbsdf"
-    // };
-    // let mut res = Response::new(Status::BadRequest, json.dump());
-    // res.set_code(200);
-
-    //
-
-    // res.set_header("Content-Type", "text/plain");
-    // res.set_header("Content-Size", "1623");
-    // stream.write_all(res.to_string().as_bytes());
-    // stream.flush();
 }
