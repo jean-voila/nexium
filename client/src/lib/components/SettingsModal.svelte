@@ -1,6 +1,8 @@
 <script>
 	export let showSettingsModal = false;
 
+	import Spinner from '$lib/components/Spinner.svelte';
+
 	import { blur } from 'svelte/transition';
 	import { Circle, Download } from 'lucide-svelte';
 	import { Upload } from 'lucide-svelte';
@@ -10,30 +12,14 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { save } from '@tauri-apps/plugin-dialog';
 	import { Unplug } from 'lucide-svelte';
-	import {
-		globalPort,
-		globalUrl,
-		globalLogin,
-		globalGitlabToken,
-		globalPubKey,
-		globalPrivKey
-	} from '$lib/stores/settings.js';
+	import { globalConfig } from '$lib/stores/settings.js';
 
 	import { invoke } from '@tauri-apps/api/core';
 	import { error } from '@sveltejs/kit';
 	import { get } from 'svelte/store';
 
-	let port = '';
-	let url = '';
-	let login = '';
-
-	let oauth_connected = false;
-
-	let pub_key = '';
-	let priv_key = '';
-
-	let gitlab_classic_token = '';
-	let gitlab_oauth_token = '';
+	// create a copy of the global config store
+	let config = get(globalConfig);
 
 	let errorMessage = '';
 	let isValidating = false;
@@ -41,52 +27,29 @@
 	let isGenerating = false;
 	let generationMessage = '';
 
-	// Default password need to change it so the user can set it manually
 	// (use new modal to ask for password)
 	let password = '1234';
 
 	async function getGitlabOauthToken() {
 		try {
-			gitlab_classic_token = '';
 			const response = await invoke('get_gitlab_oauth_token');
-			gitlab_oauth_token = response.token;
-			oauth_connected = true; // a supprimer apres avoir mis en place le code qui donne le login utilisateur
+			config.gitlab_token = response.token;
+			config.gitlab_token_type = 'OAuth';
 		} catch (error) {
 			errorMessage = String(error);
 		}
 	}
 
 	async function validateSettings() {
-		if (pub_key === '' || priv_key === '') {
-			errorMessage = 'KeyPairError';
-			return false;
-		}
-
-		let sentToken = '';
-		let tokenType = '';
-
-		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
-			errorMessage = 'No Token.';
-			return false;
-		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-			oauth_connected = false;
-		} else if (gitlab_oauth_token !== '') {
-			sentToken = gitlab_oauth_token;
-			tokenType = 'oauth';
-		} else {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-		}
-
 		try {
 			const response = await invoke('check_config_values', {
 				port: String(port),
 				url,
 				login,
-				gitlabtoken: sentToken,
-				tokentypestring: tokenType
+				gitlabTokenType: gitlab_token,
+				tokenType: gitlab_token_type,
+				pubKey: pub_key,
+				privKey: priv_key
 			});
 			errorMessage = '';
 			return true;
@@ -117,7 +80,7 @@
 				login = response.user_login;
 				pub_key = response.pub_key;
 				priv_key = response.priv_key;
-				gitlab_classic_token = response.gitlab_token;
+				gitlab_token = response.gitlab_token;
 			} catch (error) {
 				errorMessage = String(error);
 			}
@@ -142,7 +105,8 @@
 					login: login,
 					pubKey: pub_key,
 					privKey: priv_key,
-					gitlabToken: gitlab_classic_token
+					gitlabToken: gitlab_token,
+					gitlabTokenType: gitlab_token_type
 				});
 			} catch (error) {
 				errorMessage = String(error);
@@ -160,27 +124,10 @@
 		}
 	}
 	async function sendGpgKey() {
-		let sentToken = '';
-		let tokenType = '';
-
-		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
-			errorMessage = 'No Token.';
-			return false;
-		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-			oauth_connected = false;
-		} else if (gitlab_oauth_token !== '') {
-			sentToken = gitlab_oauth_token;
-			tokenType = 'oauth';
-		} else {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-		}
 		try {
 			await invoke('send_gpg_key', {
-				tokentypestring: tokenType,
-				gitlabToken: sentToken,
+				gitlabTokenType: gitlab_token_type,
+				gitlabToken: gitlab_token,
 				pubKey: pub_key
 			});
 		} catch (error) {
@@ -189,11 +136,6 @@
 	}
 
 	async function handleKeyGeneration() {
-		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
-			errorMessage = 'Aucun token disponible.';
-			return;
-		}
-
 		isGenerating = true;
 		generationMessage = 'Génération de vos clés...';
 
@@ -211,33 +153,15 @@
 	}
 
 	function disconnectGitlabOauth() {
-		gitlab_oauth_token = '';
-		oauth_connected = false;
+		gitlab_token = '';
+		gitlab_token_type = 'classic';
 	}
 
 	async function getLoginFromToken() {
-		let sentToken = '';
-		let tokenType = '';
-
-		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
-			errorMessage = 'No Token.';
-			return false;
-		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-			oauth_connected = false;
-		} else if (gitlab_oauth_token !== '') {
-			sentToken = gitlab_oauth_token;
-			tokenType = 'oauth';
-		} else {
-			sentToken = gitlab_classic_token;
-			tokenType = 'classic';
-		}
-
 		try {
 			const response = await invoke('get_login', {
-				gitlabToken: sentToken,
-				tokentypestring: tokenType
+				gitlabToken: gitlab_token,
+				tokentypestring: gitlab_token_type
 			});
 			login = response.login;
 		} catch (error) {
@@ -246,13 +170,8 @@
 	}
 
 	let lastCheckedToken = '';
-
-	$: if (
-		gitlab_classic_token &&
-		gitlab_classic_token.length > 15 &&
-		gitlab_classic_token !== lastCheckedToken
-	) {
-		lastCheckedToken = gitlab_classic_token;
+	$: if (gitlab_token && gitlab_token.length > 15 && gitlab_token !== lastCheckedToken) {
+		lastCheckedToken = gitlab_token;
 		getLoginFromToken();
 	}
 
@@ -260,9 +179,10 @@
 		globalPort.set(port);
 		globalUrl.set(url);
 		globalLogin.set(login);
-		globalGitlabToken.set(gitlab_classic_token);
+		globalGitlabToken.set(gitlab_token);
 		globalPubKey.set(pub_key);
 		globalPrivKey.set(priv_key);
+		globalGitlabTokenType.set(gitlab_token_type);
 	}
 </script>
 
@@ -297,39 +217,34 @@
 			</div>
 
 			<div class="settings-item flex items-center justify-between gap-4">
-				<div class="flex w-full max-w-xl flex-col gap-2">
-					<input
-						id="user-login"
-						type="text"
-						bind:value={login}
-						class="input-field"
-						placeholder="Login (prenom.nom)"
-					/>
-					<input
-						id="gitlab-token"
-						type="text"
-						bind:value={gitlab_classic_token}
-						class="input-field"
-						placeholder="Token Gitlab"
-					/>
-				</div>
+				<input
+					id="gitlab-token"
+					type="text"
+					bind:value={gitlab_token}
+					class="input-field"
+					placeholder="Token Gitlab"
+					disabled={gitlab_token_type === 'oauth'}
+				/>
+
+				<!-- "ou" -->
+				<span class="ou">ou</span>
 
 				<div class="flex flex-col items-center">
-					<span class="mb-1 text-sm text-gray-500">ou</span>
 					<button
 						on:click={() => {
-							if (oauth_connected) {
+							if (gitlab_token_type === 'oauth') {
 								disconnectGitlabOauth();
 							} else {
 								getGitlabOauthToken();
 								getLoginFromToken();
 							}
 						}}
-						class="bouton bouton-gitlab group flex items-center gap-1 px-4 py-2 pl-3 transition {oauth_connected
+						class=" bouton-gitlab group flex items-center gap-1 px-4 py-2 pl-3 transition {gitlab_token_type ===
+						'oauth'
 							? 'pillule-bouton-gitlab-checked'
 							: 'pillule-bouton-gitlab'}"
 					>
-						{#if oauth_connected}
+						{#if gitlab_token_type === 'oauth'}
 							<span
 								class="relative flex h-[24px] w-[140px] items-center justify-center transition-all duration-300"
 							>
@@ -354,23 +269,29 @@
 				</div>
 			</div>
 
+			<!-- Affichage du login -->
+			<div class="settings-item flex-1">
+				<span class="nom-parametre">Login: </span>
+				<span class="login">{login}</span>
+			</div>
+
 			<div class="settings-item flex-1">
 				<label for="key_pair" class="nom-parametre">Paire de clés</label>
 
 				<div class="flex items-center gap-4">
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-1">
 						{#if pub_key !== '' && priv_key !== ''}
-							<CheckCheck strokeWidth={3.5} class="green-icon m-1" />
-							<span class="keypair-status text-green-500">Clé définie</span>
+							<CheckCheck strokeWidth={3.7} class="blue-icon " />
+							<span class="keypair-status keypair-status-green">Clé définie</span>
 						{:else}
-							<CircleOff strokeWidth={3.5} class="red-icon m-1" />
-							<span class="keypair-status text-red-500">Clé non définie</span>
+							<CircleOff strokeWidth={3.7} class="orange-icon " />
+							<span class="keypair-status keypair-status-red">Clé non définie</span>
 						{/if}
 
 						<button
 							class="pillule-bouton-keypair bouton-keypair flex items-center transition"
 							on:click={handleKeyGeneration}
-							disabled={(gitlab_oauth_token === '' && gitlab_classic_token === '') ||
+							disabled={gitlab_token === '' ||
 								isGenerating ||
 								(pub_key !== '' && priv_key !== '') ||
 								login.trim() === ''}
@@ -381,17 +302,7 @@
 
 					{#if isGenerating}
 						<div class="flex items-center gap-2 text-sm text-gray-700">
-							<svg class="h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-							</svg>
+							<Spinner />
 							<span>{generationMessage}</span>
 						</div>
 					{/if}
@@ -403,7 +314,7 @@
 			<div class="mt-6 flex items-center justify-between">
 				<div class="flex gap-2">
 					<button
-						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
+						class="pillule-bouton-sauvercharger bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
 							loadConfigFromFile();
 						}}
@@ -413,7 +324,7 @@
 					</button>
 
 					<button
-						class="pillule-bouton-sauvercharger bouton bouton-settings flex items-center justify-center gap-2 p-2 transition"
+						class="pillule-bouton-sauvercharger bouton-settings flex items-center justify-center gap-2 p-2 transition"
 						on:click={() => {
 							saveConfigToFile();
 						}}
@@ -435,24 +346,14 @@
 								}
 							});
 						}}
-						class="pillule-bouton-settings bouton bouton-settings flex items-center transition"
+						class="pillule-bouton-settings bouton-settings flex items-center transition"
 						disabled={isValidating}
 					>
 						<span class="texte-bouton-settings">Terminé</span>
 					</button>
 					{#if isValidating}
 						<div class="mt-1 flex items-center">
-							<svg class="m-1 h-5 w-5 animate-spin text-gray-600" fill="none" viewBox="0 0 24 24">
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-							</svg>
+							<Spinner />
 						</div>
 					{:else if errorMessage !== ''}
 						<div class="mt-1 flex items-center">

@@ -149,22 +149,6 @@ fn main() {
     print!("Signing the transaction... ");
     thread::sleep(wait_time);
     std::io::stdout().flush().unwrap();
-    let signature = match keypair.sign(transaction.as_bytes().to_vec()) {
-        Ok(signature) => {
-            println!(
-                "{}",
-                to_truncated_hash(&signature.to_string()).green().bold()
-            );
-            signature
-        }
-        Err(e) => {
-            println!("{}", "ERROR".red().bold());
-            println!("Error: {:?}", e);
-            panic!();
-        }
-    };
-
-    println!("{}", print_formatted(&signature.to_string()));
 
     print!(
         "Press {} to open the Gitlab login page",

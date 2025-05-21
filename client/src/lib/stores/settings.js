@@ -1,8 +1,14 @@
 import { writable } from 'svelte/store';
 
-export const globalUrl = writable('');
-export const globalPort = writable();
-export const globalLogin = writable('');
-export const globalGitlabToken = writable('');
-export const globalPubKey = writable('');
-export const globalPrivKey = writable('');
+
+
+export const globalConfig = writable({
+    url_server: '',
+    port: 0,
+    user_login: '<undefined>',
+    pub_key: '',
+    priv_key: '',
+    gitlab_token: '',
+    gitlab_token_type: 'Classic',
+});
+

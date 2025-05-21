@@ -2,6 +2,7 @@ pub const GITLAB_API_ENDPOINT: &str = "/api/v4";
 pub const NEXIUM_HOME: &str = ".nexiumlocal";
 pub const INITIAL_BALANCE: u32 = 5000;
 
+pub const KEYPAIR_BIT_SIZE: usize = 2048;
 pub const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";
 
 pub const DEFAULT_LISTEN: &str = "0.0.0.0";

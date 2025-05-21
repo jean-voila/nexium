@@ -1,9 +1,11 @@
-use json;
+use nexium::gitlab;
 use nexium::gitlab::*;
 use serde::{Deserialize, Serialize};
+use serde_json;
 use std::fmt;
 use std::fs;
 use std::path::Path;
+use url::Url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -13,6 +15,7 @@ pub struct Config {
     pub pub_key: String,
     pub priv_key: String,
     pub gitlab_token: String,
+    pub gitlab_token_type: gitlab::TokenType,
 }
 
 #[derive(Debug)]
@@ -28,6 +31,8 @@ pub enum ConfigError {
     FileFormatError,
     FileWriteError,
     KeyGenerationError,
+    EmptyKeyError,
+    FileReadError,
 }
 
 impl fmt::Display for ConfigError {
@@ -54,13 +59,16 @@ impl fmt::Display for ConfigError {
                 "Error writing to the configuration file."
             }
             ConfigError::KeyGenerationError => "Error generating key pair.",
+            ConfigError::EmptyKeyError => "Public or private key is empty.",
+            ConfigError::FileReadError => {
+                "Error reading the configuration file."
+            }
         };
         write!(f, "{msg}")
     }
 }
 
 impl Config {
-    /// Create a new Config from a json file
     pub fn from_file(path: &Path) -> Result<Config, ConfigError> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
@@ -68,90 +76,55 @@ impl Config {
                 return Err(ConfigError::FileNotFound);
             }
         };
-
-        let parsed = match json::parse(content.as_str()) {
-            Ok(p) => p,
+        let config: Config = match serde_json::from_str(&content) {
+            Ok(c) => c,
             Err(_) => {
                 return Err(ConfigError::FileFormatError);
             }
         };
-        if parsed["url_server"].is_null()
-            || parsed["port"].is_null()
-            || parsed["user_login"].is_null()
-            || parsed["pub_key"].is_null()
-            || parsed["priv_key"].is_null()
-            || parsed["gitlab_token"].is_null()
-        {
-            return Err(ConfigError::InvalidFields);
+        match config.check_values() {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e);
+            }
         }
 
-        Ok(Config {
-            url_server: parsed["url_server"].to_string(),
-            port: parsed["port"]
-                .as_u16()
-                .expect("Config read: Port is not a number"),
-            user_login: parsed["user_login"].to_string(),
-            pub_key: parsed["pub_key"].to_string(),
-            priv_key: parsed["priv_key"].to_string(),
-            gitlab_token: parsed["gitlab_token"].to_string(),
-        })
+        return Ok(config);
     }
 
-    /// Write the Config object to a json filepriv_keyb fn to_filriv&self, path: &Path)
     pub fn to_file(&self, path: &Path) -> Result<(), ConfigError> {
-        let mut config_obj = json::JsonValue::new_object();
-        config_obj["url_server"] = self.url_server.to_string().into();
-        config_obj["port"] = self.port.into();
-        config_obj["user_login"] = self.user_login.to_string().into();
-        config_obj["pub_key"] = self.pub_key.to_string().into();
-        config_obj["priv_key"] = self.priv_key.to_string().into();
-        config_obj["gitlab_token"] = self.gitlab_token.to_string().into();
-        match fs::write(path, config_obj.pretty(4).as_bytes()) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ConfigError::FileWriteError),
-        }
-    }
-
-    pub fn check_values(
-        port: String,
-        url: String,
-        login: String,
-        gitlab_token: String,
-        token_type_string: String,
-    ) -> Result<(), ConfigError> {
-        // Check if port is valid port
-
-        let port: u16 = match port.parse() {
-            Ok(p) => p,
+        let content = match serde_json::to_string_pretty(self) {
+            Ok(c) => c,
             Err(_) => {
-                return Err(ConfigError::InvalidPort);
+                return Err(ConfigError::FileFormatError);
             }
         };
+        match fs::write(path, content) {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(ConfigError::FileWriteError);
+            }
+        }
+        return Ok(());
+    }
 
-        if port < 1 {
+    pub fn check_values(&self) -> Result<(), ConfigError> {
+        if self.port < 1 || self.port > 65535 {
             return Err(ConfigError::InvalidPort);
         }
 
-        // Check if url_server is valid url
-        if url.contains(" ")
-            || url.contains("\n")
-            || url.contains("..")
-            || url.ends_with(".")
-            || url.starts_with(".")
-            || url == ""
-        {
-            return Err(ConfigError::InvalidURL);
+        match Url::parse(&self.url_server) {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(ConfigError::InvalidURL);
+            }
         }
 
-        let token_type: TokenType = match token_type_string.as_str() {
-            "classic" => TokenType::Classic,
-            "oauth" => TokenType::OAuth,
-            _ => {
-                return Err(ConfigError::InternalError);
-            }
-        };
-        // Check if gitlab_token is valid token
-        let gitlab_client = GitlabClient::new(gitlab_token.clone(), token_type);
+        let gitlab_client = GitlabClient::new(
+            self.gitlab_token.clone(),
+            self.gitlab_token_type.clone(),
+        );
+
         match gitlab_client.check_token() {
             Ok(valid) => {
                 if !valid {
@@ -169,13 +142,13 @@ impl Config {
             }
         };
 
-        // Check if  user_login is valid login (prenom.nom)
-        let parts: Vec<&str> = login.split('.').collect();
-        if parts.len() != 2 {
+        let parts: Vec<&str> = self.user_login.split('.').collect();
+        if parts.len() != 2 || parts[0].len() == 0 || parts[1].len() == 0 {
             return Err(ConfigError::InvalidLogin);
         }
-        if parts[0].len() == 0 || parts[1].len() == 0 {
-            return Err(ConfigError::InvalidLogin);
+
+        if self.pub_key.len() == 0 || self.priv_key.len() == 0 {
+            return Err(ConfigError::EmptyKeyError);
         }
 
         return Ok(());

@@ -6,20 +6,13 @@
 	import { Share2 } from 'lucide-svelte';
 	import { Copy } from 'lucide-svelte';
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
-	import {
-		globalPort,
-		globalUrl,
-		globalLogin,
-		globalGitlabToken,
-		globalPubKey,
-		globalPrivKey
-	} from '$lib/stores/settings.js';
+	import { globalConfig } from '$lib/stores/settings.js';
 	import { on } from 'svelte/events';
 	let firstName = '';
 	let lastName = '';
 
 	$: {
-		const login = $globalLogin || '';
+		const login = $globalConfig.user_login || '';
 		const parts = login.split('.');
 		firstName = parts[0] || '';
 		lastName = parts[1] || '';
@@ -38,15 +31,7 @@
 			<div class="nom">{lastName}</div>
 		</div>
 		<div class="flex gap-1">
-			<button>
-				<QrCode strokeWidth={2.4} size={25} class="bouton-action" />
-			</button>
-
-			<button>
-				<Share2 strokeWidth={2.4} size={25} class="bouton-action" />
-			</button>
-
-			<button>
+			<button onclick={() => writeText($globalConfig.user_login)}>
 				<Copy strokeWidth={2.4} size={25} class="bouton-action" />
 			</button>
 		</div>

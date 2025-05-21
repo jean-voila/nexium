@@ -75,7 +75,8 @@ impl KeyPair {
         };
     }
 
-    pub fn sign(&self, message: Vec<u8>) -> Result<BigUint, RSAError> {
+    pub fn sign(&self, message: String) -> Result<String, RSAError> {
+        let message: Vec<u8> = message.as_bytes().to_vec();
         if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
@@ -87,13 +88,19 @@ impl KeyPair {
             return Err(RSAError::MessageTooBig);
         }
 
-        Ok(m.modpow(&self.d, &self.n))
+        let res = m.modpow(&self.d, &self.n);
+
+        Ok(res.to_string())
     }
     pub fn check_signature(
         &self,
-        message: Vec<u8>,
-        signature: &BigUint,
+        message: String,
+        signature: String,
     ) -> Result<bool, RSAError> {
+        let message: Vec<u8> = message.as_bytes().to_vec();
+        let signature = BigUint::parse_bytes(signature.as_bytes(), 10)
+            .ok_or(RSAError::BadSignatureFormat)?;
+
         if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
@@ -104,7 +111,9 @@ impl KeyPair {
         Ok(decrypted_signature == m)
     }
 
-    pub fn crypt(&self, message: Vec<u8>) -> Result<BigUint, RSAError> {
+    pub fn crypt(&self, message: String) -> Result<String, RSAError> {
+        let message: Vec<u8> = message.as_bytes().to_vec();
+
         if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
@@ -114,21 +123,21 @@ impl KeyPair {
         if &m >= &self.n {
             return Err(RSAError::MessageTooBig);
         }
-
-        Ok(m.modpow(&self.e, &self.n))
+        let res = m.modpow(&self.e, &self.n);
+        Ok(res.to_string())
     }
-    pub fn decrypt(&self, message: Vec<u8>) -> Result<BigUint, RSAError> {
-        if message.is_empty() {
-            return Err(RSAError::EmptyMessage);
-        }
+    pub fn decrypt(&self, message: String) -> Result<String, RSAError> {
+        let message = BigUint::parse_bytes(message.as_bytes(), 10)
+            .ok_or(RSAError::BadSignatureFormat)?;
 
-        let m = BigUint::from_bytes_be(message.as_slice());
+        let m = BigUint::from_bytes_be(message.to_bytes_be().as_slice());
 
         if &m >= &self.n {
             return Err(RSAError::MessageTooBig);
         }
 
-        Ok(m.modpow(&self.d, &self.n))
+        let res = m.modpow(&self.d, &self.n);
+        Ok(String::from_utf8(res.to_bytes_be()).unwrap())
     }
 
     // Concatenate packet of the public key with packet of user id
