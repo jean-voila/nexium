@@ -203,14 +203,3 @@ fn to_truncated_hash(src: &str) -> String {
     compressed.push_str("..");
     return compressed;
 }
-
-fn print_formatted(signature: &str) -> String {
-    // Get the hash of the signature
-    let hash = sha256(signature.as_bytes().to_vec())
-        .to_vec()
-        .iter()
-        .map(|b| format!("{:02x}", b))
-        .collect::<String>();
-
-    return hash;
-}

@@ -21,7 +21,6 @@ pub struct Config {
 #[derive(Debug)]
 pub enum ConfigError {
     FileNotFound,
-    InvalidFields,
     InvalidLogin,
     InvalidURL,
     InvalidPort,
@@ -39,9 +38,7 @@ impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             ConfigError::FileNotFound => "Configuration file not found.",
-            ConfigError::InvalidFields => {
-                "Configuration file contains invalid or missing fields."
-            }
+
             ConfigError::InvalidLogin => {
                 "Invalid login format. Expected 'prenom.nom'."
             }
@@ -109,7 +106,7 @@ impl Config {
     }
 
     pub fn check_values(&self) -> Result<(), ConfigError> {
-        if self.port < 1 || self.port > 65535 {
+        if self.port < 1 {
             return Err(ConfigError::InvalidPort);
         }
 
