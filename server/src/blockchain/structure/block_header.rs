@@ -40,7 +40,7 @@ impl BlockHeader {
         }
     }
 
-    pub fn from_buff(buff: [u8; BLOCK_HEADER_SIZE]) -> Self {
+    pub fn from_buff(buff: &[u8; BLOCK_HEADER_SIZE]) -> Self {
         let pbh_start = HEADER_VERSION;
         let mr_start = pbh_start + HEADER_PREVIOUS_BLOCK_HASH_SIZE;
         let tt_start = mr_start + HEADER_MERKLE_ROOT_SIZE;

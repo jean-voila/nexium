@@ -1,4 +1,6 @@
+use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
+use touche::header;
 
 use crate::{blockchain::consts::TRANSACTION_EMITTER, rsa::KeyPair};
 
@@ -10,20 +12,20 @@ use super::{
 
 pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Transaction {
     pub transaction_header: TransactionHeader,
     pub data: Vec<u8>,
     #[serde(with = "serde_signature")]
-    pub signature: SIGNATURE,
+    pub signature: BigUint,
 }
 
 impl Default for Transaction {
     fn default() -> Self {
         Self {
-            signature: [0; SIGNATURE_SIZE],
             transaction_header: Default::default(),
             data: vec![],
+            signature: BigUint::from(0u8),
         }
     }
 }
@@ -34,7 +36,7 @@ impl Transaction {
         fees: u16,
         emitter: T,
         data_type: DataType,
-        key: KeyPair,
+        key: &KeyPair,
     ) -> Result<Self, String>
     where
         T: Into<String>,
@@ -47,25 +49,15 @@ impl Transaction {
         buff[TRANSACTION_HEADER_SIZE..].copy_from_slice(&data);
         // dbg!(&buff.len());
 
-        let sig: SIGNATURE = match key.sign(buff) {
-            Ok(sig_vec) => match sig_vec.to_bytes_be().try_into() {
-                Ok(sig_u8) => sig_u8,
-                Err(_) => {
-                    return Err(
-                        "Error converting signature to array".to_string()
-                    )
-                }
-            },
+        let signature = match key.sign(buff) {
+            Ok(sig) => sig,
             Err(_) => return Err("Error signing transaction".to_string()),
         };
-        // let sig = [0; SIGNATURE_SIZE];
-        // println!("signature: {:?}", sig);
-        // dbg!(&sig.len());
 
         Ok(Self {
             transaction_header: header,
             data,
-            signature: sig,
+            signature,
         })
     }
 
@@ -73,22 +65,28 @@ impl Transaction {
         (TRANSACTION_HEADER_SIZE + self.data.len() + SIGNATURE_SIZE) as u32
     }
 
-    pub fn from_buffer(buff: &[u8]) -> Self {
+    pub fn from_buffer(buff: &[u8]) -> Result<Self, String> {
         let data_start = TRANSACTION_HEADER_SIZE;
-        let header = TransactionHeader::from_buffer(
-            &buff[0..data_start].try_into().unwrap(),
-        );
+        let header_buff = match buff[0..data_start].try_into() {
+            Ok(h) => h,
+            Err(_) => return Err("Buffer too small".to_string()),
+        };
+
+        let header = TransactionHeader::from_buffer(&header_buff);
         let signature_start = data_start + header.transaction_size as usize;
         let signature_end = signature_start + SIGNATURE_SIZE;
         // check signature size
         if buff.len() < signature_end {
-            panic!("Buffer is too small for transaction");
+            return Err("Buffer too small".to_string());
         }
-        Self {
+
+        let sig = BigUint::from_bytes_be(&buff[signature_start..signature_end]);
+
+        Ok(Self {
             transaction_header: header,
             data: buff[data_start..signature_start].to_vec(),
-            signature: buff[signature_start..signature_end].try_into().unwrap(),
-        }
+            signature: sig,
+        })
     }
 
     pub fn to_buffer(self) -> Vec<u8> {
@@ -106,55 +104,50 @@ impl Transaction {
             .copy_from_slice(&self.transaction_header.to_buffer());
         res[TRANSACTION_HEADER_SIZE..signature_start]
             .copy_from_slice(&self.data);
-        res[signature_start..].copy_from_slice(&self.signature);
+        res[signature_start..].copy_from_slice(&self.signature.to_bytes_be());
         return res;
     }
 }
 
-impl core::fmt::Debug for Transaction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{\n")?;
-        write!(f, "header: {:?},\n", self.transaction_header)?;
-        // write!(f, "transactions: [{:?}],\n", self.data)?;
-        write!(f, "signature: {:?},\n", self.signature.to_vec())?;
-        write!(f, "}}")?;
-        Ok(())
-    }
-}
+// impl core::fmt::Debug for Transaction {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{{\n")?;
+//         write!(f, "header: {:?},\n", self.transaction_header)?;
+//         // write!(f, "transactions: [{:?}],\n", self.data)?;
+//         write!(f, "signature: {:?},\n", self.signature)?;
+//         write!(f, "}}")?;
+//         Ok(())
+//     }
+// }
 
 pub fn transaction_vec_size(transactions: &Vec<Transaction>) -> u32 {
     transactions.iter().fold(0, |acc, t| acc + t.size())
 }
 
 mod serde_signature {
-    use super::SIGNATURE;
+    use std::str::FromStr;
+
+    use num_bigint::BigUint;
     use serde::{Deserialize, Deserializer, Serializer};
 
-    pub fn serialize<S>(
-        sig: &SIGNATURE,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(sig: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let s = match std::str::from_utf8(sig) {
-            Ok(s) => s.trim_end_matches('\0'),
-            Err(_) => "",
-        };
-        serializer.serialize_str(s)
+        let s = sig.to_string();
+        serializer.serialize_str(s.as_str())
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<SIGNATURE, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s: &str = Deserialize::deserialize(deserializer)?;
-        let mut buf = [0u8; super::SIGNATURE_SIZE];
-        let bytes = s.as_bytes();
-        if bytes.len() > super::SIGNATURE_SIZE {
-            return Err(serde::de::Error::custom("Signature string too long"));
+        match BigUint::from_str(s) {
+            Ok(res) => Ok(res),
+            Err(_) => {
+                return Err(serde::de::Error::custom("Invalid signature"))
+            }
         }
-        buf[..bytes.len()].copy_from_slice(bytes);
-        Ok(buf)
     }
 }

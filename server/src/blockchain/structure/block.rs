@@ -38,10 +38,15 @@ impl Block {
     //     BLOCK_HEADER_SIZE as u32 + transaction_vec_size(&self.transactions)
     // }
 
-    pub fn from_buffer(buff: &[u8]) -> Self {
-        let header = BlockHeader::from_buff(
-            buff[0..BLOCK_HEADER_SIZE].try_into().unwrap(),
-        );
+    pub fn from_buffer(buff: &[u8]) -> Result<Self, String> {
+        let header_buff: [u8; BLOCK_HEADER_SIZE] =
+            match buff[0..BLOCK_HEADER_SIZE].try_into() {
+                Ok(h) => h,
+                Err(_) => {
+                    return Err("Failed to read block header".to_string());
+                }
+            };
+        let header = BlockHeader::from_buff(&header_buff);
 
         let transactions_size = header.transactions_size as usize;
 
@@ -55,15 +60,23 @@ impl Block {
         let mut offset = BLOCK_HEADER_SIZE;
         let mut transactions = vec![];
         while offset < transactions_size {
-            transaction = Transaction::from_buffer(&buff[offset..]);
+            transaction = match Transaction::from_buffer(&buff[offset..]) {
+                Ok(t) => t,
+                Err(_) => {
+                    return Err(format!(
+                        "Error while reading transaction at offset {}",
+                        offset
+                    ));
+                }
+            };
             offset += transaction.size() as usize;
             transactions.push(transaction);
         }
 
-        Self {
+        Ok(Self {
             header,
             transactions,
-        }
+        })
     }
 
     pub fn to_buffer(self) -> Vec<u8> {
