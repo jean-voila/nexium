@@ -14,7 +14,7 @@ impl Status {
             Self::Ok => 200,
             Self::BadRequest => 400,
             Self::NotFound => 404,
-            Self::InternalError => 505,
+            Self::InternalError => 500,
         }
     }
 

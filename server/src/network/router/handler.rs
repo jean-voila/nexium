@@ -49,7 +49,7 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
         (method, path)
             if method == "GET" && path.starts_with("/transactions/") =>
         {
-            get_transactions::handler(&mut req, &server);
+            get_transactions::handler(&mut req, &mut server);
         }
         ("POST", "/transaction") => {
             new_transaction::handler(&mut req, &mut server);

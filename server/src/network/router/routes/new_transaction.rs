@@ -30,17 +30,6 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     //     }
     // };
 
-    let json = match json::parse(&req.body) {
-        Ok(obj) => obj,
-        Err(e) => {
-            let res = Response::new(Status::BadRequest, e.to_string());
-            let _ = req.send(&res);
-            return;
-        }
-    };
-    println!("json: {json}");
-
-    // let tr: Transaction = serde_json::from_str(&data).expect("erreur");
     let tr: Transaction = match serde_json::from_str(&req.body) {
         Ok(obj) => obj,
         Err(e) => {
