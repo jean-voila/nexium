@@ -21,6 +21,7 @@
 
 	import { invoke } from '@tauri-apps/api/core';
 	import { error } from '@sveltejs/kit';
+	import { get } from 'svelte/store';
 
 	let port = '';
 	let url = '';
@@ -47,10 +48,8 @@
 	async function getGitlabOauthToken() {
 		try {
 			gitlab_classic_token = '';
-			// a supprimer apres avoir mis en place le code qui donne le login utilisateur en dessous
 			const response = await invoke('get_gitlab_oauth_token');
 			gitlab_oauth_token = response.token;
-			// login = response.login || login;
 			oauth_connected = true; // a supprimer apres avoir mis en place le code qui donne le login utilisateur
 		} catch (error) {
 			errorMessage = String(error);
@@ -153,7 +152,7 @@
 
 	async function generateKeyPair() {
 		try {
-			const [pubKey, privKey] = await invoke('keypair_generation', { login: login, password });
+			const [pubKey, privKey] = await invoke('keypair_generation', { login, password });
 			pub_key = pubKey;
 			priv_key = privKey;
 		} catch (error) {
@@ -214,6 +213,47 @@
 	function disconnectGitlabOauth() {
 		gitlab_oauth_token = '';
 		oauth_connected = false;
+	}
+
+	async function getLoginFromToken() {
+		let sentToken = '';
+		let tokenType = '';
+
+		if (gitlab_oauth_token === '' && gitlab_classic_token === '') {
+			errorMessage = 'No Token.';
+			return false;
+		} else if (gitlab_oauth_token !== '' && gitlab_classic_token !== '') {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+			oauth_connected = false;
+		} else if (gitlab_oauth_token !== '') {
+			sentToken = gitlab_oauth_token;
+			tokenType = 'oauth';
+		} else {
+			sentToken = gitlab_classic_token;
+			tokenType = 'classic';
+		}
+
+		try {
+			const response = await invoke('get_login', {
+				gitlabToken: sentToken,
+				tokentypestring: tokenType
+			});
+			login = response.login;
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
+
+	let lastCheckedToken = '';
+
+	$: if (
+		gitlab_classic_token &&
+		gitlab_classic_token.length > 15 &&
+		gitlab_classic_token !== lastCheckedToken
+	) {
+		lastCheckedToken = gitlab_classic_token;
+		getLoginFromToken();
 	}
 
 	function saveGlobalSettings() {
@@ -282,6 +322,7 @@
 								disconnectGitlabOauth();
 							} else {
 								getGitlabOauthToken();
+								getLoginFromToken();
 							}
 						}}
 						class="bouton bouton-gitlab group flex items-center gap-1 px-4 py-2 pl-3 transition {oauth_connected

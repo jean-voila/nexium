@@ -132,15 +132,7 @@ async fn send_gpg_key(
 async fn get_gitlab_oauth_token() -> Result<serde_json::Value, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         match GitlabClient::get_token() {
-            Ok(token) => {
-                /*
-                let login = GitlabClient::get_login(&token)
-                    .unwrap_or_else(|_| "".to_string());
-
-                Ok(serde_json::json!({ "token": token, "login": login }))
-                */
-                Ok(serde_json::json!({ "token": token }))
-            }
+            Ok(token) => Ok(serde_json::json!({ "token": token })),
             Err(e) => Err(format!("{}", e)),
         }
     })
@@ -151,8 +143,38 @@ async fn get_gitlab_oauth_token() -> Result<serde_json::Value, String> {
     }
 }
 
+#[tauri::command]
+async fn get_login(
+    token: String,
+    tokentypestring: String,
+) -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let tokentype = match tokentypestring.as_str() {
+            "classic" => TokenType::Classic,
+            "oauth" => TokenType::OAuth,
+            _ => return Err(format!("{}", ConfigError::InternalError)),
+        };
+        // enlever les commentaires quand la fonction sera implémentée
+        /*
+        let gitlab_client = GitlabClient::new(token, tokentype);
+        match gitlab_client.get_login_from_token(&token, &tokentype) {
+            Ok(login) => Ok(login),
+            Err(e) => Err(format!("{}", e)),
+        }
+        */
+        Ok("".to_string())
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Erreur lors de la récupération du login".into()),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             check_config_values,
@@ -160,7 +182,8 @@ fn main() {
             load_config_from_file,
             save_config_to_file,
             keypair_generation,
-            send_gpg_key
+            send_gpg_key,
+            get_login
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

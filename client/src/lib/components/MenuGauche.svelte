@@ -5,7 +5,7 @@
 	import { QrCode } from 'lucide-svelte';
 	import { Share2 } from 'lucide-svelte';
 	import { Copy } from 'lucide-svelte';
-
+	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 	import {
 		globalPort,
 		globalUrl,
@@ -14,7 +14,7 @@
 		globalPubKey,
 		globalPrivKey
 	} from '$lib/stores/settings.js';
-
+	import { on } from 'svelte/events';
 	let firstName = '';
 	let lastName = '';
 

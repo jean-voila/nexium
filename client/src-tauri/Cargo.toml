@@ -28,3 +28,4 @@ nexium = { workspace = true }
 tauri-plugin-fs = "2.2.1"
 json = "0.12.4"
 tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
