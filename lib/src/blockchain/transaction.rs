@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{blockchain::consts::TRANSACTION_EMITTER, rsa::KeyPair};
+
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
@@ -27,23 +29,44 @@ impl Default for Transaction {
 }
 
 impl Transaction {
-    pub fn new(
+    pub fn new<T>(
         data: Vec<u8>,
         fees: u16,
-        emitter: EMITTER,
+        emitter: T,
         data_type: DataType,
-        signature: SIGNATURE,
-    ) -> Self {
-        Self {
-            transaction_header: TransactionHeader::new(
-                data.len() as u16,
-                fees,
-                emitter,
-                data_type,
-            ),
+        key: KeyPair,
+    ) -> Result<Self, String>
+    where
+        T: Into<String>,
+    {
+        let header =
+            TransactionHeader::new(data.len() as u16, fees, emitter, data_type);
+
+        let mut buff = vec![0; TRANSACTION_HEADER_SIZE + data.len()];
+        buff[0..TRANSACTION_HEADER_SIZE].copy_from_slice(&header.to_buffer());
+        buff[TRANSACTION_HEADER_SIZE..].copy_from_slice(&data);
+        // dbg!(&buff.len());
+
+        let sig: SIGNATURE = match key.sign(buff) {
+            Ok(sig_vec) => match sig_vec.to_bytes_be().try_into() {
+                Ok(sig_u8) => sig_u8,
+                Err(_) => {
+                    return Err(
+                        "Error converting signature to array".to_string()
+                    )
+                }
+            },
+            Err(_) => return Err("Error signing transaction".to_string()),
+        };
+        // let sig = [0; SIGNATURE_SIZE];
+        // println!("signature: {:?}", sig);
+        // dbg!(&sig.len());
+
+        Ok(Self {
+            transaction_header: header,
             data,
-            signature,
-        }
+            signature: sig,
+        })
     }
 
     pub fn size(&self) -> u32 {
@@ -93,11 +116,7 @@ impl core::fmt::Debug for Transaction {
         write!(f, "{{\n")?;
         write!(f, "header: {:?},\n", self.transaction_header)?;
         // write!(f, "transactions: [{:?}],\n", self.data)?;
-        write!(
-            f,
-            "signature: {:?},\n",
-            String::from_utf8(self.signature.to_vec()).unwrap()
-        )?;
+        write!(f, "signature: {:?},\n", self.signature.to_vec())?;
         write!(f, "}}")?;
         Ok(())
     }

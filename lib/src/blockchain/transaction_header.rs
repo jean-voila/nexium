@@ -30,17 +30,27 @@ impl Default for TransactionHeader {
 }
 
 impl TransactionHeader {
-    pub fn new(
+    pub fn new<T>(
         transaction_size: u16,
         fees: u16,
-        emitter: EMITTER,
+        emitter: T,
         data_type: DataType,
-    ) -> Self {
+    ) -> Self
+    where
+        T: Into<String>,
+    {
+        let mut em = [0_u8; TRANSACTION_EMITTER];
+        let emitter_str = emitter.into();
+        let bytes = emitter_str.as_bytes();
+        if bytes.len() > TRANSACTION_EMITTER {
+            panic!("Emitter string too long");
+        }
+        em[..bytes.len()].copy_from_slice(bytes);
         Self {
             transaction_size,
             timestamp: current_time(),
             fees,
-            emitter,
+            emitter: em,
             data_type,
         }
     }

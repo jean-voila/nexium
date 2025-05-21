@@ -5,7 +5,7 @@ use super::{
         check_nexium, get_balance, get_transactions, new_transaction, ping,
     },
 };
-use std::{io::Write, net::TcpStream};
+use std::net::TcpStream;
 
 pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
     println!("New connection: {}", stream.peer_addr().unwrap());
@@ -41,7 +41,7 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
             ping::handler(&mut req);
         }
         ("GET", "/nexium") => {
-            check_nexium::handler(&mut req);
+            check_nexium::handler(&mut req, &mut server);
         }
         (method, path) if method == "GET" && path.starts_with("/balance/") => {
             get_balance::handler(&mut req, &mut server);
@@ -52,7 +52,7 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
             get_transactions::handler(&mut req, &server);
         }
         ("POST", "/transaction") => {
-            new_transaction::handler(&mut req, &server);
+            new_transaction::handler(&mut req, &mut server);
         }
         _ => {
             let res = Response::new(Status::NotFound, "");

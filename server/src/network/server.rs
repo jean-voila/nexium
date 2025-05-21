@@ -7,7 +7,7 @@ pub struct Server<'a> {
     pub cache: Cache<'a>,
     mempool: Vec<Transaction>,
     pub gitlab: &'a GitlabClient,
-    login: String,
+    pub login: String,
     address: String,
     port: u16,
 }
