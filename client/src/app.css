@@ -41,13 +41,14 @@
     --color-noir-primaire: rgba(21, 21, 40, 1);
     --color-noir-secondaire: #121413;
     --color-noir-tertiaire: #444448;
+    --color-noir-quaternaire: #2c2a2a;
     --color-gris-primaire: #616161;
     --color-gris-secondaire: #E8E8E8;
     --color-gris-tertiaire: #B8B8B8;
     --color-bleu-primaire: #2479d9;
     --color-bleu-secondaire: #3276FF;
-    --color-vert-primaire: #07a940;
-    --color-rouge-primaire: #ff2626;
+    --color-vert-primaire: #098d37;
+    --color-rouge-primaire: #ca2121;
     --color-orange-primaire: #df8a22;
 }
 
@@ -269,16 +270,7 @@ body {
     margin-top: 1rem;
 }
 
-/*.bouton-settings:disabled {
-    background-color: var(--color-blanc-secondaire);
-    color: var(--color-noir-secondaire);
-    border: 2px solid var(--color-blanc-tertiaire);
-    cursor: not-allowed;
-}*/
 
-/*.bouton-settings:hover:disabled {
-    transform: none;
-}*/
 
 
 
@@ -299,7 +291,7 @@ body {
     /* équivalent à rounded-3xl */
     padding: 2rem;
     /* équivalent à p-8 */
-    max-width: 45rem;
+    max-width: 37rem;
     /* équivalent à max-w-md */
     width: 100%;
     /* équivalent à w-full */
@@ -310,6 +302,7 @@ body {
     font-weight: 850;
     font-size: 40px;
     color: var(--color-noir-primaire);
+
 }
 
 .pillule-bouton-settings {
@@ -379,8 +372,8 @@ body {
 
 .input-field:disabled {
     cursor: not-allowed;
-    opacity: 0.7;
-    filter: grayscale(0.5);
+    opacity: 0.4;
+
 }
 
 .nom-parametre {
@@ -394,7 +387,7 @@ body {
 .keypair-status {
     font-family: 'Work Sans', sans-serif;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .keypair-status-orange {
@@ -408,7 +401,13 @@ body {
 
 .generation-status {
     font-family: 'Work Sans', sans-serif;
-    font-weight: 600;
+    font-weight: 800;
+
+    color: var(--color-noir-primaire);
+    font-size: 14px;
+
+    border-radius: 0.5rem;
+
 }
 
 
@@ -448,12 +447,14 @@ body {
 }
 
 .settings-item {
-    padding: 0.5rem;
+    /* padding only top and bottom */
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
     border-bottom: 0px solid var(--color-blanc-tertiaire);
 }
 
 .pillule-bouton-sauvercharger {
-    background-color: var(--color-noir-quaternaire);
+
     color: var(--color-blanc-primaire);
     transition: all 0.1s ease-in-out;
     border-radius: 0.6rem;
@@ -472,29 +473,48 @@ body {
 }
 
 .pillule-bouton-gitlab-checked {
-    background-color: var(--color-blanc-quaternaire);
-    border: 2px solid var(--color-blanc-quaternaire);
+    background-color: var(--color-noir-quaternaire);
+    transition: all 0.1s ease-in-out;
     border-radius: 0.6rem;
-    box-sizing: border-box;
+    padding: 0.7rem 0.1rem;
 
 
-    /* équivalent à rounded-3xl */
 }
 
 .pillule-bouton-gitlab-checked:hover {
-    border: 2px solid var(--color-gris-tertiaire);
+    filter: opacity(0.8);
+    transition: all 0.1s ease-in-out;
+
+
+}
+
+.pillule-bouton-gitlab-checked:active {
+    filter: opacity(0.5);
+    transform: scale(90%);
+    transition: all 0.1s ease-in-out;
+
 
 }
 
 
-.texte-bouton-gitlab {
+.texte-bouton-gitlab-noir {
     font-family: 'Work Sans', sans-serif;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 14px;
     padding: 0rem 0.3rem;
     white-space: nowrap;
     padding-right: 1rem;
+
 }
+
+.texte-bouton-gitlab {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 0rem 0.3rem;
+    color: var(--color-blanc-primaire);
+}
+
 
 /* Icone gitlab, contenu dans un bouton, doit s'adapter à la taille du bouton */
 .icone-gitlab {
@@ -507,6 +527,7 @@ body {
     width: 1.2em;
     height: 1.2em;
     color: var(--color-rouge-primaire);
+    padding-left: 0.2rem;
 }
 
 .blue-icon {
@@ -532,8 +553,9 @@ body {
     margin-top: 0.2rem;
     text-align: center;
     font-family: 'Work Sans', sans-serif;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--color-rouge-primaire);
+    font-size: 14px;
 }
 
 .ou {
@@ -544,7 +566,7 @@ body {
 
 }
 
-.login {
+.surligne {
     font-family: 'Inconsolata', sans-serif;
     font-weight: 500;
     color: var(--color-noir-primaire);
@@ -559,13 +581,36 @@ body {
     transition: all 0.1s ease-in-out;
 }
 
-.bouton-noir-settings:hover {
+.bouton-noir-settings:hover:enabled {
     transform: scale(95%);
     transition: all 0.1s ease-in-out;
 }
 
-.bouton-noir-settings:active {
+.bouton-noir-settings:active:enabled {
     opacity: 0.7;
     transform: scale(90%);
     transition: all 0.1s ease-in-out;
+}
+
+.bouton-noir-settings:disabled {
+
+    filter: grayscale(0.8);
+    opacity: 0.5;
+
+}
+
+.sent-keys {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--color-vert-primaire);
+
+}
+
+.barre-separation {
+    height: 3px;
+    width: 50%;
+    border-radius: 9999px;
+
+    margin-bottom: 1rem;
 }

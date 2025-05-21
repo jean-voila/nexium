@@ -3,8 +3,9 @@
 
 	import Spinner from '$lib/components/Spinner.svelte';
 
-	import { blur } from 'svelte/transition';
-	import { Circle, Download } from 'lucide-svelte';
+	import { CloudUpload } from 'lucide-svelte';
+	import { fly } from 'svelte/transition';
+	import { Download } from 'lucide-svelte';
 	import { Upload } from 'lucide-svelte';
 	import { CheckCheck } from 'lucide-svelte';
 	import { CircleOff } from 'lucide-svelte';
@@ -15,7 +16,7 @@
 	import { globalConfig } from '$lib/stores/settings.js';
 
 	import { invoke } from '@tauri-apps/api/core';
-	import { error } from '@sveltejs/kit';
+
 	import { get } from 'svelte/store';
 	import PasswordModal from '$lib/components/PasswordModal.svelte';
 	// create a copy of the global config store
@@ -26,6 +27,9 @@
 
 	let isGenerating = false;
 	let generationMessage = '';
+	let sentKeys = false;
+
+	let isValidatingAndDone = false;
 
 	let password = '';
 	let showPasswordModal = false;
@@ -46,15 +50,22 @@
 			config.gitlab_token = '';
 			config.gitlab_token_type = 'Classic';
 			config.user_login = '';
+			config.pub_key = '';
+			config.priv_key = '';
+			sentKeys = false;
+			isValidating = false;
 			return;
 		} else {
 			try {
+				isValidating = true;
 				const response = await invoke('get_gitlab_oauth_token');
 				config.gitlab_token = response.token;
 				config.gitlab_token_type = 'OAuth';
 				setLoginFromToken();
 			} catch (error) {
 				errorMessage = String(error);
+			} finally {
+				isValidating = false;
 			}
 		}
 	}
@@ -82,6 +93,7 @@
 	}
 
 	async function handleSaveFile() {
+		isValidating = true;
 		const path = await save({
 			filters: [
 				{
@@ -98,11 +110,15 @@
 				});
 			} catch (error) {
 				errorMessage = String(error);
+			} finally {
+				isValidating = false;
 			}
 		}
+		isValidating = false;
 	}
 
 	async function handleKeyGeneration() {
+		isValidating = true;
 		password = await promptPassword();
 
 		isGenerating = true;
@@ -116,18 +132,20 @@
 			config.pub_key = pubKey;
 			config.priv_key = privKey;
 
-			generationMessage = 'Communication de vos clés à GitLab...';
+			generationMessage = 'Envoi des clés sur GitLab...';
 			await invoke('send_gpg_key', {
 				gitlabTokenType: config.gitlab_token_type,
 				gitlabToken: config.gitlab_token,
 				pubKey: config.pub_key
 			});
 			generationMessage = '';
+			sentKeys = true;
 		} catch (e) {
 			errorMessage = String(e);
 			generationMessage = '';
 		} finally {
 			isGenerating = false;
+			isValidating = false;
 		}
 	}
 	/** @param {string} pw */
@@ -141,6 +159,7 @@
 	}
 
 	async function handleDone() {
+		isValidatingAndDone = true;
 		try {
 			errorMessage = '';
 			isValidating = true;
@@ -157,11 +176,15 @@
 			errorMessage = String(error);
 		} finally {
 			isValidating = false;
+			isValidatingAndDone = false;
 		}
 	}
 
 	async function setLoginFromToken() {
 		try {
+			config.pub_key = '';
+			config.priv_key = '';
+			sentKeys = false;
 			const response = await invoke('get_login', {
 				gitlabToken: config.gitlab_token,
 				gitlabTokenType: config.gitlab_token_type
@@ -179,11 +202,13 @@
 </script>
 
 {#if showSettingsModal}
-	<div class="settings-modal" transition:blur={{ amount: 5, duration: 300 }}>
+	<div class="settings-modal" transition:fly={{ duration: 300 }}>
 		<div class="settings-modal-content">
 			<h2 class="settings-titre">Paramètres</h2>
 
-			<div class=" settings-item settings-row flex gap-4">
+			<div class="barre-separation"></div>
+
+			<div class="settings-item settings-row flex gap-4">
 				<div class=" flex-1">
 					<label for="server-port" class="nom-parametre">Port</label>
 					<input
@@ -227,23 +252,22 @@
 						on:click={() => {
 							handleGitlabOAuth();
 						}}
-						class="group flex items-center gap-1 px-4 py-2 pl-3 {config.gitlab_token_type ===
-						'OAuth'
+						class="group flex items-center transition {config.gitlab_token_type === 'OAuth'
 							? 'pillule-bouton-gitlab-checked'
-							: 'pillule-bouton-gitlab bouton-noir-settings'}"
+							: 'pillule-bouton-gitlab bouton-noir-settings gap-1 px-4 py-2 pl-3 '}"
 					>
 						{#if config.gitlab_token_type === 'OAuth'}
 							<span
-								class="relative flex h-[14px] w-[130px] items-center justify-center duration-300"
+								class=" relative flex h-[14px] w-[130px] items-center justify-center transition duration-300"
 							>
 								<span
-									class="absolute inset-0 flex items-center justify-center gap-2 opacity-100 group-hover:opacity-0"
+									class="absolute flex items-center justify-center gap-2 opacity-100 group-hover:opacity-0"
 								>
 									<CheckCheck strokeWidth={3} class="icone-gitlab" />
 									<span class="texte-bouton-gitlab">Connecté</span>
 								</span>
 								<span
-									class="absolute inset-0 flex items-center justify-center gap-2 text-black opacity-0 group-hover:opacity-100"
+									class="absolute flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100"
 								>
 									<Unplug strokeWidth={3} class="icone-gitlab-deco" />
 									<span class="texte-bouton-gitlab">Déconnexion</span>
@@ -251,56 +275,63 @@
 							</span>
 						{:else}
 							<img src="/gitlab.png" alt="GitLab" class="icone-gitlab" />
-							<span class="texte-bouton-gitlab">Connexion</span>
+							<span class="texte-bouton-gitlab-noir">Connexion</span>
 						{/if}
 					</button>
 				</div>
 			</div>
-
+			<div class="barre-separation"></div>
 			<!-- Affichage du login -->
 			<div class="settings-item flex-1">
 				<span class="nom-parametre">Login: </span>
 				{#if config.user_login !== ''}
-					<span class="login">{config.user_login}</span>
+					<span class="surligne transition">{config.user_login}</span>
 				{/if}
 			</div>
 
-			<div class="settings-item flex-1">
-				<div class="flex items-center gap-4">
-					<div class="flex items-center gap-3">
-						<div class="flex items-center gap-1">
+			<div class="settings-item flex-1 transition">
+				<div class="flex items-center gap-4 transition">
+					<div class="flex items-center gap-3 transition">
+						<div class="flex items-center gap-1 transition">
 							{#if config.pub_key !== '' && config.priv_key !== ''}
 								<CheckCheck strokeWidth={3.7} class="blue-icon " />
-								<span class="keypair-status keypair-status-blue">Clés définies</span>
+								<span class="keypair-status keypair-status-blue transition">Clés définies!</span>
 							{:else}
 								<CircleOff strokeWidth={3.7} class="orange-icon " />
-								<span class="keypair-status keypair-status-orange">Clés non définies</span>
+								<span class="keypair-status keypair-status-orange transition"
+									>Clés non définies</span
+								>
 							{/if}
 						</div>
 
 						<button
 							class="bouton-keypair flex items-center transition"
 							on:click={handleKeyGeneration}
-							disabled={config.gitlab_token === '' ||
-								isGenerating ||
+							hidden={config.gitlab_token === '' ||
 								(config.pub_key !== '' && config.priv_key !== '') ||
 								config.user_login.trim() === ''}
+							disabled={isGenerating}
 						>
 							<span class="texte-bouton-keypair">Générer les clés</span>
 						</button>
 					</div>
 
 					{#if isGenerating}
-						<div class="flex items-center gap-2 text-sm text-gray-700">
+						<div class="flex items-center gap-1 text-sm text-gray-700 transition">
 							<Spinner />
-							<span class="generation-status">{generationMessage}</span>
+							<span class="generation-status transition">{generationMessage}</span>
+						</div>
+					{:else if sentKeys}
+						<div class="sent-keys flex items-center gap-1 transition">
+							<CloudUpload strokeWidth={3.2} />
+							<span>Clés ajoutées sur Gitlab!</span>
 						</div>
 					{/if}
 				</div>
 			</div>
 
-			<!-- Bouton Terminé -->
-			<!-- Bouton Terminé et autres actions -->
+			<div class="barre-separation"></div>
+			<!-- Barre du bas -->
 			<div class="mt-6 flex items-center justify-between">
 				<div class="flex gap-4">
 					<button
@@ -322,11 +353,11 @@
 					</button>
 				</div>
 
-				<div class="flex items-center gap-2">
+				<div class="flex items-center gap-1">
 					{#if errorMessage !== ''}
-						<div class="mt-1 flex items-center">
-							<CircleAlert strokeWidth={3.5} class="red-icon m-1" />
-							<span class="error-message centered-error">{errorMessage}</span>
+						<div class="mt-1 flex items-center gap-1">
+							<CircleAlert strokeWidth={3.5} class="red-icon m" />
+							<span class="centered-error">{errorMessage}</span>
 						</div>
 					{/if}
 				</div>
@@ -341,7 +372,7 @@
 					>
 						<span class="texte-bouton-settings">Terminé</span>
 					</button>
-					{#if isValidating}
+					{#if isValidatingAndDone}
 						<div class="mt-1 flex items-center">
 							<Spinner />
 						</div>
