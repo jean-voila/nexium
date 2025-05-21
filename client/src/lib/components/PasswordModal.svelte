@@ -10,8 +10,8 @@
 	}
 </script>
 
-<div class="modal-backdrop">
-	<div class="modal-content">
+<div class="settings-modal">
+	<div class="settings-modal-content">
 		<h3 class="settings-titre mb-4">Entrez votre mot de passe</h3>
 		<input type="password" bind:value={password} class="input-field" />
 		<div class="mt-4 flex justify-end gap-4">

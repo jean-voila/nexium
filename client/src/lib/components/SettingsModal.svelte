@@ -29,13 +29,15 @@
 
 	let password = '';
 	let showPasswordModal = false;
+	let rejectPassword;
 	/** @type {(value: string) => void} */
 	let resolvePassword;
 
 	function promptPassword() {
 		showPasswordModal = true;
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
 			resolvePassword = resolve;
+			rejectPassword = reject;
 		});
 	}
 
@@ -136,7 +138,6 @@
 
 	function handlePasswordCancel() {
 		showPasswordModal = false;
-		resolvePassword('');
 	}
 
 	async function handleDone() {
@@ -352,7 +353,6 @@
 {/if}
 {#if showPasswordModal}
 	<PasswordModal
-		bind:password
 		on:submit={(e) => handlePasswordSubmit(e.detail)}
 		on:cancel={handlePasswordCancel}
 	/>
