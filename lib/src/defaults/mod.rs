@@ -14,3 +14,5 @@ pub const CLIENT_ID: &str =
 pub const CLIENT_SECRET: &str =
     "gloas-83e39025a820061c0744402c93a5915c5dc1bdb30ac2d23df3b68485b044545c";
 pub const REDIRECT_URI: &str = "http://localhost:8080/callback";
+
+pub const SIG_SAMPLE: &str = "NEXIUMREQ";

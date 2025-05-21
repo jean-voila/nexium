@@ -2418,6 +2418,7 @@ dependencies = [
  "json",
  "log",
  "nexium",
+ "reqwest",
  "serde",
  "serde_json",
  "tauri",
