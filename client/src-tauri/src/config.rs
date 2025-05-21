@@ -10,7 +10,7 @@ use url::Url;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub url_server: String,
-    pub port: u16,
+    pub port: Option<u16>,
     pub user_login: String,
     pub pub_key: String,
     pub priv_key: String,
@@ -106,8 +106,15 @@ impl Config {
     }
 
     pub fn check_values(&self) -> Result<(), ConfigError> {
-        if self.port < 1 {
-            return Err(ConfigError::InvalidPort);
+        match self.port {
+            Some(port) => {
+                if port < 1 {
+                    return Err(ConfigError::InvalidPort);
+                }
+            }
+            None => {
+                return Err(ConfigError::InvalidPort);
+            }
         }
 
         match Url::parse(&self.url_server) {

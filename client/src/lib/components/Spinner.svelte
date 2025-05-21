@@ -1,4 +1,4 @@
-<svg width="24" height="24" viewBox="0 0 24 24"
+<svg width="20" height="20" viewBox="0 0 24 24"
 	><style>
 		.spinner_z9k8 {
 			transform-origin: center;

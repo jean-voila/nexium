@@ -257,9 +257,8 @@ impl GitlabClient {
 
     pub fn get_login(&self) -> Result<String, GitlabError> {
         let url = format!("{}/user", self.api_url);
-        let client = Client::new();
+        let client = reqwest::blocking::Client::new();
         let request = client.get(&url);
-
         let request = self.build_headers(request);
 
         let response = request.send();
@@ -269,13 +268,15 @@ impl GitlabClient {
                 if resp.status().is_success() {
                     let user: serde_json::Value =
                         resp.json().unwrap_or(serde_json::json!({}));
-                    if let Some(login) = user.get("username") {
-                        if let Some(login) = login.as_str() {
-                            return Ok(login.to_string());
+                    if let Some(username) = user.get("username") {
+                        if let Some(username) = username.as_str() {
+                            return Ok(username.to_string());
                         }
                     }
+                    Err(GitlabError::UnknownError)
+                } else {
+                    Err(GitlabError::InvalidToken)
                 }
-                Err(GitlabError::InvalidToken)
             }
             Err(_) => Err(GitlabError::NetworkError),
         }

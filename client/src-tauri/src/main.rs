@@ -9,10 +9,17 @@ use nexium::{defaults::*, gitlab::*, rsa::*};
 use std::path::Path;
 
 #[tauri::command]
-fn check_config_values(config: Config) -> Result<String, String> {
-    match Config::check_values(&config) {
-        Ok(_) => Ok("".to_string()),
-        Err(e) => Err(e.to_string()),
+async fn check_config_values(config: Config) -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        Config::check_values(&config)
+            .map(|_| "".to_string())
+            .map_err(|e| e.to_string())
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Thread panicked during config validation".to_string()),
     }
 }
 #[tauri::command]

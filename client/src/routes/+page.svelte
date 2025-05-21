@@ -7,22 +7,7 @@
 	import { CircleAlert } from 'lucide-svelte';
 
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
-	let showSettingsModal = false;
-
-	import { globalUrl } from '$lib/stores/settings.js';
-
-	/**
-	 * @type {string}
-	 */
-	let currentServerUrl;
-	import { onMount } from 'svelte';
-	onMount(() => {
-		const unsubscribe = globalUrl.subscribe((value) => {
-			currentServerUrl = value;
-		});
-
-		return unsubscribe;
-	});
+	let showSettingsModal = true;
 </script>
 
 <div class="relative flex min-h-screen items-center justify-center">
@@ -39,16 +24,4 @@
 	</div>
 
 	<SettingsModal bind:showSettingsModal></SettingsModal>
-
-	<div class="server-url-container" class:red={!currentServerUrl} class:gray={currentServerUrl}>
-		{#if currentServerUrl}
-			<Server strokeWidth={3} size={20} class="icon" />
-			{currentServerUrl}
-		{:else}
-			<button onclick={() => (showSettingsModal = true)}>
-				<CircleAlert strokeWidth={3} size={20} class="icon" />
-				Configuration manquante
-			</button>
-		{/if}
-	</div>
 </div>

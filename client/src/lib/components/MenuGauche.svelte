@@ -8,6 +8,7 @@
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 	import { globalConfig } from '$lib/stores/settings.js';
 	import { on } from 'svelte/events';
+
 	let firstName = '';
 	let lastName = '';
 
