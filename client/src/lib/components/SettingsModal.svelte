@@ -17,7 +17,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { error } from '@sveltejs/kit';
 	import { get } from 'svelte/store';
-
+	import PasswordModal from '$lib/components/PasswordModal.svelte';
 	// create a copy of the global config store
 	let config = get(globalConfig);
 
@@ -27,8 +27,17 @@
 	let isGenerating = false;
 	let generationMessage = '';
 
-	// (use new modal to ask for password)
-	let password = '1234';
+	let password = '';
+	let showPasswordModal = false;
+	/** @type {(value: string) => void} */
+	let resolvePassword;
+
+	function promptPassword() {
+		showPasswordModal = true;
+		return new Promise((resolve) => {
+			resolvePassword = resolve;
+		});
+	}
 
 	async function handleGitlabOAuth() {
 		if (config.gitlab_token_type === 'OAuth') {
@@ -92,6 +101,8 @@
 	}
 
 	async function handleKeyGeneration() {
+		password = await promptPassword();
+
 		isGenerating = true;
 		generationMessage = 'Génération de vos clés...';
 
@@ -116,6 +127,16 @@
 		} finally {
 			isGenerating = false;
 		}
+	}
+	/** @param {string} pw */
+	function handlePasswordSubmit(pw) {
+		showPasswordModal = false;
+		resolvePassword(pw);
+	}
+
+	function handlePasswordCancel() {
+		showPasswordModal = false;
+		resolvePassword('');
 	}
 
 	async function handleDone() {
@@ -328,4 +349,11 @@
 			</div>
 		</div>
 	</div>
+{/if}
+{#if showPasswordModal}
+	<PasswordModal
+		bind:password
+		on:submit={(e) => handlePasswordSubmit(e.detail)}
+		on:cancel={handlePasswordCancel}
+	/>
 {/if}
