@@ -163,7 +163,3 @@ fn _check_login_syntax(login: String) -> bool {
     }
     return true;
 }
-
-fn get_gitlab_api_url() -> String {
-    return format!("{}{}", GITLAB_URL, GITLAB_API_ENDPOINT);
-}
