@@ -15,12 +15,12 @@
     "windows": [
       {
         "title": "Nexium",
-        "width": 800,
-        "height": 600,
+        "width": 1100,
+        "height": 700,
         "resizable": true,
         "fullscreen": false,
-        "minHeight": 400,
-        "minWidth": 600,
+        "minWidth": 950,
+        "minHeight": 600,
         "decorations": true
       }
     ],
