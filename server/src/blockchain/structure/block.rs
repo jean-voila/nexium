@@ -97,9 +97,9 @@ impl Block {
         return b;
     }
 
-    // pub fn size(&self) -> u32 {
-    //     BLOCK_HEADER_SIZE as u32 + transaction_vec_size(&self.transactions)
-    // }
+    pub fn size(&self) -> u32 {
+        BLOCK_HEADER_SIZE as u32 + transaction_vec_size(&self.transactions)
+    }
 
     pub fn from_buffer(buff: &[u8]) -> Result<Self, String> {
         let header_buff: [u8; BLOCK_HEADER_SIZE] =

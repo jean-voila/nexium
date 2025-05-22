@@ -11,12 +11,12 @@ pub type HeaderPreviousBlockHash = [u8; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
 // #[derive(Debug, Default, Clone, Copy)]
 #[derive(Default, Clone, Copy, PartialEq)]
 pub struct BlockHeader {
-    version: u16,
-    previous_block_hash: HeaderPreviousBlockHash,
-    merkle_root: HeaderMerkleRoot,
-    timestamp: u32,
-    difficulty_target: u32,
-    nonce: u32,
+    pub version: u16,
+    pub previous_block_hash: HeaderPreviousBlockHash,
+    pub merkle_root: HeaderMerkleRoot,
+    pub timestamp: u32,
+    pub difficulty_target: u32,
+    pub nonce: u32,
     pub transactions_size: u32,
 }
 
@@ -47,8 +47,8 @@ impl BlockHeader {
         let dt_start = tt_start + 4;
         let nonce_start = dt_start + 4;
         let ts_start = nonce_start + 4;
-        let end = ts_start + 4; // HEADER_SIZE
-                                // let end = BLOCK_HEADER_SIZE;
+        let end = BLOCK_HEADER_SIZE;
+
         BlockHeader {
             version: u16::from_be_bytes(buff[0..pbh_start].try_into().unwrap()),
             previous_block_hash: buff[pbh_start..mr_start].try_into().unwrap(),
@@ -66,21 +66,6 @@ impl BlockHeader {
                 buff[ts_start..end].try_into().unwrap(),
             ),
         }
-        // BlockHeader {
-        //     version: u16::from_be_bytes(
-        //         buff[0..HEADER_VERSION].try_into().unwrap(),
-        //     ),
-        //     previous_block_hash: buff[2..34].try_into().unwrap(),
-        //     merkle_root: buff[34..66].try_into().unwrap(),
-        //     timestamp: u32::from_be_bytes(buff[66..70].try_into().unwrap()),
-        //     difficulty_target: u32::from_be_bytes(
-        //         buff[70..74].try_into().unwrap(),
-        //     ),
-        //     nonce: u32::from_be_bytes(buff[74..78].try_into().unwrap()),
-        //     transactions_size: u32::from_be_bytes(
-        //         buff[78..82].try_into().unwrap(),
-        //     ),
-        // }
     }
 
     pub fn to_buffer(self) -> [u8; BLOCK_HEADER_SIZE] {
@@ -104,7 +89,7 @@ impl core::fmt::Debug for BlockHeader {
         write!(
             f,
             "  previous_block_hash: {:?},\n",
-            String::from_utf8(self.previous_block_hash.to_vec()).unwrap()
+            self.previous_block_hash
         )?;
         write!(f, "  merkle_root: {:?},\n", self.merkle_root)?;
         write!(f, "  timestamp: {},\n", self.timestamp)?;

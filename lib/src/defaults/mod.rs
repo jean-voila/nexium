@@ -2,7 +2,7 @@ pub const GITLAB_API_ENDPOINT: &str = "/api/v4";
 pub const NEXIUM_HOME: &str = ".nexiumlocal";
 pub const INITIAL_BALANCE: u32 = 5000;
 pub const BLOCKCHAIN_FILE: &str = "blockchain.dat";
-pub const TRANSACTION_COUNT: usize = 2;
+pub const TRANSACTION_COUNT: usize = 1;
 pub const BLOCK_VERSION: u16 = 1;
 pub const DIFFICULTY_TARGET: u32 = 1;
 

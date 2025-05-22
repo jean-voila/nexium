@@ -109,8 +109,8 @@ impl KeyPair {
 
     pub fn priv_from_file<T>(
         path: T,
-        user_id: &String,
-        password: &String,
+        user_id: T,
+        password: T,
     ) -> Result<Self, String>
     where
         T: Into<String>,
@@ -120,7 +120,11 @@ impl KeyPair {
             Err(e) => return Err(e),
         };
 
-        let key = match KeyPair::priv_from_pem(&contents, password, user_id) {
+        let key = match KeyPair::priv_from_pem(
+            &contents,
+            &password.into(),
+            &user_id.into(),
+        ) {
             Ok(k) => k,
             Err(_) => return Err("Failed to create key pair".to_string()),
         };
@@ -166,12 +170,12 @@ impl KeyPair {
     }
 
     pub fn crypt(&self, message: &str) -> Result<String, RSAError> {
-        let parsed_msg: Vec<u8> = message.as_bytes().to_vec();
-
         if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
 
+        let parsed_msg: Vec<u8> = message.as_bytes().to_vec();
+        dbg!(&parsed_msg.len());
         let m = BigUint::from_bytes_be(parsed_msg.as_slice());
 
         if &m >= &self.n {
@@ -187,10 +191,11 @@ impl KeyPair {
         let mut res = String::new();
 
         while i < message.len() {
-            j += 256;
+            j += 250;
             if j > message.len() {
                 j = message.len();
             }
+            dbg!(&message[i..j].len());
             let r = match self.crypt(&message[i..j]) {
                 Ok(r) => r,
                 Err(e) => {
@@ -199,7 +204,7 @@ impl KeyPair {
             };
             dbg!(&r.len());
             res.push_str(r.as_str());
-            i += 256;
+            i += 250;
         }
         return Ok(res);
     }

@@ -15,7 +15,6 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     // println!("login: {login}");
 
     let n = match req.query.get("n") {
-        // Some(n) => n.parse::<u32>().unwrap_or(3),
         Some(n) => match n.parse::<u32>() {
             Ok(0) | Err(_) => 3,
             Ok(100..) => 100,
@@ -37,6 +36,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     let json = json::array![
         //
     ];
+    
     let data = json.dump();
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
