@@ -38,7 +38,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         //
     ];
     let data = json.dump();
-    let crypted = match key.crypt(&data) {
+    let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
         Err(_) => {
             let res = Response::new(Status::InternalError, "");

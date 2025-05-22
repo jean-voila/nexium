@@ -12,25 +12,16 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     //     None => {}
     // };
 
-    // let key = match req.check(&mut server.cache) {
-    //     Ok(data) => data,
-    //     Err(e) => {
-    //         let res = Response::new(Status::BadRequest, e);
-    //         let _ = req.send(&res);
-    //         return;
-    //     }
-    // };
+    let data = match server.key.decrypt_split(&req.body) {
+        Ok(res) => res,
+        Err(_) => {
+            let res = Response::new(Status::BadRequest, "Invalid data");
+            let _ = req.send(&res);
+            return;
+        }
+    };
 
-    // let data = match key.decrypt(&req.body) {
-    //     Ok(res) => res,
-    //     Err(_) => {
-    //         let res = Response::new(Status::BadRequest, "Invalid data");
-    //         let _ = req.send(&res);
-    //         return;
-    //     }
-    // };
-
-    let tr: Transaction = match serde_json::from_str(&req.body) {
+    let tr: Transaction = match serde_json::from_str(&data) {
         Ok(obj) => obj,
         Err(e) => {
             let res = Response::new(Status::BadRequest, e.to_string());

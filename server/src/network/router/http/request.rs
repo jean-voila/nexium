@@ -9,7 +9,7 @@ use std::{
     net::TcpStream,
 };
 
-const READ_SIZE: usize = 2048;
+const READ_SIZE: usize = 32768;
 
 pub struct Request<'a> {
     pub method: String,

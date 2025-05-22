@@ -18,9 +18,9 @@ impl Response {
         }
     }
 
-    pub fn set_status(&mut self, status: Status) {
-        self.status = status;
-    }
+    // pub fn set_status(&mut self, status: Status) {
+    //     self.status = status;
+    // }
 
     pub fn set_header(&mut self, name: &str, value: &str) {
         self.headers.push(format!("{name}:{value}"));

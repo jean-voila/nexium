@@ -12,6 +12,8 @@ use std::path::Path;
 pub struct Config {
     /// Path to the directory containing the key
     pub key_filepath: String,
+    /// Password for the key
+    pub key_password: String,
     /// Address on which the server will listen
     pub listen: String,
     /// Port on which the server will listen
@@ -81,8 +83,17 @@ impl Config {
             s => s.to_string(),
         };
 
+        let key_password = match ask("Enter key password: ").as_str() {
+            "" => {
+                println!("Empty password, using default");
+                String::new()
+            }
+            s => s.to_string(),
+        };
+
         let res = Config {
             key_filepath,
+            key_password,
             listen,
             port,
             user_login,
@@ -119,6 +130,10 @@ impl Config {
 
         Config {
             key_filepath: parsed["key"].to_string(),
+            key_password: match parsed["key_password"].as_str() {
+                Some(p) => p.to_string(),
+                None => String::new(),
+            },
             listen: parsed["listen"].to_string(),
             port: parsed["port"]
                 .as_u16()
@@ -132,6 +147,7 @@ impl Config {
     pub fn to_file(&self, path: &Path) {
         let mut config_obj = json::JsonValue::new_object();
         config_obj["key"] = self.key_filepath.to_string().into();
+        config_obj["key_password"] = self.key_password.to_string().into();
         config_obj["listen"] = self.listen.to_string().into();
         config_obj["port"] = self.port.into();
         config_obj["user_id"] = self.user_login.to_string().into();

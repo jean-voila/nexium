@@ -38,6 +38,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     };
 
     let data = json.dump();
+    dbg!(data.len());
     let crypted = match key.crypt(&data) {
         Ok(res) => res,
         Err(_) => {

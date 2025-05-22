@@ -6,6 +6,8 @@ use num_primes::Generator;
 use rand::Rng;
 use sha1::Digest;
 use sha1::Sha1;
+use std::fs::File;
+use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -73,6 +75,56 @@ impl KeyPair {
             timestamp: timestamp,
             user_id: user_id.to_string(),
         };
+    }
+
+    fn read_key(path: &String) -> Result<String, String> {
+        let file = match File::open(path) {
+            Ok(f) => f,
+            Err(e) => return Err(format!("{} -> {}", path, e)),
+        };
+
+        let mut contents = String::new();
+        match file.take(4096).read_to_string(&mut contents) {
+            Ok(_) => {}
+            Err(e) => return Err(e.to_string()),
+        };
+        Ok(contents)
+    }
+
+    pub fn pub_from_file<T>(path: T, user_id: &String) -> Result<Self, String>
+    where
+        T: Into<String>,
+    {
+        let contents = match KeyPair::read_key(&path.into()) {
+            Ok(c) => c,
+            Err(e) => return Err(e),
+        };
+
+        let key = match KeyPair::pub_from_pem(&contents, user_id) {
+            Ok(k) => k,
+            Err(_) => return Err("Failed to create key pair".to_string()),
+        };
+        Ok(key)
+    }
+
+    pub fn priv_from_file<T>(
+        path: T,
+        user_id: &String,
+        password: &String,
+    ) -> Result<Self, String>
+    where
+        T: Into<String>,
+    {
+        let contents = match KeyPair::read_key(&path.into()) {
+            Ok(c) => c,
+            Err(e) => return Err(e),
+        };
+
+        let key = match KeyPair::priv_from_pem(&contents, password, user_id) {
+            Ok(k) => k,
+            Err(_) => return Err("Failed to create key pair".to_string()),
+        };
+        Ok(key)
     }
 
     pub fn sign<T>(&self, message: T) -> Result<BigUint, RSAError>

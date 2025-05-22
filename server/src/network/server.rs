@@ -1,27 +1,49 @@
 use super::router::handler::handler;
 use crate::{blockchain::cache::cache::Cache, config::Config};
-use nexium::{blockchain::transaction::Transaction, gitlab::GitlabClient};
+use nexium::{
+    blockchain::transaction::Transaction, gitlab::GitlabClient, rsa::KeyPair,
+};
 use std::{net::TcpListener, process};
 
 pub struct Server<'a> {
     pub cache: Cache<'a>,
+    #[allow(dead_code)]
     mempool: Vec<Transaction>,
-    pub gitlab: &'a GitlabClient,
+    // pub gitlab: &'a GitlabClient,
     pub login: String,
     address: String,
     port: u16,
+    pub key: KeyPair,
 }
 
 impl<'a> Server<'a> {
-    pub fn new(config: &Config, gitlab: &'a GitlabClient) -> Self {
-        Self {
+    pub fn new(
+        config: &Config,
+        gitlab: &'a GitlabClient,
+    ) -> Result<Self, String> {
+        let key = match KeyPair::priv_from_file(
+            &config.key_filepath,
+            &config.user_login,
+            &config.key_password,
+        ) {
+            Ok(key) => key,
+            Err(e) => {
+                return Err(format!(
+                    "Failed to load private key from file: {}",
+                    e
+                ));
+            }
+        };
+
+        Ok(Self {
             cache: Cache::new(gitlab),
             mempool: Vec::new(),
-            gitlab,
+            // gitlab,
             login: config.user_login.clone(),
             address: config.listen.clone(),
             port: config.port,
-        }
+            key,
+        })
     }
 
     pub fn listen(&mut self) {
