@@ -55,6 +55,16 @@ impl TransactionHeader {
         }
     }
 
+    pub fn get_login(&self) -> String {
+        self.emitter
+            .iter()
+            .map_while(|x| match *x {
+                0 => None,
+                _ => Some(*x as char),
+            })
+            .collect()
+    }
+
     // pub fn fill_from_buffer(&mut self, buff: &[u8; TRANSACTION_HEADER_SIZE]) {
     //     self.transaction_size =
     //         u16::from_be_bytes(buff[0..2].try_into().unwrap());

@@ -18,32 +18,32 @@ const KEY_FILE: &str = ".nexiumlocal/private-key.pem";
 
 pub fn main() {
     let mut bc = Blockchain::init().expect("Failed to initialize blockchain");
-    let b1 = match bc.read_block(0) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("Error getting block: {}", e);
-            return;
-        }
-    };
-    dbg!(&b1);
-    // dbg!(&bc.last_hash);
+    // let b1 = match bc.read_block(0) {
+    //     Ok(b) => b,
+    //     Err(e) => {
+    //         println!("Error getting block: {}", e);
+    //         return;
+    //     }
+    // };
+    // dbg!(&b1);
+    // // dbg!(&bc.last_hash);
 
-    let b2 = match bc.get_block(&bc.last_hash.clone()) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("Error getting block: {}", e);
-            return;
-        }
-    };
-    dbg!(&b2);
-    dbg!(&b1 == &b2);
-    return;
+    // let b2 = match bc.get_block(&bc.last_hash.clone()) {
+    //     Ok(b) => b,
+    //     Err(e) => {
+    //         println!("Error getting block: {}", e);
+    //         return;
+    //     }
+    // };
+    // dbg!(&b2);
+    // dbg!(&b1 == &b2);
+    // return;
 
     // println!("Key creation");
-    let key = KeyPair::generate(KEYPAIR_BIT_SIZE, "");
+    // let key = KeyPair::generate(KEYPAIR_BIT_SIZE, "");
     // println!("Key created");
-    // let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
-    //     .expect("Failed to load private key from file");
+    let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
+        .expect("Failed to load private key from file");
 
     let h = [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
     let transactions = vec![Transaction::new(

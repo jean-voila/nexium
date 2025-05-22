@@ -6,7 +6,6 @@ use super::{
         consts::{BLOCK_HEADER_SIZE, HEADER_PREVIOUS_BLOCK_HASH_SIZE},
     },
 };
-use chrono::offset;
 use nexium::{
     blockchain::transaction::Transaction, defaults::BLOCKCHAIN_FILE,
     sha256::sha256,
@@ -14,12 +13,12 @@ use nexium::{
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
-    io::{Read, Seek, Write},
+    io::Write,
     os::unix::fs::FileExt,
 };
 
 pub struct Blockchain {
-    cache: HashMap<HeaderPreviousBlockHash, u64>,
+    pub cache: HashMap<HeaderPreviousBlockHash, u64>,
     file: File,
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,

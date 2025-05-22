@@ -13,7 +13,7 @@ pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transaction {
-    pub transaction_header: TransactionHeader,
+    pub header: TransactionHeader,
     pub data: Vec<u8>,
     #[serde(with = "serde_signature")]
     pub signature: BigUint,
@@ -22,7 +22,7 @@ pub struct Transaction {
 impl Default for Transaction {
     fn default() -> Self {
         Self {
-            transaction_header: Default::default(),
+            header: Default::default(),
             data: vec![],
             signature: BigUint::from(0u8),
         }
@@ -54,7 +54,7 @@ impl Transaction {
         };
 
         Ok(Self {
-            transaction_header: header,
+            header,
             data,
             signature,
         })
@@ -82,7 +82,7 @@ impl Transaction {
         let sig = BigUint::from_bytes_le(&buff[signature_start..signature_end]);
 
         Ok(Self {
-            transaction_header: header,
+            header,
             data: buff[data_start..signature_start].to_vec(),
             signature: sig,
         })
@@ -91,18 +91,18 @@ impl Transaction {
     pub fn to_buffer(&self) -> Vec<u8> {
         let data_start = TRANSACTION_HEADER_SIZE;
         let signature_start =
-            data_start + self.transaction_header.transaction_size as usize;
+            data_start + self.header.transaction_size as usize;
 
         let mut res = vec![
             0;
             TRANSACTION_HEADER_SIZE
-                + self.transaction_header.transaction_size
+                + self.header.transaction_size
                     as usize
                 + SIGNATURE_SIZE
         ];
 
         res[0..TRANSACTION_HEADER_SIZE]
-            .copy_from_slice(&self.transaction_header.to_buffer());
+            .copy_from_slice(&self.header.to_buffer());
 
         res[TRANSACTION_HEADER_SIZE..signature_start]
             .copy_from_slice(&self.data);
@@ -119,7 +119,7 @@ impl Transaction {
 impl core::fmt::Debug for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\n")?;
-        write!(f, "header: {:?},\n", self.transaction_header)?;
+        write!(f, "header: {:?},\n", self.header)?;
         // write!(f, "transactions: [{:?}],\n", self.data)?;
         write!(f, "signature: {:?},\n", self.signature)?;
         write!(f, "}}")?;

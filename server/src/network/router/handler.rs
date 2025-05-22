@@ -1,9 +1,7 @@
 use super::{
     super::server::Server,
     http::{request::Request, response::Response, status::Status},
-    routes::{
-        check_nexium, get_balance, get_transactions, new_transaction, ping,
-    },
+    routes::{check_nexium, get_balance, get_transactions, new_transaction},
 };
 use std::net::TcpStream;
 
@@ -37,9 +35,6 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
     println!("------------------");
 
     match (req.method.as_str(), req.path.as_str()) {
-        ("GET", "/ping") => {
-            ping::handler(&mut req);
-        }
         ("GET", "/nexium") => {
             check_nexium::handler(&mut req, &mut server);
         }

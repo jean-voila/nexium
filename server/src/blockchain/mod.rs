@@ -1,5 +1,5 @@
 pub mod blockchain;
 pub mod cache;
-pub mod mempool;
+mod mempool;
 pub mod structure;
 pub mod test;

@@ -175,7 +175,6 @@ impl KeyPair {
         }
 
         let parsed_msg: Vec<u8> = message.as_bytes().to_vec();
-        dbg!(&parsed_msg.len());
         let m = BigUint::from_bytes_be(parsed_msg.as_slice());
 
         if &m >= &self.n {
@@ -195,14 +194,13 @@ impl KeyPair {
             if j > message.len() {
                 j = message.len();
             }
-            dbg!(&message[i..j].len());
+
             let r = match self.crypt(&message[i..j]) {
                 Ok(r) => r,
                 Err(e) => {
                     return Err(e);
                 }
             };
-            dbg!(&r.len());
             res.push_str(r.as_str());
             i += 250;
         }

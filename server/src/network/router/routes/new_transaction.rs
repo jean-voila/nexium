@@ -6,12 +6,6 @@ use crate::network::{
 };
 
 pub fn handler(req: &mut Request, server: &mut Server) {
-    // let x = "text/plain".to_string();
-    // match req.headers.get("Content-Type") {
-    //     Some(x) => {}
-    //     None => {}
-    // };
-
     let data = match server.key.decrypt_split(&req.body) {
         Ok(res) => res,
         Err(_) => {
