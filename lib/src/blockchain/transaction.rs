@@ -79,7 +79,7 @@ impl Transaction {
             return Err("Buffer too small".to_string());
         }
 
-        let sig = BigUint::from_bytes_be(&buff[signature_start..signature_end]);
+        let sig = BigUint::from_bytes_le(&buff[signature_start..signature_end]);
 
         Ok(Self {
             transaction_header: header,
@@ -88,10 +88,11 @@ impl Transaction {
         })
     }
 
-    pub fn to_buffer(self) -> Vec<u8> {
+    pub fn to_buffer(&self) -> Vec<u8> {
         let data_start = TRANSACTION_HEADER_SIZE;
         let signature_start =
             data_start + self.transaction_header.transaction_size as usize;
+
         let mut res = vec![
             0;
             TRANSACTION_HEADER_SIZE
@@ -99,11 +100,18 @@ impl Transaction {
                     as usize
                 + SIGNATURE_SIZE
         ];
+
         res[0..TRANSACTION_HEADER_SIZE]
             .copy_from_slice(&self.transaction_header.to_buffer());
+
         res[TRANSACTION_HEADER_SIZE..signature_start]
             .copy_from_slice(&self.data);
-        res[signature_start..].copy_from_slice(&self.signature.to_bytes_be());
+
+        let mut sig = self.signature.to_bytes_le();
+        if sig.len() < SIGNATURE_SIZE {
+            sig.resize(SIGNATURE_SIZE, 0);
+        };
+        res[signature_start..].copy_from_slice(&sig);
         return res;
     }
 }

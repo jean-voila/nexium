@@ -2,7 +2,10 @@ use super::{
     block_header::{BlockHeader, HeaderMerkleRoot, HeaderPreviousBlockHash},
     consts::BLOCK_HEADER_SIZE,
 };
-use nexium::blockchain::transaction::{transaction_vec_size, Transaction};
+use nexium::{
+    blockchain::transaction::{transaction_vec_size, Transaction},
+    sha256::sha256,
+};
 
 #[derive(Default, Clone, PartialEq)]
 pub struct Block {
@@ -12,10 +15,58 @@ pub struct Block {
 }
 
 impl Block {
+    fn merkle_root_hash(tr1: &Vec<u8>, tr2: &Vec<u8>) -> Vec<u8> {
+        let mut res = vec![0; 64];
+        res[0..32].copy_from_slice(&sha256(tr1));
+        res[32..64].copy_from_slice(&sha256(tr2));
+        return res;
+    }
+
+    // fn merkle_root_rec(trs: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    //     if trs.len() == 1 {
+    //         return trs;
+    //     };
+
+    //     let res = trs
+    //         .chunks(2)
+    //         .map(|pair| {
+    //             if pair.len() == 2 {
+    //                 Block::merkle_root_hash(&pair[0], &pair[1])
+    //             } else {
+    //                 Block::merkle_root_hash(&pair[0], &pair[0])
+    //             }
+    //         })
+    //         .collect();
+
+    //     Block::merkle_root_rec(res)
+    // }
+
+    fn merkle_root(transactions: &Vec<Transaction>) -> HeaderMerkleRoot {
+        let mut trs: Vec<Vec<u8>> =
+            transactions.iter().map(|tr| tr.to_buffer()).collect();
+
+        while trs.len() > 1 {
+            trs = trs
+                .chunks(2)
+                .map(|pair| {
+                    if pair.len() == 2 {
+                        Block::merkle_root_hash(&pair[0], &pair[1])
+                    } else {
+                        Block::merkle_root_hash(&pair[0], &pair[0])
+                    }
+                })
+                .collect();
+        }
+
+        // let mut res = [0; 32];
+        // res.copy_from_slice(&trs[0]);
+        // return res;
+        sha256(&trs[0])
+    }
+
     pub fn new(
         version: u16,
         previous_block_hash: HeaderPreviousBlockHash,
-        merkle_root: HeaderMerkleRoot,
         difficulty_target: u32,
         nonce: u32,
         transactions: Vec<Transaction>,
@@ -25,7 +76,7 @@ impl Block {
             header: BlockHeader::new(
                 version,
                 previous_block_hash,
-                merkle_root,
+                Block::merkle_root(&transactions),
                 difficulty_target,
                 nonce,
                 size,

@@ -106,11 +106,7 @@ impl core::fmt::Debug for BlockHeader {
             "  previous_block_hash: {:?},\n",
             String::from_utf8(self.previous_block_hash.to_vec()).unwrap()
         )?;
-        write!(
-            f,
-            "  merkle_root: {:?},\n",
-            String::from_utf8(self.merkle_root.to_vec()).unwrap()
-        )?;
+        write!(f, "  merkle_root: {:?},\n", self.merkle_root)?;
         write!(f, "  timestamp: {},\n", self.timestamp)?;
         write!(f, "  difficulty_target: {},\n", self.difficulty_target)?;
         write!(f, "  nonce: {},\n", self.nonce)?;

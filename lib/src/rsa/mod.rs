@@ -136,7 +136,7 @@ impl KeyPair {
             return Err(RSAError::EmptyMessage);
         }
 
-        let hash = sha256(message);
+        let hash = sha256(&message);
         let m = BigUint::from_bytes_be(&hash);
 
         if &m >= &self.n {
@@ -158,7 +158,7 @@ impl KeyPair {
         if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
-        let hash_verif = sha256(message);
+        let hash_verif = sha256(&message);
         let m = BigUint::from_bytes_be(&hash_verif);
         let decrypted_signature = signature.modpow(&self.e, &self.n);
 
@@ -465,7 +465,7 @@ impl KeyPair {
                 let repeated = s2k_input
                     .repeat((iter_count as usize / s2k_input.len()) + 1);
                 let key =
-                    &sha256(repeated[..iter_count as usize].to_vec())[0..16];
+                    &sha256(&repeated[..iter_count as usize].to_vec())[0..16];
                 let key_array: &[u8; 16] = key.try_into().unwrap();
 
                 let cipher = Cipher::new_128(key_array);
@@ -538,7 +538,7 @@ impl KeyPair {
         s2k_input.extend(password.as_bytes());
         let repeated_input =
             s2k_input.repeat((iter_count / s2k_input.len()) + 1);
-        let digest = sha256(repeated_input[..iter_count].to_vec());
+        let digest = sha256(&repeated_input[..iter_count].to_vec());
         let key = &digest[..16];
         let key_array: &[u8; 16] =
             key.try_into().expect("Key must be 16 bytes");
@@ -622,7 +622,7 @@ impl KeyPair {
         to_hash.push(0x04);
         to_hash.push(0xFF);
         to_hash.extend(&(hashed_data.len() as u32).to_be_bytes());
-        let hash = sha256(to_hash);
+        let hash = sha256(&to_hash);
         assert_eq!(hash.len(), 32);
         let hash_prefix = &hash[0..2];
         let mut digest_info = vec![];
