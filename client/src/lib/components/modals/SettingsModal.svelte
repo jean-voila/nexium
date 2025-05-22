@@ -343,7 +343,7 @@
 							handleLoadFile();
 						}}
 					>
-						<Upload strokeWidth={3.4} class="icone-bouton-sauvercharger" />
+						<Download strokeWidth={3.4} class="icone-bouton-sauvercharger" />
 					</button>
 
 					<button
@@ -352,7 +352,7 @@
 							handleSaveFile();
 						}}
 					>
-						<Download strokeWidth={3.4} class="icone-bouton-sauvercharger " />
+						<Upload strokeWidth={3.4} class="icone-bouton-sauvercharger " />
 					</button>
 				</div>
 

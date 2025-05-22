@@ -3,16 +3,18 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
 	let { oncancel } = $props();
-	let destinataire = $state('');
-	let montant = $state('');
-	let description = $state('');
+
 	let balance = $state(0);
 
-	let invoice = $state(null);
+	let sender_login = $state('');
+	let amount = $state('');
+	let description = $state('');
 
-	let errorMessage = $state('');
-
-	function handleCancel() {
+	let invoice_file_extension = '';
+	invoke('get_invoice_extension').then((ext) => {
+		invoice_file_extension = ext;
+	});
+	function handleClose() {
 		oncancel?.();
 	}
 
@@ -25,61 +27,36 @@
 	}
 
 	async function handleLoadFile() {
-		errorMessage = '';
 		const path = await open({
 			title: 'Choisir le fichier de la facture',
 			multiple: false,
 			directory: false,
 			save: false,
-			filters: [{ name: 'JSON', extensions: ['json'] }]
+			filters: [{ name: 'Nexium Invoice', extensions: [invoice_file_extension] }]
 		});
 		if (!path) {
-			errorMessage = 'Aucun chemin sélectionné.';
 			return;
 		}
 		try {
-			const result = await invoke('load_facture_from_file', { pathString: path });
-			if (result !== '') {
-				errorMessage = result;
-				return;
-			}
-			invoice = result;
-			destinataire = result.destinataire;
-			montant = result.montant;
+			console.log('Path:', path);
+			const result = await invoke('load_invoice_from_file', { pathString: path });
+
+			sender_login = result.sender_login;
+			amount = result.amount;
 			description = result.description;
+			console.log('Invoice loaded');
 		} catch (e) {
-			errorMessage = `${e}`;
+			console.error('Error loading invoice:', e);
 		}
 	}
 	async function handleSend() {
-		errorMessage = '';
-		if (montant === '') {
-			errorMessage = 'Montant invalide.';
-			return;
-		}
-		if (destinataire === '') {
-			errorMessage = 'Login du destinataire invalide.';
-			return;
-		}
-		if (!checkGitlabBalance()) {
-			errorMessage = 'Solde insuffisant.';
-			return;
-		}
+		const invoice = {
+			sender_login,
+			amount,
+			description
+		};
 
-		try {
-			const result = await invoke('send_facture', {
-				destinataire,
-				montant,
-				description
-			});
-			if (result !== '') {
-				errorMessage = result;
-				return;
-			}
-			handleCancel();
-		} catch (e) {
-			errorMessage = `${e}`;
-		}
+		handleClose();
 	}
 </script>
 
@@ -95,21 +72,21 @@
 					<input
 						id="destinataire"
 						type="text"
-						bind:value={destinataire}
+						bind:value={sender_login}
 						oninput={checkDestinataireLogin}
 						class="input-field w-full"
 						placeholder="Login du destinataire"
 					/>
 				</div>
-				<div class="w-full md:w-1/2">
-					<label for="montant" class="nom-parametre mb-1 block">Montant</label>
+				<div class="w-full md:w-1/3">
+					<label for="montant" class="nom-parametre block">Montant</label>
 					<div class="flex items-center gap-2">
 						<input
 							id="montant"
 							type="text"
 							inputmode="decimal"
 							pattern="[0-9]*"
-							bind:value={montant}
+							bind:value={amount}
 							class="input-field flex-1"
 							placeholder="0.00"
 						/>
@@ -125,24 +102,22 @@
 					class="input-field w-full resize-none"
 					placeholder="Description (facultative)"
 					maxlength="256"
-					rows="5"
+					rows="7"
 				></textarea>
 			</div>
 		</div>
-		<div class="mt-6 flex items-center justify-between">
-			<div class="flex">
-				<button
-					class="pillule-bouton-sauvercharger flex items-center justify-center transition"
-					onclick={handleLoadFile}
-				>
-					<span class="texte-bouton-settings">Importer</span>
-				</button>
-			</div>
+		<div class="mt-6 flex items-center justify-end">
 			<div class="flex gap-2">
 				<button
 					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-					onclick={handleCancel}
-					><span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
+					onclick={handleLoadFile}
+				>
+					<span class="texte-bouton-settings texte-bouton-password-blanc">Importer</span>
+				</button>
+				<button
+					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
+					onclick={handleClose}
+					><span class="texte-bouton-settings texte-bouton-password-blanc">Annuler</span>
 				</button>
 				<button
 					onclick={handleSend}

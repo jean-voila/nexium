@@ -1,52 +1,44 @@
 <script>
 	import { fly, fade } from 'svelte/transition';
-	import { open } from '@tauri-apps/plugin-dialog';
+	import { save } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
+	import { globalConfig } from '$lib/stores/settings';
 	let { oncancel } = $props();
 
 	let montant = $state('');
 	let description = $state('');
-	let errorMessage = $state('');
+
+	let invoice_file_extension = '';
+	invoke('get_invoice_extension').then((ext) => {
+		invoice_file_extension = ext;
+	});
+
 	let invoice = $state(null);
-	function handleCancel() {
+	function handleClose() {
 		oncancel?.();
 	}
 
 	async function handleExport() {
-		errorMessage = '';
 		const invoice = {
-			montant: parseFloat(montant),
-			description: description
+			amount: montant,
+			description: description,
+			sender_login: $globalConfig.user_login
 		};
 		const validationError = await invoke('check_invoice_values', { invoice });
 		if (validationError !== '') {
-			errorMessage = validationError;
 			return;
 		}
-		const path = await open({
-			title: "Choisir l'emplacement de sauvegarde",
-			multiple: false,
-			directory: false,
-			save: true,
-			defaultPath: 'facture.json',
-			filters: [{ name: 'JSON', extensions: ['json'] }]
+		const path = await save({
+			filters: [{ name: 'Nexium Invoice', extensions: [invoice_file_extension] }]
 		});
-		if (!path) {
-			errorMessage = 'Aucun chemin sélectionné.';
-			return;
-		}
-		try {
-			const result = await invoke('save_facture_to_file', {
-				invoice,
-				pathString: path
-			});
-			if (result !== '') {
-				errorMessage = result;
-				return;
-			}
-			oncancel?.();
-		} catch (e) {
-			errorMessage = `${e}`;
+		if (path) {
+			try {
+				const result = await invoke('save_facture_to_file', {
+					pathString: path,
+					invoice
+				});
+				handleClose();
+			} catch (e) {}
 		}
 	}
 </script>
@@ -58,8 +50,8 @@
 
 		<div class="settings-item">
 			<div class="flex flex-wrap gap-4 md:flex-nowrap">
-				<div class="w-full md:w-1/2">
-					<label for="montant" class="nom-parametre mb-1 block">Montant</label>
+				<div class="md:w-1/ w-1/3">
+					<label for="montant" class="nom-parametre block">Montant</label>
 					<div class="flex items-center gap-2">
 						<input
 							id="montant"
@@ -73,25 +65,25 @@
 						<span class="text-sm text-gray-500">NXM</span>
 					</div>
 				</div>
-				<div class="mt-4">
-					<label for="description" class="nom-parametre block">Description</label>
-					<textarea
-						id="description"
-						bind:value={description}
-						class="input-field w-full resize-none"
-						placeholder="Description (facultative)"
-						maxlength="256"
-						rows="5"
-					></textarea>
-				</div>
+			</div>
+			<div class="mt-4">
+				<label for="description" class="nom-parametre block">Description</label>
+				<textarea
+					id="description"
+					bind:value={description}
+					class="input-field w-full resize-none"
+					placeholder="Description (facultative)"
+					maxlength="256"
+					rows="7"
+				></textarea>
 			</div>
 		</div>
 		<div class="mt-6 flex justify-end">
 			<div class="flex gap-2">
 				<button
 					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-					onclick={handleCancel}
-					><span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
+					onclick={handleClose}
+					><span class="texte-bouton-settings texte-bouton-password-blanc">Annuler</span>
 				</button>
 				<button
 					onclick={handleExport}

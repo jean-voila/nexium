@@ -103,7 +103,6 @@ async fn save_facture_to_file(
 ) -> Result<String, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         let path = Path::new(&path_string);
-
         match Invoice::to_file(&invoice, path) {
             Ok(_) => Ok("".to_string()),
             Err(e) => Err(e.to_string()),
@@ -120,9 +119,10 @@ async fn save_facture_to_file(
 #[tauri::command]
 async fn check_invoice_values(invoice: Invoice) -> Result<String, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
-        Invoice::check_values(&invoice)
-            .map(|_| "".to_string())
-            .map_err(|e| e.to_string())
+        match invoice.check_values() {
+            Ok(_) => Ok("".to_string()),
+            Err(e) => Err(e.to_string()),
+        }
     })
     .await;
 
@@ -236,6 +236,11 @@ async fn get_names_from_login(
     }
 }
 
+#[tauri::command]
+async fn get_invoice_extension() -> String {
+    return NEXIUM_INVOICE_EXTENSION.to_string();
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -251,7 +256,8 @@ fn main() {
             save_facture_to_file,
             check_invoice_values,
             get_names_from_login,
-            load_invoice_from_file
+            load_invoice_from_file,
+            get_invoice_extension,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

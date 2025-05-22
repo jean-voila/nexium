@@ -16,3 +16,5 @@ pub const CLIENT_SECRET: &str =
 pub const REDIRECT_URI: &str = "http://localhost:8080/callback";
 
 pub const SIG_SAMPLE: &str = "NEXIUMREQ";
+
+pub const NEXIUM_INVOICE_EXTENSION: &str = "nxmi";

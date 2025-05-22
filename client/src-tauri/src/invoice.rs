@@ -38,9 +38,6 @@ pub struct Invoice {
 
 impl Invoice {
     pub fn check_values(&self) -> Result<(), InvoiceError> {
-        // Check if the login is valid
-
-        // Check if the amount is a valid number
         match self.amount.parse::<f64>() {
             Ok(n) => {
                 if n <= 0.0 {
