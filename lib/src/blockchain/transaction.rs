@@ -11,7 +11,7 @@ use super::{
 
 pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transaction {
     pub transaction_header: TransactionHeader,
     pub data: Vec<u8>,
@@ -116,16 +116,16 @@ impl Transaction {
     }
 }
 
-// impl core::fmt::Debug for Transaction {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{{\n")?;
-//         write!(f, "header: {:?},\n", self.transaction_header)?;
-//         // write!(f, "transactions: [{:?}],\n", self.data)?;
-//         write!(f, "signature: {:?},\n", self.signature)?;
-//         write!(f, "}}")?;
-//         Ok(())
-//     }
-// }
+impl core::fmt::Debug for Transaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\n")?;
+        write!(f, "header: {:?},\n", self.transaction_header)?;
+        // write!(f, "transactions: [{:?}],\n", self.data)?;
+        write!(f, "signature: {:?},\n", self.signature)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
 
 pub fn transaction_vec_size(transactions: &Vec<Transaction>) -> u32 {
     transactions.iter().fold(0, |acc, t| acc + t.size())

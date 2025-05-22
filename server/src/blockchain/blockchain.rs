@@ -21,21 +21,18 @@ impl Blockchain {
             },
         };
 
-        todo!();
-
         // read the file and load the blocks into the cache
 
-        Ok(Self {
+        let mut b = Self {
             cache: HashMap::new(),
             file,
             last_hash: HeaderPreviousBlockHash::default(),
-        })
+        };
+        // b.cache.insert(k, v)
+        Ok(b)
     }
 
     pub fn append(&mut self, block: Block) {
-        let block_hash = self.last_hash.clone();
-        // self.cache.insert(block_hash.to_string(), block_hash);
-        // Write the block to the file
-        // self.file.write_all(block.to_bytes()).unwrap();
+        todo!()
     }
 }
