@@ -2,18 +2,15 @@ mod blockchain;
 mod config;
 mod network;
 
+use blockchain::blockchain::Blockchain;
 use colored::Colorize;
 use config::Config;
 use network::server::Server;
 use nexium::{
-    blockchain::{data_type::DataType, transaction::Transaction},
     defaults::*,
     gitlab::{GitlabClient, TokenType},
-    rsa::KeyPair,
-    utils::rand::create_noise,
 };
-use num_bigint::BigUint;
-use std::{env, path::Path, str::FromStr};
+use std::{env, path::Path};
 
 const GEN_CONFIG_ARG: &str = "--generate-config";
 const DEFAULT_CONFIG_NAME: &str = "config.json";
@@ -59,7 +56,15 @@ fn main() {
     let gitlab =
         GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
-    let mut server = match Server::new(&config, &gitlab) {
+    let blockchain = match Blockchain::init() {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("Failed to create blockchain: {}", e);
+            return;
+        }
+    };
+
+    let mut server = match Server::new(&config, &gitlab, blockchain) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to create server: {}", e);
