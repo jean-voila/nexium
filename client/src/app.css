@@ -162,23 +162,30 @@ body {
 }
 
 .cercle {
-    background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, hsl(295, 100%, 48%), #dd00f3);
+    background: radial-gradient(circle, #ff2400, #ff4a4a, #e8b71d, #e3e81d, #1de840, #1ddde8, #4f7bff, hsl(295, 100%, 48%), #dd00f3);
     background-size: 360% 360%;
     box-shadow: inset 0px 0px 14px 22px rgba(0, 0, 0, 0.63);
-    -webkit-animation: rainbow 9s ease infinite;
-    -z-animation: rainbow 9s ease infinite;
-    -o-animation: rainbow 9s ease infinite;
-    animation: rainbow 9s ease infinite;
+    animation: rainbow 20s linear infinite, rotate-bg 20s linear infinite;
+}
+
+@keyframes rotate-bg {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .cercle-disabled {
-    background: linear-gradient(124deg, #ff0000, #ff3636, #ff6b6b, #e56565, #da2424, #6c0c0c);
+    background: radial-gradient(circle, #6c0c0c, #940909, #d14747, #470000, #da2424, #6c0c0c);
     background-size: 360% 360%;
     box-shadow: inset 0px 0px 14px 22px rgba(0, 0, 0, 0.63);
-    -webkit-animation: rainbow 4s ease infinite;
-    -z-animation: rainbow 4s ease infinite;
-    -o-animation: rainbow 4s ease infinite;
-    animation: rainbow 4s ease infinite;
+    -webkit-animation: rainbow 5s ease infinite;
+    -z-animation: rainbow 5s ease infinite;
+    -o-animation: rainbow 5s ease infinite;
+    animation: rainbow 5s ease infinite;
 }
 
 @-webkit-keyframes rainbow {
