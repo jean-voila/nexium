@@ -1,6 +1,10 @@
 pub const GITLAB_API_ENDPOINT: &str = "/api/v4";
 pub const NEXIUM_HOME: &str = ".nexiumlocal";
 pub const INITIAL_BALANCE: u32 = 5000;
+pub const BLOCKCHAIN_FILE: &str = "blockchain.dat";
+pub const TRANSACTION_COUNT: usize = 2;
+pub const BLOCK_VERSION: u16 = 1;
+pub const DIFFICULTY_TARGET: u32 = 1;
 
 pub const KEYPAIR_BIT_SIZE: usize = 2048;
 pub const GITLAB_URL: &str = "https://gitlab.cri.epita.fr";

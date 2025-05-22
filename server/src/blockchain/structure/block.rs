@@ -4,6 +4,7 @@ use super::{
 };
 use nexium::{
     blockchain::transaction::{transaction_vec_size, Transaction},
+    defaults::{BLOCK_VERSION, DIFFICULTY_TARGET},
     sha256::sha256,
 };
 
@@ -65,24 +66,35 @@ impl Block {
     }
 
     pub fn new(
-        version: u16,
         previous_block_hash: HeaderPreviousBlockHash,
-        difficulty_target: u32,
-        nonce: u32,
         transactions: Vec<Transaction>,
     ) -> Self {
         let size = transaction_vec_size(&transactions);
-        Self {
-            header: BlockHeader::new(
-                version,
-                previous_block_hash,
-                Block::merkle_root(&transactions),
-                difficulty_target,
-                nonce,
-                size,
-            ),
-            transactions,
+        let merkle_root = Block::merkle_root(&transactions);
+        let mut b;
+        let mut nonce = 0;
+
+        loop {
+            b = Self {
+                header: BlockHeader::new(
+                    BLOCK_VERSION,
+                    previous_block_hash,
+                    merkle_root,
+                    DIFFICULTY_TARGET,
+                    nonce,
+                    size,
+                ),
+                transactions: transactions.clone(),
+            };
+
+            let hash = sha256(&b.to_buffer());
+            if hash[0..DIFFICULTY_TARGET as usize].iter().all(|&a| a == 0) {
+                break;
+            }
+            nonce += 1;
         }
+
+        return b;
     }
 
     // pub fn size(&self) -> u32 {
@@ -130,10 +142,10 @@ impl Block {
         })
     }
 
-    pub fn to_buffer(self) -> Vec<u8> {
+    pub fn to_buffer(&self) -> Vec<u8> {
         let mut res = vec![];
         res.extend_from_slice(&self.header.to_buffer());
-        for t in self.transactions {
+        for t in &self.transactions {
             res.extend_from_slice(&t.to_buffer());
         }
         return res;

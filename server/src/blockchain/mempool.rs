@@ -1,25 +1,25 @@
-use super::blockchain::Blockchain;
-use nexium::blockchain::transaction::Transaction;
+use nexium::{
+    blockchain::transaction::Transaction, defaults::TRANSACTION_COUNT,
+};
 
-const TRANSACTION_COUNT: usize = 10;
-
-struct Mempool<'a> {
-    blockchain: &'a Blockchain,
+pub struct Mempool {
     data: Vec<Transaction>,
 }
 
-impl<'a> Mempool<'a> {
-    pub fn init(blockchain: &'a Blockchain) -> Self {
-        Self {
-            blockchain,
-            data: vec![],
-        }
+impl Mempool {
+    pub fn new() -> Self {
+        Self { data: vec![] }
     }
 
     pub fn add(&mut self, transaction: Transaction) {
         self.data.push(transaction);
-        if self.data.len() > TRANSACTION_COUNT {
-            println!("Mempool is full.");
-        }
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.data.len() >= TRANSACTION_COUNT
+    }
+
+    pub fn dump(&mut self) -> Vec<Transaction> {
+        self.data.drain(0..TRANSACTION_COUNT).collect()
     }
 }
