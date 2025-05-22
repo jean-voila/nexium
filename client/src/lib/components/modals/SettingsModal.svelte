@@ -4,7 +4,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 
 	import { CloudUpload } from 'lucide-svelte';
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { Download } from 'lucide-svelte';
 	import { Upload } from 'lucide-svelte';
 	import { CheckCheck } from 'lucide-svelte';
@@ -13,12 +13,13 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { save } from '@tauri-apps/plugin-dialog';
 	import { Unplug } from 'lucide-svelte';
-	import { globalConfig } from '$lib/stores/settings.js';
+
+	import { globalConfig, isConfigSet } from '$lib/stores/settings.js';
 
 	import { invoke } from '@tauri-apps/api/core';
 
 	import { get } from 'svelte/store';
-	import PasswordModal from '$lib/components/PasswordModal.svelte';
+	import PasswordModal from '$lib/components/modals/PasswordModal.svelte';
 	// create a copy of the global config store
 	let config = get(globalConfig);
 
@@ -86,6 +87,7 @@
 			try {
 				const response = await invoke('load_config_from_file', { pathString: path });
 				config = response;
+				isValidating = false;
 			} catch (error) {
 				errorMessage = String(error);
 			}
@@ -170,6 +172,7 @@
 			config.port = parsedPort;
 			await invoke('check_config_values', { config });
 			globalConfig.set(config);
+			isConfigSet.set(true);
 			showSettingsModal = false;
 			console.log(config.gitlab_token_type);
 		} catch (error) {
@@ -202,8 +205,8 @@
 </script>
 
 {#if showSettingsModal}
-	<div class="settings-modal" transition:fly={{ duration: 300 }}>
-		<div class="settings-modal-content">
+	<div class="settings-modal" transition:fade={{ duration: 200 }}>
+		<div class="settings-modal-content" transition:fly={{ y: 30, duration: 200 }}>
 			<h2 class="settings-titre">Paramètres</h2>
 
 			<div class="barre-separation"></div>
@@ -297,7 +300,7 @@
 								<CheckCheck strokeWidth={3.7} class="blue-icon " />
 								<span class="keypair-status keypair-status-blue transition">Clés définies!</span>
 							{:else}
-								<CircleOff strokeWidth={3.7} class="orange-icon " />
+								<CircleOff strokeWidth={3.9} class="orange-icon " />
 								<span class="keypair-status keypair-status-orange transition"
 									>Clés non définies</span
 								>
@@ -384,7 +387,7 @@
 {/if}
 {#if showPasswordModal}
 	<PasswordModal
-		on:submit={(e) => handlePasswordSubmit(e.detail)}
-		on:cancel={handlePasswordCancel}
+		onsubmit={(/** @type {string} */ password) => handlePasswordSubmit(password)}
+		oncancel={handlePasswordCancel}
 	/>
 {/if}

@@ -2,12 +2,21 @@
 	import MenuGauche from '$lib/components/MenuGauche.svelte';
 	import Solde from '$lib/components/Solde.svelte';
 
-	import { Settings } from 'lucide-svelte';
-	import { Server } from 'lucide-svelte';
+	import { Settings, TruckElectric } from 'lucide-svelte';
 	import { CircleAlert } from 'lucide-svelte';
 
-	import SettingsModal from '$lib/components/SettingsModal.svelte';
-	let showSettingsModal = true;
+	import SendModal from '$lib/components/modals/SendModal.svelte';
+	import ReceiveModal from '$lib/components/modals/ReceiveModal.svelte';
+
+	import SettingsModal from '$lib/components/modals/SettingsModal.svelte';
+	import {
+		globalConfig,
+		isConfigSet,
+		showReceiveModal,
+		showSendModal
+	} from '$lib/stores/settings.js';
+
+	let showSettingsModal = false;
 </script>
 
 <div class="relative flex min-h-screen items-center justify-center">
@@ -24,4 +33,21 @@
 	</div>
 
 	<SettingsModal bind:showSettingsModal></SettingsModal>
+
+	{#if $showSendModal}
+		<SendModal oncancel={showSendModal.set(false)} />
+	{/if}
+
+	{#if $showReceiveModal}
+		<ReceiveModal oncancel={showReceiveModal.set(false)} />
+	{/if}
+
+	{#if !$isConfigSet}
+		<div class="missing-config-container">
+			<button onclick={() => (showSettingsModal = true)}>
+				<CircleAlert strokeWidth={3.7} size={20} class="icon" id="missing-config-icon" />Aucune
+				configuration</button
+			>
+		</div>
+	{/if}
 </div>

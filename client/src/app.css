@@ -1,7 +1,6 @@
 @import "tailwindcss";
-/*@tailwind base;
-@tailwind components;
-@tailwind utilities;*/
+@import './styles/checkbox.css';
+@import './styles/transactionmodal.css';
 
 @font-face {
     font-family: 'Inconsolata';
@@ -83,11 +82,7 @@ body {
     transition: all 0.1s ease-in-out;
 }
 
-.pillule-bouton-principal:hover {
-    background-color: var(--color-noir-tertiaire);
 
-    transition: all 0.1s ease-in-out;
-}
 
 .pillule-bouton-secondaire {
     background-color: var(--color-blanc-primaire);
@@ -96,29 +91,23 @@ body {
     transition: all 0.1s ease-in-out;
 }
 
-.pillule-bouton-secondaire:hover {
-    color: var(--color-gris-primaire);
-    transform: scale(96%);
-    border: 4px solid var(--color-gris-primaire);
-    transition: all 0.1s ease-in-out;
-}
-
-
-.boutons-menu {
-    transition: all 0.1s ease-in-out;
-}
 
 .boutons-menu:hover {
-    transform: scale(95%);
-    transition: all 0.1s ease-in-out;
+    opacity: 0.7;
+    filter: grayscale(0.5);
 }
 
 .boutons-menu:active {
-    opacity: 0.7;
+    opacity: 0.5;
     filter: grayscale(0.5);
-    transition: all 0.1s ease-in-out;
+    transform: scale(97%);
 }
 
+.boutons-menu-disabled {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
 
 
 
@@ -176,10 +165,20 @@ body {
     background: linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, hsl(295, 100%, 48%), #dd00f3);
     background-size: 360% 360%;
     box-shadow: inset 0px 0px 14px 22px rgba(0, 0, 0, 0.63);
-    -webkit-animation: rainbow 18s ease infinite;
-    -z-animation: rainbow 18s ease infinite;
-    -o-animation: rainbow 18s ease infinite;
-    animation: rainbow 18s ease infinite;
+    -webkit-animation: rainbow 9s ease infinite;
+    -z-animation: rainbow 9s ease infinite;
+    -o-animation: rainbow 9s ease infinite;
+    animation: rainbow 9s ease infinite;
+}
+
+.cercle-disabled {
+    background: linear-gradient(124deg, #ff0000, #ff3636, #ff6b6b, #e56565, #da2424, #6c0c0c);
+    background-size: 360% 360%;
+    box-shadow: inset 0px 0px 14px 22px rgba(0, 0, 0, 0.63);
+    -webkit-animation: rainbow 4s ease infinite;
+    -z-animation: rainbow 4s ease infinite;
+    -o-animation: rainbow 4s ease infinite;
+    animation: rainbow 4s ease infinite;
 }
 
 @-webkit-keyframes rainbow {
@@ -272,30 +271,63 @@ body {
 
 
 
-
-
 .settings-modal {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.2);
+
+    transition: backdrop-filter 0.3s ease;
+
+}
+
+.settings-modal.leave-active {
     backdrop-filter: blur(5px);
 }
 
 .settings-modal-content {
     background-color: var(--color-blanc-primaire);
     border-radius: 1.5rem;
-    /* équivalent à rounded-3xl */
     padding: 2rem;
-    /* équivalent à p-8 */
     max-width: 37rem;
-    /* équivalent à max-w-md */
     width: 100%;
+
+}
+
+
+
+.password-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    transition: backdrop-filter 0.3s ease;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.password-modal.leave-active {
+    backdrop-filter: blur(5px);
+}
+
+.password-modal-content {
+    background-color: var(--color-blanc-primaire);
+    border-radius: 1.3rem;
+    /* équivalent à rounded-3xl */
+    padding: 1.2rem;
+    /* équivalent à p-8 */
+    width: 26rem;
+    /* équivalent à max-w-md */
+
     /* équivalent à w-full */
 }
+
 
 .settings-titre {
     font-family: 'Work Sans', sans-serif;
@@ -305,13 +337,45 @@ body {
 
 }
 
+.password-titre {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 25px;
+    color: var(--color-noir-primaire);
+    line-height: 30px;
+
+    letter-spacing: -0.03em;
+}
+
 .pillule-bouton-settings {
     background-color: var(--color-noir-primaire);
     color: var(--color-blanc-primaire);
     transition: all 0.1s ease-in-out;
     border-radius: 0.6rem;
-    /* équivalent à rounded-3xl */
+}
 
+.pillule-bouton-password {
+
+    color: var(--color-blanc-primaire);
+    transition: all 0.1s ease-in-out;
+    border-radius: 0.6rem;
+}
+
+.pillule-bouton-password-noir {
+    background-color: var(--color-noir-primaire);
+}
+
+
+.pillule-bouton-password-blanc {
+    background-color: var(--color-blanc-quaternaire);
+}
+
+.password-label {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.05em;
+    color: var(--color-noir-primaire);
 }
 
 
@@ -323,6 +387,22 @@ body {
     /* équivalent à px-4 py-2 */
 }
 
+.texte-bouton-password {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0.4rem 1rem;
+    /* équivalent à px-4 py-2 */
+}
+
+.texte-bouton-password-noir {
+    color: var(--color-blanc-primaire);
+}
+
+.texte-bouton-password-blanc {
+    color: var(--color-noir-primaire);
+}
+
 .texte-bouton-sauvercharger {
     font-family: 'Work Sans', sans-serif;
     font-weight: 600;
@@ -331,9 +411,9 @@ body {
     /* équivalent à px-4 py-2 */
 }
 
-.server-url-container {
+.missing-config-container {
     font-family: 'Work Sans', sans-serif;
-    font-weight: 700;
+    font-weight: 620;
     position: fixed;
     bottom: 0;
     left: 50%;
@@ -343,16 +423,11 @@ body {
     gap: 8px;
     padding: 10px;
     font-size: 14px;
+    color: var(--color-rouge-primaire);
 
 }
 
-.server-url-container.red {
-    color: rgba(255, 64, 64, 1);
-}
 
-.server-url-container.gray {
-    color: rgba(128, 128, 128, 1);
-}
 
 .icon {
     display: inline-block;
@@ -368,12 +443,42 @@ body {
     /* rounded-md */
     font-weight: 600;
     font-size: 15px;
+    transform: scale(100%);
+    transition: all 0.1s ease-in-out;
 }
+
+
 
 .input-field:disabled {
     cursor: not-allowed;
     opacity: 0.4;
 
+}
+
+.input-field-password {
+    width: 100%;
+
+    padding: 0.6rem;
+    background-color: #e8e8e8;
+
+    border-radius: 0.8rem;
+    font-weight: 700;
+    font-size: 13px;
+    transform: scale(100%);
+    transition: all 0.1s ease-in-out;
+}
+
+
+
+
+.password-texte {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 13px;
+    padding-bottom: 5%;
+    letter-spacing: -0.03em;
+    color: var(--color-gris-primaire);
 }
 
 .nom-parametre {
@@ -613,4 +718,64 @@ body {
     border-radius: 9999px;
 
     margin-bottom: 1rem;
+}
+
+#missing-config-icon {
+    width: 1.2em;
+    height: 1.2em;
+    color: var(--color-rouge-primaire);
+    margin-right: 0.3rem;
+}
+
+
+
+@keyframes placeHolderShimmer {
+    0% {
+        background-position: -468px 0
+    }
+
+    100% {
+        background-position: 468px 0
+    }
+}
+
+.placeholder {
+    padding: 1em;
+    border-radius: 0.7rem;
+    opacity: 0.7;
+    margin: 0.2rem 0;
+    animation-duration: 1.25s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: placeHolderShimmer;
+    animation-timing-function: ease-in-out;
+    background: darkgray;
+    background: linear-gradient(to right, #b0b0b0 10%, #d7d7d7 18%, #b0b0b0 33%);
+    background-size: 800px 104px;
+    position: relative;
+
+}
+
+.copy-tooltip {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(10px, 10px);
+    transition: opacity 0.3s ease;
+    font-family: 'Inconsolata', sans-serif;
+    font-weight: 600;
+    color: var(--color-noir-primaire);
+    font-size: 15px;
+
+    padding: 0.4rem;
+    border-radius: 0.6rem;
+
+
+}
+
+.green-icon {
+    width: 1.2em;
+    height: 1.2em;
+    color: var(--color-vert-primaire);
+
 }

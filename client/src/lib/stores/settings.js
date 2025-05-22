@@ -1,6 +1,9 @@
 import { writable } from 'svelte/store';
 
+export const isConfigSet = writable(false);
 
+export const showSendModal = writable(false);
+export const showReceiveModal = writable(false);
 
 export const globalConfig = writable({
     url_server: '',

@@ -1,5 +1,7 @@
 use nexium::gitlab;
 use nexium::gitlab::*;
+use nexium::login;
+use nexium::login::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
@@ -21,7 +23,7 @@ pub struct Config {
 #[derive(Debug)]
 pub enum ConfigError {
     FileNotFound,
-    InvalidLogin,
+
     InvalidURL,
     InvalidPort,
     InvalidGitlabToken,
@@ -37,28 +39,27 @@ pub enum ConfigError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
-            ConfigError::FileNotFound => "Configuration file not found.",
+            ConfigError::FileNotFound => {
+                "Fichier de configuration introuvable."
+            }
 
-            ConfigError::InvalidLogin => {
-                "Invalid login format. Expected 'prenom.nom'."
-            }
-            ConfigError::InvalidURL => "Invalid server URL.",
-            ConfigError::InvalidPort => "Invalid port number.",
-            ConfigError::InvalidGitlabToken => "Invalid GitLab token.",
+            ConfigError::InvalidURL => "URL de serveur invalide.",
+            ConfigError::InvalidPort => "Port de serveur invalide.",
+            ConfigError::InvalidGitlabToken => "Token GitLab invalide.",
             ConfigError::NetworkError => {
-                "Network error while validating GitLab token."
+                "Erreur de réseau lors de la vérification du token."
             }
-            ConfigError::InternalError => "Internal error.",
+            ConfigError::InternalError => "Erreur interne.",
             ConfigError::FileFormatError => {
-                "Configuration file format is invalid."
+                "Le format du fichier de configuration est invalide."
             }
             ConfigError::FileWriteError => {
-                "Error writing to the configuration file."
+                "Erreur d'écriture dans le fichier de configuration."
             }
-            ConfigError::KeyGenerationError => "Error generating key pair.",
-            ConfigError::EmptyKeyError => "Public or private key is empty.",
+            ConfigError::KeyGenerationError => "Erreur de génération de clé.",
+            ConfigError::EmptyKeyError => "Une ou plusieurs clés sont vides.",
             ConfigError::FileReadError => {
-                "Error reading the configuration file."
+                "Erreur de lecture du fichier de configuration."
             }
         };
         write!(f, "{msg}")
@@ -66,23 +67,23 @@ impl fmt::Display for ConfigError {
 }
 
 impl Config {
-    pub fn from_file(path: &Path) -> Result<Config, ConfigError> {
+    pub fn from_file(path: &Path) -> Result<Config, String> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => {
-                return Err(ConfigError::FileNotFound);
+                return Err(ConfigError::FileNotFound.to_string());
             }
         };
         let config: Config = match serde_json::from_str(&content) {
             Ok(c) => c,
             Err(_) => {
-                return Err(ConfigError::FileFormatError);
+                return Err(ConfigError::FileFormatError.to_string());
             }
         };
         match config.check_values() {
             Ok(_) => {}
             Err(e) => {
-                return Err(e);
+                return Err(e.to_string());
             }
         }
 
@@ -105,22 +106,22 @@ impl Config {
         return Ok(());
     }
 
-    pub fn check_values(&self) -> Result<(), ConfigError> {
+    pub fn check_values(&self) -> Result<(), String> {
         match self.port {
             Some(port) => {
                 if port < 1 {
-                    return Err(ConfigError::InvalidPort);
+                    return Err(ConfigError::InvalidPort.to_string());
                 }
             }
             None => {
-                return Err(ConfigError::InvalidPort);
+                return Err(ConfigError::InvalidPort.to_string());
             }
         }
 
         match Url::parse(&self.url_server) {
             Ok(_) => {}
             Err(_) => {
-                return Err(ConfigError::InvalidURL);
+                return Err(ConfigError::InvalidURL.to_string());
             }
         }
 
@@ -132,7 +133,7 @@ impl Config {
         match gitlab_client.check_token() {
             Ok(valid) => {
                 if !valid {
-                    return Err(ConfigError::InvalidGitlabToken);
+                    return Err(ConfigError::InvalidGitlabToken.to_string());
                 }
             }
             Err(e) => {
@@ -142,17 +143,21 @@ impl Config {
                         ConfigError::InvalidGitlabToken
                     }
                     _ => ConfigError::InternalError,
-                });
+                }
+                .to_string());
             }
         };
 
-        let parts: Vec<&str> = self.user_login.split('.').collect();
-        if parts.len() != 2 || parts[0].len() == 0 || parts[1].len() == 0 {
-            return Err(ConfigError::InvalidLogin);
+        let login = Login::new(self.user_login.clone());
+        match login {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e.to_string());
+            }
         }
 
         if self.pub_key.len() == 0 || self.priv_key.len() == 0 {
-            return Err(ConfigError::EmptyKeyError);
+            return Err(ConfigError::EmptyKeyError.to_string());
         }
 
         return Ok(());

@@ -133,7 +133,7 @@ jzTbHisy
         223,
         "william.valenduc",
         DataType::ClassicTransaction,
-        key,
+        &key,
     )
     .expect("Failed to create transaction");
 

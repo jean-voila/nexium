@@ -1,13 +1,15 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod config;
+mod invoice;
 mod nexium_api;
 
 use config::Config;
 use config::ConfigError;
+use invoice::*;
 use nexium_api::*;
 
-use nexium::{defaults::*, gitlab::*, rsa::*};
+use nexium::{defaults::*, gitlab::*, login::*, rsa::*};
 // use sleep
 use std::path::Path;
 
@@ -29,7 +31,7 @@ async fn check_config_values(config: Config) -> Result<String, String> {
 async fn load_config_from_file(path_string: String) -> Result<Config, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         if Path::new(&path_string).exists() == false {
-            return Err(ConfigError::FileNotFound);
+            return Err(ConfigError::FileNotFound.to_string());
         }
         let path = Path::new(&path_string);
         match Config::from_file(path) {
@@ -66,6 +68,67 @@ async fn save_config_to_file(
     match result {
         Ok(r) => r,
         Err(_) => Err(ConfigError::FileWriteError.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn load_invoice_from_file(
+    path_string: String,
+) -> Result<Invoice, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        if Path::new(&path_string).exists() == false {
+            return Err(InvoiceError::FileNotFound);
+        }
+        let path = Path::new(&path_string);
+        match Invoice::from_file(path) {
+            Ok(invoice) => Ok(invoice),
+            Err(e) => Err(e),
+        }
+    })
+    .await;
+
+    match result {
+        Ok(r) => match r {
+            Ok(config) => Ok(config),
+            Err(e) => Err(e.to_string()),
+        },
+        Err(_) => Err(ConfigError::FileReadError.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn save_facture_to_file(
+    invoice: Invoice,
+    path_string: String,
+) -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&path_string);
+
+        match Invoice::to_file(&invoice, path) {
+            Ok(_) => Ok("".to_string()),
+            Err(e) => Err(e.to_string()),
+        }
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err(ConfigError::FileWriteError.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn check_invoice_values(invoice: Invoice) -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        Invoice::check_values(&invoice)
+            .map(|_| "".to_string())
+            .map_err(|e| e.to_string())
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err("Thread panicked during invoice validation".to_string()),
     }
 }
 
@@ -153,6 +216,26 @@ async fn get_login(
     }
 }
 
+#[tauri::command]
+async fn get_names_from_login(
+    login: String,
+) -> Result<(String, String), String> {
+    // Utilise login::new(login) et login::get_names() pour obtenir le nom et le prénom
+    let login = Login::new(login);
+    match login {
+        Ok(login) => {
+            let names = login.get_names();
+            match names {
+                Ok((first_name, last_name)) => {
+                    return Ok((first_name, last_name))
+                }
+                Err(e) => Err(e.to_string()),
+            }
+        }
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -164,7 +247,11 @@ fn main() {
             save_config_to_file,
             keypair_generation,
             send_gpg_key,
-            get_login
+            get_login,
+            save_facture_to_file,
+            check_invoice_values,
+            get_names_from_login,
+            load_invoice_from_file
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())
