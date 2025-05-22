@@ -22,7 +22,7 @@ pub struct Blockchain {
     file: File,
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,
-    size: u64,
+    pub size: u64,
 }
 
 impl Blockchain {
@@ -34,7 +34,7 @@ impl Blockchain {
             .create(true)
             .open(BLOCKCHAIN_FILE);
 
-        let mut file = match r {
+        let file = match r {
             Ok(f) => f,
             Err(_) => {
                 return Err(format!(
@@ -107,7 +107,8 @@ impl Blockchain {
         match self.file.write_all(&buff) {
             Ok(_) => {
                 self.last_hash = sha256(&buff);
-                // self.cache.insert();
+                self.cache.insert(self.last_hash, self.size);
+                self.size += buff.len() as u64;
             }
             Err(e) => {
                 println!("Error writing to file: {}", e);

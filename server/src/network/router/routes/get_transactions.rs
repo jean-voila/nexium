@@ -34,10 +34,10 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     };
 
     let mut arr = json::array![];
-    let mut hash = server.blockchain.last_hash;
+    let mut hash = server.cache.blockchain.last_hash;
 
     loop {
-        let b = match server.blockchain.get_block(&hash) {
+        let b = match server.cache.blockchain.get_block(&hash) {
             Ok(b) => b,
             Err(_) => {
                 let res = Response::new(Status::BadRequest, "Invalid block");
@@ -84,7 +84,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
 
         hash = b.header.previous_block_hash;
 
-        match server.blockchain.cache.get(&hash) {
+        match server.cache.blockchain.cache.get(&hash) {
             Some(0) => {
                 // end of blockchain
                 break;

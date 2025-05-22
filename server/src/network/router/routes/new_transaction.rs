@@ -25,7 +25,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     };
     dbg!(&tr);
 
-    server.blockchain.add_transaction(tr);
+    server.cache.blockchain.add_transaction(tr);
 
     let res = Response::new(Status::Ok, "");
     let _ = req.send(&res);

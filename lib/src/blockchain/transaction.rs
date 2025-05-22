@@ -6,6 +6,7 @@ use crate::rsa::KeyPair;
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
+    transaction_data::{TransactionData, TransactionDataError},
     transaction_header::TransactionHeader,
 };
 
@@ -96,8 +97,7 @@ impl Transaction {
         let mut res = vec![
             0;
             TRANSACTION_HEADER_SIZE
-                + self.header.transaction_size
-                    as usize
+                + self.header.transaction_size as usize
                 + SIGNATURE_SIZE
         ];
 
@@ -113,6 +113,10 @@ impl Transaction {
         };
         res[signature_start..].copy_from_slice(&sig);
         return res;
+    }
+
+    pub fn get_data(&self) -> Result<TransactionData, TransactionDataError> {
+        TransactionData::from_buffer(&self.header.data_type, &self.data)
     }
 }
 

@@ -27,9 +27,20 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     let balance = match server.cache.get(user_login) {
         Some(u) => match u.balance {
             Some(b) => b,
-            None => server.cache.update_balance(user_login),
+            None => match server.cache.update_balance(user_login) {
+                Ok(b) => b,
+                Err(e) => {
+                    let res = Response::new(Status::BadRequest, e);
+                    let _ = req.send(&res);
+                    return;
+                }
+            },
         },
-        None => server.cache.update_balance(user_login),
+        None => {
+            let res = Response::new(Status::BadRequest, "User not found");
+            let _ = req.send(&res);
+            return;
+        }
     };
 
     let json = json::object! {

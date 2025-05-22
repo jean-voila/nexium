@@ -3,17 +3,11 @@ use crate::{
     blockchain::{blockchain::Blockchain, cache::cache::Cache},
     config::Config,
 };
-use nexium::{
-    blockchain::transaction::Transaction, gitlab::GitlabClient, rsa::KeyPair,
-};
+use nexium::{gitlab::GitlabClient, rsa::KeyPair};
 use std::{net::TcpListener, process};
 
 pub struct Server<'a> {
     pub cache: Cache<'a>,
-    #[allow(dead_code)]
-    mempool: Vec<Transaction>,
-    // pub gitlab: &'a GitlabClient,
-    pub blockchain: Blockchain,
     pub login: String,
     address: String,
     port: u16,
@@ -24,7 +18,7 @@ impl<'a> Server<'a> {
     pub fn new(
         config: &Config,
         gitlab: &'a GitlabClient,
-        blockchain: Blockchain,
+        blockchain: &'a mut Blockchain,
     ) -> Result<Self, String> {
         let key = match KeyPair::priv_from_file(
             &config.key_filepath.to_string(),
@@ -41,10 +35,7 @@ impl<'a> Server<'a> {
         };
 
         Ok(Self {
-            cache: Cache::new(gitlab),
-            mempool: Vec::new(),
-            blockchain,
-            // gitlab,
+            cache: Cache::new(gitlab, blockchain),
             login: config.user_login.clone(),
             address: config.listen.clone(),
             port: config.port,
