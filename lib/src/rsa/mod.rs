@@ -113,7 +113,7 @@ impl KeyPair {
         Ok(decrypted_signature == m)
     }
 
-    pub fn crypt(&self, message: &String) -> Result<String, RSAError> {
+    pub fn crypt(&self, message: &str) -> Result<String, RSAError> {
         let parsed_msg: Vec<u8> = message.as_bytes().to_vec();
 
         if message.is_empty() {
@@ -126,9 +126,33 @@ impl KeyPair {
             return Err(RSAError::MessageTooBig);
         }
         let res = m.modpow(&self.e, &self.n);
-        Ok(res.to_string())
+        Ok(format!("{:0617}", res))
     }
-    pub fn decrypt(&self, message: &String) -> Result<String, RSAError> {
+
+    pub fn crypt_split(&self, message: &String) -> Result<String, RSAError> {
+        let mut i = 0;
+        let mut j = 0;
+        let mut res = String::new();
+
+        while i < message.len() {
+            j += 256;
+            if j > message.len() {
+                j = message.len();
+            }
+            let r = match self.crypt(&message[i..j]) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e);
+                }
+            };
+            dbg!(&r.len());
+            res.push_str(r.as_str());
+            i += 256;
+        }
+        return Ok(res);
+    }
+
+    pub fn decrypt(&self, message: &str) -> Result<String, RSAError> {
         let parsed_msg = BigUint::parse_bytes(message.as_bytes(), 10)
             .ok_or(RSAError::BadSignatureFormat)?;
 
@@ -143,6 +167,28 @@ impl KeyPair {
             Ok(s) => Ok(s),
             Err(_) => Err(RSAError::BadSignatureFormat),
         }
+    }
+
+    pub fn decrypt_split(&self, message: &String) -> Result<String, RSAError> {
+        let mut i = 0;
+        let mut j = 0;
+        let mut res = String::new();
+
+        while i < message.len() {
+            j += 617;
+            if j > message.len() {
+                j = message.len();
+            }
+            let r = match self.decrypt(&message[i..j]) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e);
+                }
+            };
+            res.push_str(r.as_str());
+            i += 617;
+        }
+        return Ok(res);
     }
 
     // Concatenate packet of the public key with packet of user id

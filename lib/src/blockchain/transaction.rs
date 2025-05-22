@@ -1,13 +1,12 @@
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
-use touche::header;
 
-use crate::{blockchain::consts::TRANSACTION_EMITTER, rsa::KeyPair};
+use crate::rsa::KeyPair;
 
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
-    transaction_header::{TransactionHeader, EMITTER},
+    transaction_header::TransactionHeader,
 };
 
 pub type SIGNATURE = [u8; SIGNATURE_SIZE];
