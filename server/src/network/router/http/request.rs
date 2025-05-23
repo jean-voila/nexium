@@ -101,7 +101,7 @@ impl<'a> Request<'a> {
         while lines[0] != "" {
             let line = &lines[0];
             let (key, value) = Request::parse_header(line);
-            req.headers.insert(key, value);
+            req.headers.insert(key.to_lowercase(), value);
             lines.rotate_left(1);
         }
         lines.rotate_left(1);
@@ -115,12 +115,12 @@ impl<'a> Request<'a> {
     }
 
     pub fn check(&mut self, cache: &mut Cache) -> Result<KeyPair, String> {
-        let login = match self.headers.get("Login") {
+        let login = match self.headers.get("login") {
             Some(l) => l,
             None => return Err(String::from("Missing Login header")),
         };
 
-        let sig = match self.headers.get("Sig-Sample") {
+        let sig = match self.headers.get("sig-sample") {
             Some(s) => s,
             None => return Err(String::from("Missing Sig-Sample header")),
         };
