@@ -103,16 +103,7 @@ impl core::fmt::Debug for TransactionHeader {
         write!(f, "transaction_size: {},\n", self.transaction_size)?;
         write!(f, "timestamp: {},\n", self.timestamp)?;
         write!(f, "fees: {},\n", self.fees)?;
-        // write!(f, "emitter: [")?;
-        // for i in 0..TRANSACTION_EMITTER {
-        //     write!(f, "{}, ", self.emitter[i])?;
-        // }
-        // write!(f, "],\n")?;
-        write!(
-            f,
-            "emitter: {:?},\n",
-            String::from_utf8(self.emitter.to_vec()).unwrap()
-        )?;
+        write!(f, "emitter: {},\n", String::from_utf8_lossy(&self.emitter))?;
         // write!(f, "data_type: {},\n", self.data_type)?;
         write!(f, "}}")?;
         Ok(())

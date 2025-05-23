@@ -171,14 +171,14 @@ impl KeyPair {
         signature: &BigUint,
     ) -> Result<bool, RSAError>
     where
-        T: Into<Vec<u8>>,
+        T: AsRef<Vec<u8>>,
     {
-        let message = message.into();
-        if message.is_empty() {
+        let msg = message.as_ref();
+        if msg.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
-        let hash_verif = sha256(&message);
-        let m = BigUint::from_bytes_be(&hash_verif);
+        let hash = sha256(msg);
+        let m = BigUint::from_bytes_be(&hash);
         let decrypted_signature = signature.modpow(&self.e, &self.n);
 
         Ok(decrypted_signature == m)

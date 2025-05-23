@@ -114,7 +114,12 @@ impl<'a> Cache<'a> {
         return Ok(balance);
     }
 
-    fn check_keys(&self, keys: &Vec<KeyPair>, sig: &String) -> Option<KeyPair> {
+    fn check_keys(
+        &self,
+        keys: &Vec<KeyPair>,
+        sig: &String,
+        message: &Vec<u8>,
+    ) -> Option<KeyPair> {
         let s = match BigUint::from_str(sig) {
             Ok(s) => s,
             Err(_) => {
@@ -124,7 +129,7 @@ impl<'a> Cache<'a> {
         };
 
         for key in keys {
-            match key.check_signature(SIG_SAMPLE, &s) {
+            match key.check_signature(&message, &s) {
                 Ok(b) => {
                     if b {
                         return Some(key.clone());
@@ -138,9 +143,19 @@ impl<'a> Cache<'a> {
         None
     }
 
-    pub fn get_key(&mut self, login: &String, sig: &String) -> Option<KeyPair> {
+    pub fn get_key(
+        &mut self,
+        login: &String,
+        sig: &String,
+        message: Option<&Vec<u8>>,
+    ) -> Option<KeyPair> {
+        let msg = match message {
+            Some(m) => m,
+            None => &SIG_SAMPLE.as_bytes().to_vec(),
+        };
+
         match self.data.get(login) {
-            Some(u) => match self.check_keys(&u.keys, sig) {
+            Some(u) => match self.check_keys(&u.keys, sig, msg) {
                 Some(k) => {
                     return Some(k);
                 }
@@ -151,7 +166,7 @@ impl<'a> Cache<'a> {
 
         match self.update_keys(&login) {
             Ok(keys) => {
-                return self.check_keys(&keys, sig);
+                return self.check_keys(&keys, sig, msg);
             }
             Err(_) => return None,
         }

@@ -197,7 +197,13 @@ impl core::fmt::Debug for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\n")?;
         write!(f, "header: {:?},\n", self.header)?;
-        write!(f, "data: [{:?}],\n", self.get_data())?;
+        write!(
+            f,
+            "data: {:?},\n",
+            self.get_data().unwrap_or(TransactionData::Unknown {
+                data: self.data.to_vec()
+            })
+        )?;
         write!(f, "signature: {:?},\n", self.signature)?;
         write!(f, "}}")?;
         Ok(())

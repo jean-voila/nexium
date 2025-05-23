@@ -7,7 +7,13 @@ use super::{
     },
 };
 use nexium::{
-    blockchain::transaction::Transaction, defaults::BLOCKCHAIN_FILE,
+    blockchain::{
+        consts::TRANSACTION_RECEIVER,
+        data_type::DataType,
+        transaction::Transaction,
+        transaction_data::{TransactionData, RECEIVER},
+    },
+    defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     sha256::sha256,
 };
 use std::{
@@ -120,7 +126,29 @@ impl Blockchain {
         self.mempool.add(transaction);
         dbg!(self.mempool.is_full());
         if self.mempool.is_full() {
-            let block = Block::new(self.last_hash, self.mempool.dump());
+            let mut transactions = self.mempool.dump();
+            transactions
+                .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
+
+            //
+
+            let a = transactions.iter().filter_map(|tr| match tr.get_data() {
+                Ok(data) => match data {
+                    TransactionData::ClassicTransaction {
+                        receiver,
+                        amount,
+                        has_description,
+                        description,
+                    } => {
+                        todo!();
+                        Some(())
+                    }
+                    _ => None,
+                },
+                Err(_) => None,
+            });
+
+            let block = Block::new(self.last_hash, &transactions);
             // dbg!(&block);
             self.append(&block);
         }
@@ -167,5 +195,75 @@ impl Blockchain {
             }
         };
         self.read_block(offset)
+    }
+
+    pub fn block_foreach(
+        &mut self,
+        mut f: impl FnMut(&Block) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let mut offset = 0;
+        while offset < self.size {
+            let block = match self.read_block(offset) {
+                Ok(b) => b,
+                Err(e) => {
+                    return Err(format!(
+                        "Error reading blockchain file: {}",
+                        e
+                    ));
+                }
+            };
+            f(&block)?;
+            offset += block.size() as u64;
+        }
+        Ok(())
+    }
+
+    pub fn get_user_balance<T>(&mut self, login: T) -> Result<u32, String>
+    where
+        T: AsRef<str>,
+    {
+        let login = login.as_ref();
+        let mut balance = INITIAL_BALANCE;
+
+        let res = self.block_foreach(|b| {
+            for tr in &b.transactions {
+                if tr.header.get_login() == login
+                    || tr.header.data_type == DataType::ClassicTransaction
+                {
+                    match tr.get_data() {
+                        Ok(data) => {
+                            match data {
+                                TransactionData::ClassicTransaction {
+                                    receiver,
+                                    amount,
+                                    ..
+                                } => {
+                                    let mut l = [0; TRANSACTION_RECEIVER];
+                                    l[..login.len()]
+                                        .copy_from_slice(login.as_bytes());
+                                    if l == receiver {
+                                        balance += amount;
+                                    } else if l == tr.header.emitter {
+                                        balance -= amount;
+                                    };
+                                }
+                                _ => (),
+                            };
+                        }
+                        Err(_) => {
+                            return Err(
+                                "Failed to get transaction data".to_string()
+                            );
+                        }
+                    };
+                };
+            }
+            Ok(())
+        });
+
+        match res {
+            Ok(_) => Ok(balance),
+            Err(e) => Err(e),
+        }
     }
 }

@@ -11,7 +11,7 @@ use nexium::{
         consts::SIGNATURE_SIZE, data_type::DataType, transaction::Transaction,
     },
     defaults::KEYPAIR_BIT_SIZE,
-    rsa::KeyPair,
+    rsa::{self, KeyPair},
 };
 
 const KEY_FILE: &str = ".nexiumlocal/private-key.pem";
@@ -20,48 +20,6 @@ pub fn main() {
     let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
         .expect("Failed to load private key from file");
 
-    let tr = Transaction::new_classic(
-        "jean.herail",
-        50,
-        "",
-        100,
-        "william.valenduc",
-        &key,
-    )
-    .expect("Failed to create transaction");
-
-    // let tr = Transaction::new_classic(
-    //     "jean.herail",
-    //     50,
-    //     "usdfviosb",
-    //     100,
-    //     "william.valenduc",
-    //     &key,
-    // )
-    // .expect("Failed to create transaction");
-
-    // let tr = Transaction::new_classic(
-    //     "sqsjeaoidhfsiufpsfusdfgfusifn.hersuigfbsflgsfosiufgsfsydfgfvdsifail",
-    //     50,
-    //     "usdfviosb",
-    //     100,
-    //     "william.valenduc",
-    //     &key,
-    // )
-    // .expect("Failed to create transaction");
-
-    // let tr = Transaction::new_classic(
-    //     "jean.herail",
-    //     50,
-    //     "suidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifg",
-    //     100,
-    //     "william.valenduc",
-    //     &key,
-    // )
-    // .expect("Failed to create transaction");
-    dbg!(&tr);
-
-    return;
     let mut bc = Blockchain::init().expect("Failed to initialize blockchain");
     // let b1 = match bc.read_block(0) {
     //     Ok(b) => b,
@@ -82,79 +40,84 @@ pub fn main() {
     // };
     // dbg!(&b2);
     // dbg!(&b1 == &b2);
-    // return;
-
-    // println!("Key creation");
-    // let key = KeyPair::generate(KEYPAIR_BIT_SIZE, "");
-    // println!("Key created");
-
-    let h = [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
-    let transactions = vec![Transaction::new(
-        [0; 1000].to_vec(),
-        0,
-        "william.valenduc",
-        DataType::ClassicTransaction,
-        &key,
-    )
-    .expect("Failed to create transaction")];
-    let block = Block::new(h, transactions);
-    bc.append(&block);
-
     return;
 
-    let tr1 = match Transaction::new(
-        [0; 1000].to_vec(),
-        0,
+    let login1 = "william.valenduc";
+    let login2 = "jean.herail";
+    let balance = bc
+        .get_user_balance(login1)
+        .expect("Failed to get user balance");
+    println!("Balance: {} {}", login1, balance);
+
+    let balance = bc
+        .get_user_balance(login2)
+        .expect("Failed to get user balance");
+    println!("Balance: {} {}", login2, balance);
+    return;
+
+    //////////////////
+
+    // let t = Transaction::new(
+    //     "GENESIS".as_bytes().to_vec(),
+    //     0,
+    //     "william.valenduc",
+    //     DataType::Unknown,
+    //     &key,
+    // )
+    // .expect("Failed to create transaction");
+    // dbg!(&t);
+
+    // let mut vec = t.header.to_buffer().to_vec();
+    // vec.extend(&t.data);
+    // let check = key.check_signature(vec, &t.signature).unwrap();
+    // println!("Check signature: {}", check);
+
+    // println!("data: {}", String::from_utf8_lossy(&t.data));
+    // let json =
+    //     serde_json::to_string(&t).expect("Failed to serialize transaction");
+    // println!("Transaction: {}", json);
+
+    // bc.add_transaction(t);
+    // return;
+
+    ///////////////
+
+    // let h = [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
+    // let transactions = vec![t];
+    // let block = Block::new(h, &transactions);
+    // bc.append(&block);
+
+    ///////////////
+
+    // let tr = Transaction::new_classic(
+    //     "jean.herail",
+    //     50,
+    //     "TEST",
+    //     0,
+    //     "william.valenduc",
+    //     &key,
+    // );
+    let tr = Transaction::new_classic(
         "william.valenduc",
-        DataType::ClassicTransaction,
-        &key,
-    ) {
-        Ok(tr) => tr,
-        Err(e) => {
-            println!("Error creating transaction: {}", e);
-            return;
-        }
-    };
-
-    let tr2 = match Transaction::new(
-        [1; 2863].to_vec(),
-        999,
+        50,
+        "TEST_ERROR",
+        0,
         "jean.herail",
-        DataType::Unknown,
         &key,
-    ) {
-        Ok(tr) => tr,
+    );
+
+    let tr1 = match tr {
+        Ok(t) => t,
         Err(e) => {
             println!("Error creating transaction: {}", e);
             return;
         }
     };
-
-    // let transactions = vec![tr1, tr2];
-    // let block = Block::new(1, prev_hash, 3, 19, transactions);
-    // dbg!(&block);
-
-    // let buff = block.clone().to_buffer();
-    // std::fs::write("block.bin", &buff).expect("Unable to write file");
-
-    // // read the file
-    // let buff_r = std::fs::read("block.bin").expect("Unable to read file");
-    // let block_r = match Block::from_buffer(&buff_r) {
-    //     Ok(block) => block,
-    //     Err(e) => {
-    //         println!("Error creating block from buffer: {}", e);
-    //         return;
-    //     }
-    // };
-
-    // let same_buff = buff == buff_r;
-    // println!("Buffers are the same: {}", same_buff);
-
-    // let same_block = block == block_r;
-    // println!("Blocks are the same: {}", same_block);
-
-    // dbg!(block_r);
-
-    bc.add_transaction(tr1);
-    // blockchain.add_transaction(tr2);
+    // dbg!(&tr1);
+    let json =
+        serde_json::to_string(&tr1).expect("Failed to serialize transaction");
+    // println!("Transaction: {}", json);
+    let crypt = key.crypt_split(&json).expect("Failed to encrypt");
+    println!("Crypt:\n{}", crypt);
+    // bc.add_transaction(tr1);
 }

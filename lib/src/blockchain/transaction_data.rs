@@ -148,8 +148,8 @@ impl core::fmt::Debug for TransactionData {
                     "receiver: {},\n",
                     String::from_utf8_lossy(receiver)
                 )?;
-                write!(f, "amount: {:?},\n", amount)?;
-                write!(f, "has_description: {:?},\n", has_description)?;
+                write!(f, "amount: {},\n", amount)?;
+                write!(f, "has_description: {},\n", has_description)?;
                 if *has_description {
                     write!(
                         f,

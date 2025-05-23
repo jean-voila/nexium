@@ -1,3 +1,9 @@
+use nexium::blockchain::{
+    consts::TRANSACTION_RECEIVER,
+    data_type::DataType,
+    transaction_data::{TransactionData, RECEIVER},
+};
+
 use crate::network::{
     router::http::{request::Request, response::Response, status::Status},
     server::Server,
@@ -46,35 +52,57 @@ pub fn handler(req: &mut Request, server: &mut Server) {
             }
         };
 
-        for tr in b.transactions.iter() {
+        for tr in b.transactions.iter().rev() {
             if tr.header.get_login() == *login {
-                let obj = match serde_json::to_string(&tr) {
-                    Ok(obj) => obj,
-                    Err(_) => {
-                        let res = Response::new(
-                            Status::BadRequest,
-                            "Failed to parse transaction",
-                        );
-                        let _ = req.send(&res);
-                        return;
-                    }
+                // take the transaction
+            } else if tr.header.data_type == DataType::ClassicTransaction {
+                match tr.get_data() {
+                    Ok(tr_data) => match tr_data {
+                        TransactionData::ClassicTransaction {
+                            receiver,
+                            ..
+                        } => {
+                            let mut l = [0; TRANSACTION_RECEIVER];
+                            l[..login.len()].copy_from_slice(login.as_bytes());
+
+                            if receiver != l {
+                                continue; // skip this transaction
+                            }
+
+                            // take the transaction
+                        }
+                        _ => continue, // skip this transaction
+                    },
+                    _ => continue, // skip this transaction
                 };
+            }
 
-                match arr.push(obj) {
-                    Ok(_) => {}
-                    Err(_) => {
-                        let res = Response::new(
-                            Status::BadRequest,
-                            "Failed to add transaction object",
-                        );
-                        let _ = req.send(&res);
-                        return;
-                    }
+            let obj = match serde_json::to_string(&tr) {
+                Ok(obj) => obj,
+                Err(_) => {
+                    let res = Response::new(
+                        Status::BadRequest,
+                        "Failed to parse transaction",
+                    );
+                    let _ = req.send(&res);
+                    return;
                 }
+            };
 
-                if arr.len() >= n {
-                    break;
+            match arr.push(obj) {
+                Ok(_) => {}
+                Err(_) => {
+                    let res = Response::new(
+                        Status::BadRequest,
+                        "Failed to add transaction object",
+                    );
+                    let _ = req.send(&res);
+                    return;
                 }
+            }
+
+            if arr.len() >= n {
+                break;
             }
         }
 

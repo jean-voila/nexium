@@ -24,20 +24,10 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         }
     };
 
-    let balance = match server.cache.get(user_login) {
-        Some(u) => match u.balance {
-            Some(b) => b,
-            None => match server.cache.update_balance(user_login) {
-                Ok(b) => b,
-                Err(e) => {
-                    let res = Response::new(Status::BadRequest, e);
-                    let _ = req.send(&res);
-                    return;
-                }
-            },
-        },
-        None => {
-            let res = Response::new(Status::BadRequest, "User not found");
+    let balance = match server.cache.blockchain.get_user_balance(user_login) {
+        Ok(b) => b,
+        Err(e) => {
+            let res = Response::new(Status::BadRequest, e);
             let _ = req.send(&res);
             return;
         }
@@ -49,7 +39,9 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     };
 
     let data = json.dump();
-    dbg!(data.len());
+    println!("data: {}", data);
+    println!("data len: {}", data.len());
+
     let crypted = match key.crypt(&data) {
         Ok(res) => res,
         Err(_) => {
@@ -58,7 +50,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
             return;
         }
     };
-    // dbg!(&crypted);
+    println!("crypted: {}", crypted);
 
     let mut res = Response::new(Status::Ok, crypted);
     res.set_header("content-type", "text/plain");

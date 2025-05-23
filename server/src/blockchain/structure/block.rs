@@ -67,7 +67,7 @@ impl Block {
 
     pub fn new(
         previous_block_hash: HeaderPreviousBlockHash,
-        transactions: Vec<Transaction>,
+        transactions: &Vec<Transaction>,
     ) -> Self {
         let size = transaction_vec_size(&transactions);
         let merkle_root = Block::merkle_root(&transactions);

@@ -19,10 +19,6 @@ pub struct Request<'a> {
     pub headers: HashMap<String, String>,
     pub body: String,
     stream: &'a mut TcpStream,
-    // pub server: &'a mut Server,
-    // pub login: String,
-    // pub sig: String,
-    // pub key: KeyPair,
 }
 
 impl<'a> Request<'a> {
@@ -100,9 +96,6 @@ impl<'a> Request<'a> {
             headers: HashMap::new(),
             body: String::new(),
             stream,
-            // login: String::new(),
-            // sig: String::new(),
-            // key: KeyPair::default(),
         };
 
         while lines[0] != "" {
@@ -118,10 +111,6 @@ impl<'a> Request<'a> {
             None => lines[0].to_string(),
         };
 
-        // let (l, s, k) = req.check(&mut cache)?;
-        // req.login = l;
-        // req.sig = s;
-        // req.key = k;
         return Ok(req);
     }
 
@@ -136,7 +125,7 @@ impl<'a> Request<'a> {
             None => return Err(String::from("Missing Sig-Sample header")),
         };
 
-        match cache.get_key(login, sig) {
+        match cache.get_key(login, sig, None) {
             Some(k) => Ok(k),
             None => {
                 return Err(String::from("Invalid signature"));
