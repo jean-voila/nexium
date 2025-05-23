@@ -61,14 +61,6 @@
 			console.error('Montant ou frais contient des caractères non numériques');
 			return;
 		}
-		try {
-			totalFees = await invoke('get_total_fees', {
-				login: sender_login,
-				amount: amount,
-				fees: parseFloat(fees) / 1_000_000,
-				description: description
-			});
-		} catch (e) {}
 		const invoice = {
 			sender_login,
 			amount,
