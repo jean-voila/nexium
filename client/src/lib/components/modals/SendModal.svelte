@@ -2,14 +2,20 @@
 	import { fly, fade } from 'svelte/transition';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
-	import { isConfigSet } from '$lib/stores/settings.js';
+	import { globalConfig } from '$lib/stores/settings.js';
 
 	let { oncancel } = $props();
 
-	let sender_login = $state('');
+	let receiver = $state('');
 	let amount = $state('');
 	let description = $state('');
 	let fees = $state('');
+	let copied = false;
+
+	let tooltipX = $state(0);
+	let tooltipY = $state(0);
+	let showMessage = $state('');
+
 	let invoice_file_extension = '';
 	invoke('get_invoice_extension').then((ext) => {
 		invoice_file_extension = ext;
@@ -21,13 +27,6 @@
 	let totalFees = '';
 	let isUserLoginValid = $state(false);
 
-	async function checkDestinataireLogin() {
-		try {
-			isUserLoginValid = await invoke('check_user_login', { login: sender_login });
-		} catch (e) {
-			isUserLoginValid = false;
-		}
-	}
 	async function handleLoadFile() {
 		const path = await open({
 			title: 'Choisir le fichier de la facture',
@@ -43,30 +42,28 @@
 			console.log('Path:', path);
 			const result = await invoke('load_invoice_from_file', { pathString: path });
 
-			sender_login = result.sender_login;
+			receiver = result.sender_login;
 			amount = result.amount;
 			description = result.description;
-			console.log('Invoice loaded');
-		} catch (e) {
-			console.error('Error loading invoice:', e);
-		}
+		} catch (e) {}
 	}
 	async function handleSend() {
-		if (!amount || !fees) {
-			console.error('Montant ou frais manquant');
-			return;
-		}
-		// ONLY ALLOW NUMERIC CHARACTERS
-		if (!/^\d*\.?\d*$/.test(amount) || !/^\d*\.?\d*$/.test(fees)) {
-			console.error('Montant ou frais contient des caractères non numériques');
-			return;
-		}
-		const invoice = {
-			sender_login,
-			amount,
-			description
+		const transaction = {
+			receiver: receiver,
+			amount: amount,
+			description: description,
+			fees: fees
 		};
-		handleClose();
+
+		try {
+			let send_transaction_result = await invoke('send_transaction', {
+				transaction: transaction,
+				globalConfig: $globalConfig
+			});
+			handleClose();
+		} catch (e) {
+			console.error('Error sending transaction:', e);
+		}
 	}
 </script>
 
@@ -81,8 +78,7 @@
 					<input
 						id="destinataire"
 						type="text"
-						bind:value={sender_login}
-						oninput={checkDestinataireLogin}
+						bind:value={receiver}
 						class="input-field w-full"
 						placeholder="Login du destinataire"
 					/>
@@ -110,8 +106,15 @@
 								id="fees"
 								type="text"
 								bind:value={fees}
-								class="input-field flex-1"
+								class="input-field-fees flex-1"
 								placeholder="0.00"
+								disabled={$globalConfig.is_testnet}
+								onmouseenter={() => (showMessage = 'Le serveur est en testnet')}
+								onmouseleave={() => (showMessage = '')}
+								onmousemove={(e) => {
+									tooltipX = e.clientX;
+									tooltipY = e.clientY;
+								}}
 							/>
 							<span class="text-sm text-gray-500">µNXM / o</span>
 						</div>
@@ -158,3 +161,17 @@
 		</div>
 	</div>
 </div>
+
+{#if showMessage}
+	<div class="testnet-tooltip" style="top: {tooltipY}px; left: {tooltipX}px;">
+		<span
+			class="absolute"
+			class:translate-y-0={!copied}
+			class:-translate-y-3={copied}
+			class:opacity-100={!copied}
+			class:opacity-0={copied}
+		>
+			{showMessage}
+		</span>
+	</div>
+{/if}

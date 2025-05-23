@@ -4,6 +4,7 @@
 	import { HandCoins } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { RefreshCw } from 'lucide-svelte';
+	import { History } from 'lucide-svelte';
 
 	import { Copy } from 'lucide-svelte';
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
@@ -106,6 +107,10 @@
 				}}
 			>
 				<RefreshCw strokeWidth={2.6} size={24} class="bouton-action" />
+			</button>
+
+			<button hidden={!$isConfigSet}>
+				<History strokeWidth={2.6} size={24} class="bouton-action" />
 			</button>
 		</div>
 	</div>

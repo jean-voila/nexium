@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import './styles/checkbox.css';
 @import './styles/transactionmodal.css';
+@import './styles/historiquemodal.css';
 
 @font-face {
     font-family: 'Inconsolata';
@@ -465,6 +466,25 @@ body {
     transition: all 0.1s ease-in-out;
 }
 
+.input-field-fees {
+    width: 100%;
+    /* w-full */
+    padding: 0.7rem;
+    /* p-2 */
+    background-color: #e8e8e8;
+    border-radius: 1rem;
+    /* rounded-md */
+    font-weight: 600;
+    font-size: 15px;
+    transform: scale(100%);
+    transition: all 0.1s ease-in-out;
+}
+
+.input-field-fees:disabled {
+
+    opacity: 0.4;
+}
+
 .input-field-montant {
     text-align: end;
 }
@@ -474,7 +494,6 @@ body {
 .input-field:disabled {
     cursor: not-allowed;
     opacity: 0.4;
-
 }
 
 .input-field-password {
@@ -791,7 +810,23 @@ body {
 
     padding: 0.4rem;
     border-radius: 0.6rem;
+}
 
+.testnet-tooltip {
+    white-space: nowrap;
+    width: auto;
+    max-width: none;
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(10px, 10px);
+    transition: opacity 0.3s ease;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    color: var(--color-noir-tertiaire);
+    letter-spacing: -0.05em;
+    font-size: 15px;
+    border-radius: 0.6rem;
 
 }
 

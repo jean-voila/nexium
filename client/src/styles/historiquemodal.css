@@ -1,0 +1,104 @@
+.history-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    transition: backdrop-filter 0.3s ease;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.history-modal.leave-active {
+    backdrop-filter: blur(5px);
+}
+
+.history-modal-content {
+    background-color: var(--color-blanc-primaire);
+    border-radius: 1.3rem;
+    /* équivalent à rounded-3xl */
+    padding: 1.2rem;
+    /* équivalent à p-8 */
+    width: 26rem;
+    /* équivalent à max-w-md */
+
+    /* équivalent à w-full */
+}
+
+
+.history-titre {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 25px;
+    color: var(--color-noir-primaire);
+    line-height: 30px;
+
+    letter-spacing: -0.03em;
+}
+
+.pillule-bouton-history {
+
+    color: var(--color-blanc-primaire);
+    transition: all 0.1s ease-in-out;
+    border-radius: 0.6rem;
+}
+
+.pillule-bouton-history-noir {
+    background-color: var(--color-noir-primaire);
+}
+
+
+.pillule-bouton-history-blanc {
+    background-color: var(--color-blanc-quaternaire);
+}
+
+.history-label {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.05em;
+    color: var(--color-noir-primaire);
+}
+
+.texte-bouton-history {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0.4rem 1rem;
+    /* équivalent à px-4 py-2 */
+}
+
+.texte-bouton-history-noir {
+    color: var(--color-blanc-primaire);
+}
+
+.texte-bouton-history-blanc {
+    color: var(--color-noir-primaire);
+}
+
+.input-field-history {
+    width: 100%;
+
+    padding: 0.6rem;
+    background-color: #e8e8e8;
+
+    border-radius: 0.8rem;
+    font-weight: 700;
+    font-size: 13px;
+    transform: scale(100%);
+    transition: all 0.1s ease-in-out;
+}
+
+
+
+
+.history-texte {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 13px;
+    padding-bottom: 5%;
+    letter-spacing: -0.03em;
+    color: var(--color-gris-primaire);
+}

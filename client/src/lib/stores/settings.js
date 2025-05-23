@@ -16,5 +16,6 @@ export const globalConfig = writable({
     priv_key: '',
     gitlab_token: '',
     gitlab_token_type: 'Classic',
+    is_testnet: false,
 });
 

@@ -237,13 +237,47 @@ async fn get_names_from_login(
 }
 
 #[tauri::command]
-async fn get_balance(login: String) -> Result<(String, String), String> {
-    todo!()
+async fn get_invoice_extension() -> String {
+    return NEXIUM_INVOICE_EXTENSION.to_string();
 }
 
 #[tauri::command]
-async fn get_invoice_extension() -> String {
-    return NEXIUM_INVOICE_EXTENSION.to_string();
+async fn get_balance(
+    login: String,
+    config: Config,
+) -> Result<(String, String), String> {
+    match nexium_api::get_balance(login, config) {
+        Ok((int, dec)) => Ok((int, dec)),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn send_transaction(
+    config: Config,
+    transaction: nexium_api::ClassicTransactionSent,
+) -> Result<String, String> {
+    match nexium_api::send_transaction(transaction, config) {
+        Ok(_) => Ok("".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn get_transactions(
+    config: Config,
+    login: String,
+    n: String,
+) -> Result<Vec<nexium_api::ClassicTransactionReceived>, String> {
+    match nexium_api::get_transactions(config, login, n) {
+        Ok(transactions) => Ok(transactions),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn is_testnet() -> bool {
+    return IS_TESTNET;
 }
 
 fn main() {
@@ -264,6 +298,9 @@ fn main() {
             load_invoice_from_file,
             get_invoice_extension,
             get_balance,
+            send_transaction,
+            get_transactions,
+            is_testnet,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

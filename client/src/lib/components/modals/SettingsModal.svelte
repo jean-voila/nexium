@@ -35,6 +35,11 @@
 	let password = '';
 	let showPasswordModal = false;
 	let rejectPassword;
+
+	invoke('is_testnet').then((result) => {
+		config.is_testnet = result;
+	});
+
 	/** @type {(value: string) => void} */
 	let resolvePassword;
 
