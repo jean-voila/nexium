@@ -56,7 +56,7 @@ fn main() {
     let gitlab =
         GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
-    let blockchain = match Blockchain::init() {
+    let mut blockchain = match Blockchain::init() {
         Ok(b) => b,
         Err(e) => {
             eprintln!("Failed to create blockchain: {}", e);
@@ -64,7 +64,7 @@ fn main() {
         }
     };
 
-    let mut server = match Server::new(&config, &gitlab, blockchain) {
+    let mut server = match Server::new(&config, &gitlab, &mut blockchain) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to create server: {}", e);
