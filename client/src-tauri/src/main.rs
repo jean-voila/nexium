@@ -243,10 +243,11 @@ async fn get_invoice_extension() -> String {
 
 #[tauri::command]
 async fn get_balance(
+    pub_key: String,
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
-    match nexium_api::get_balance(login, config) {
+    match nexium_api::get_balance(pub_key, login, config) {
         Ok((int, dec)) => Ok((int, dec)),
         Err(e) => Err(e),
     }
@@ -254,10 +255,11 @@ async fn get_balance(
 
 #[tauri::command]
 async fn send_transaction(
+    pub_key: String,
     config: Config,
     transaction: nexium_api::ClassicTransactionSent,
 ) -> Result<String, String> {
-    match nexium_api::send_transaction(transaction, config) {
+    match nexium_api::send_transaction(pub_key, transaction, config) {
         Ok(_) => Ok("".to_string()),
         Err(e) => Err(e),
     }
@@ -265,11 +267,12 @@ async fn send_transaction(
 
 #[tauri::command]
 async fn get_transactions(
+    pub_key: String,
     config: Config,
     login: String,
     n: String,
 ) -> Result<Vec<nexium_api::ClassicTransactionReceived>, String> {
-    match nexium_api::get_transactions(config, login, n) {
+    match nexium_api::get_transactions(pub_key, config, login, n) {
         Ok(transactions) => Ok(transactions),
         Err(e) => Err(e),
     }

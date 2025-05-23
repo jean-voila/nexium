@@ -2,10 +2,10 @@ use super::config::*;
 use nexium::blockchain::transaction::*;
 use nexium::defaults::*;
 use nexium::rsa::*;
+use reqwest::header::PUBLIC_KEY_PINS_REPORT_ONLY;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TransactionInOrOout {
@@ -50,6 +50,7 @@ pub struct ClassicTransactionReceived {
 }
 
 pub fn send_transaction(
+    pub_key: String,
     transaction: ClassicTransactionSent,
     config: Config,
 ) -> Result<(), String> {
@@ -58,6 +59,7 @@ pub fn send_transaction(
 }
 
 pub fn get_balance(
+    pub_key: String,
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
@@ -66,6 +68,7 @@ pub fn get_balance(
 }
 
 pub fn get_transactions(
+    pub_key: String,
     config: Config,
     login: String,
     n: String,
