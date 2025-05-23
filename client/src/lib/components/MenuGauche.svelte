@@ -24,7 +24,8 @@
 		showReceiveModal,
 		showSendModal,
 		userBalanceInt,
-		userBalanceDec
+		userBalanceDec,
+		showHistoryModal
 	} from '$lib/stores/settings.js';
 	import { on } from 'svelte/events';
 
@@ -32,6 +33,8 @@
 	let lastName = '';
 
 	let copied = false;
+
+	let canRefresh = true;
 
 	async function copyLogin() {
 		if (!$globalConfig?.user_login) return;
@@ -57,6 +60,8 @@
 	}
 
 	async function balanceUpdate() {
+		if (!canRefresh) return;
+		canRefresh = false;
 		invoke('get_balance', { login: $globalConfig.user_login })
 			.then((balance) => {
 				if (balance) {
@@ -64,7 +69,12 @@
 					userBalanceDec.set(balance[1]);
 				}
 			})
-			.catch(() => {});
+			.catch(() => {})
+			.finally(() => {
+				setTimeout(() => {
+					canRefresh = true;
+				}, 6000);
+			});
 	}
 </script>
 
@@ -99,6 +109,7 @@
 			<button
 				onclick={balanceUpdate}
 				hidden={!$isConfigSet}
+				disabled={!canRefresh}
 				onmouseenter={() => (showCopyMessage = 'Rafraîchir')}
 				onmouseleave={() => (showCopyMessage = '')}
 				onmousemove={(e) => {
@@ -109,7 +120,7 @@
 				<RefreshCw strokeWidth={2.6} size={24} class="bouton-action" />
 			</button>
 
-			<button hidden={!$isConfigSet}>
+			<button hidden={!$isConfigSet} onclick={() => showHistoryModal.set(true)}>
 				<History strokeWidth={2.6} size={24} class="bouton-action" />
 			</button>
 		</div>

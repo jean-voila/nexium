@@ -4,6 +4,7 @@ export const isConfigSet = writable(false);
 
 export const showSendModal = writable(false);
 export const showReceiveModal = writable(false);
+export const showHistoryModal = writable(false);
 
 export const userBalanceInt = writable('');
 export const userBalanceDec = writable('');

@@ -12,9 +12,11 @@
 	import {
 		globalConfig,
 		isConfigSet,
+		showHistoryModal,
 		showReceiveModal,
 		showSendModal
 	} from '$lib/stores/settings.js';
+	import HistoryModal from '$lib/components/modals/HistoryModal.svelte';
 
 	let showSettingsModal = false;
 </script>
@@ -40,6 +42,10 @@
 
 	{#if $showReceiveModal}
 		<ReceiveModal oncancel={showReceiveModal.set(false)} />
+	{/if}
+
+	{#if $showHistoryModal}
+		<HistoryModal oncancel={showHistoryModal.set(false)} />
 	{/if}
 
 	{#if !$isConfigSet}

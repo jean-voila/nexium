@@ -48,6 +48,7 @@
 		"@tauri-apps/api": "^2.5.0",
 		"@tauri-apps/plugin-clipboard-manager": "^2.2.2",
 		"@tauri-apps/plugin-dialog": "^2.2.2",
+		"flowbite-svelte": "^1.4.3",
 		"lucide-svelte": "^0.501.0"
 	}
 }
