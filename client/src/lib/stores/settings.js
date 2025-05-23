@@ -12,7 +12,7 @@ export const userBalanceDec = writable('');
 export const serverPublicKey = writable('');
 
 export const globalConfig = writable({
-    url_server: '',
+    server_address: '',
     port: 0,
     user_login: '',
     pub_key: '',

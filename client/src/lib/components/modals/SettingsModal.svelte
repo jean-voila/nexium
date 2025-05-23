@@ -243,7 +243,7 @@
 					<input
 						id="server-url"
 						type="text"
-						bind:value={config.url_server}
+						bind:value={config.server_address}
 						class="input-field"
 						placeholder="https://server.nexium.com"
 					/>

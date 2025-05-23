@@ -7,12 +7,11 @@ use serde_json;
 use std::fmt;
 use std::fs;
 use std::path::Path;
-use url::Url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub url_server: String,
-    pub port: Option<u16>,
+    pub server_address: String,
+    pub port: String,
     pub user_login: String,
     pub pub_key: String,
     pub priv_key: String,
@@ -26,7 +25,7 @@ pub struct Config {
 pub enum ConfigError {
     FileNotFound,
 
-    InvalidURL,
+    InvalidAddress,
     InvalidPort,
     InvalidGitlabToken,
     NetworkError,
@@ -45,7 +44,7 @@ impl fmt::Display for ConfigError {
                 "Fichier de configuration introuvable."
             }
 
-            ConfigError::InvalidURL => "URL de serveur invalide.",
+            ConfigError::InvalidAddress => "Adresse de serveur invalide.",
             ConfigError::InvalidPort => "Port de serveur invalide.",
             ConfigError::InvalidGitlabToken => "Token GitLab invalide.",
             ConfigError::NetworkError => {
@@ -109,22 +108,23 @@ impl Config {
     }
 
     pub fn check_values(&self) -> Result<(), String> {
-        match self.port {
-            Some(port) => {
-                if port < 1 {
-                    return Err(ConfigError::InvalidPort.to_string());
-                }
-            }
-            None => {
+        match self.port.parse::<u16>() {
+            Ok(_) => {}
+            Err(_) => {
                 return Err(ConfigError::InvalidPort.to_string());
             }
         }
 
-        match Url::parse(&self.url_server) {
-            Ok(_) => {}
-            Err(_) => {
-                return Err(ConfigError::InvalidURL.to_string());
-            }
+        if self.server_address.len() == 0 {
+            return Err(ConfigError::InvalidAddress.to_string());
+        }
+
+        if self.server_address.contains(":") {
+            return Err(ConfigError::InvalidAddress.to_string());
+        }
+
+        if self.server_address.contains("..") {
+            return Err(ConfigError::InvalidAddress.to_string());
         }
 
         let gitlab_client = GitlabClient::new(
