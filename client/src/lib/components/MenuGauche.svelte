@@ -2,7 +2,6 @@
 	import Bouton from '$lib/components/Bouton.svelte';
 	import { SendHorizontal } from 'lucide-svelte';
 	import { HandCoins } from 'lucide-svelte';
-
 	import { onMount } from 'svelte';
 
 	import { Copy } from 'lucide-svelte';

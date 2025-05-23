@@ -2,14 +2,14 @@
 	import { fly, fade } from 'svelte/transition';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
-	let { oncancel } = $props();
+	import { userBalance, isConfigSet } from '$lib/stores/settings.js';
 
-	let balance = $state(0);
+	let { oncancel } = $props();
 
 	let sender_login = $state('');
 	let amount = $state('');
 	let description = $state('');
-
+	let fees = $state('');
 	let invoice_file_extension = '';
 	invoke('get_invoice_extension').then((ext) => {
 		invoice_file_extension = ext;
@@ -18,14 +18,16 @@
 		oncancel?.();
 	}
 
-	function checkGitlabBalance() {
-		return true;
-	}
+	let totalFees = '';
+	let isUserLoginValid = $state(false);
 
 	async function checkDestinataireLogin() {
-		// appel a la fonction qui verifie si le login est valide
+		try {
+			isUserLoginValid = await invoke('check_user_login', { login: sender_login });
+		} catch (e) {
+			isUserLoginValid = false;
+		}
 	}
-
 	async function handleLoadFile() {
 		const path = await open({
 			title: 'Choisir le fichier de la facture',
@@ -50,12 +52,28 @@
 		}
 	}
 	async function handleSend() {
+		if (!amount || !fees) {
+			console.error('Montant ou frais manquant');
+			return;
+		}
+		// ONLY ALLOW NUMERIC CHARACTERS
+		if (!/^\d*\.?\d*$/.test(amount) || !/^\d*\.?\d*$/.test(fees)) {
+			console.error('Montant ou frais contient des caractères non numériques');
+			return;
+		}
+		try {
+			totalFees = await invoke('get_total_fees', {
+				login: sender_login,
+				amount: amount,
+				fees: parseFloat(fees) / 1_000_000,
+				description: description
+			});
+		} catch (e) {}
 		const invoice = {
 			sender_login,
 			amount,
 			description
 		};
-
 		handleClose();
 	}
 </script>
@@ -66,8 +84,8 @@
 		<p class="password-texte"></p>
 
 		<div class="settings-item">
-			<div class="flex flex-wrap gap-4 md:flex-nowrap">
-				<div class="flex-1">
+			<div class="flex flex-col gap-4">
+				<div class="w-full">
 					<label for="destinataire" class="nom-parametre block">Destinataire</label>
 					<input
 						id="destinataire"
@@ -78,19 +96,34 @@
 						placeholder="Login du destinataire"
 					/>
 				</div>
-				<div class="w-full md:w-1/3">
-					<label for="montant" class="nom-parametre block">Montant</label>
-					<div class="flex items-center gap-2">
-						<input
-							id="montant"
-							type="text"
-							inputmode="decimal"
-							pattern="[0-9]*"
-							bind:value={amount}
-							class="input-field flex-1"
-							placeholder="0.00"
-						/>
-						<span class="text-sm text-gray-500">NXM</span>
+				<div class="flex flex-col gap-4 md:flex-row">
+					<div class="w-full md:w-1/2">
+						<label for="montant" class="nom-parametre block">Montant</label>
+						<div class="flex items-center gap-2">
+							<input
+								id="montant"
+								type="text"
+								inputmode="decimal"
+								pattern="[0-9]*"
+								bind:value={amount}
+								class="input-field flex-1"
+								placeholder="0.00"
+							/>
+							<span class="text-sm text-gray-500">NXM</span>
+						</div>
+					</div>
+					<div class="w-full md:w-1/2">
+						<label for="fees" class="nom-parametre block">Frais</label>
+						<div class="flex items-center gap-2">
+							<input
+								id="fees"
+								type="text"
+								bind:value={fees}
+								class="input-field flex-1"
+								placeholder="0.00"
+							/>
+							<span class="text-sm text-gray-500">µNXM / o</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -122,6 +155,7 @@
 				<button
 					onclick={handleSend}
 					class="pillule-bouton-settings bouton-noir-settings flex items-center transition"
+					disabled={isUserLoginValid}
 				>
 					<span class="texte-bouton-settings">Envoyer</span>
 				</button>

@@ -5,6 +5,8 @@ export const isConfigSet = writable(false);
 export const showSendModal = writable(false);
 export const showReceiveModal = writable(false);
 
+export const userBalance = writable('0.00');
+
 export const globalConfig = writable({
     url_server: '',
     port: 0,

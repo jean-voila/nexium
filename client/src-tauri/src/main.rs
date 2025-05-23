@@ -237,6 +237,11 @@ async fn get_names_from_login(
 }
 
 #[tauri::command]
+async fn get_balance(login: String) -> Result<String, String> {
+    todo!()
+}
+
+#[tauri::command]
 async fn get_invoice_extension() -> String {
     return NEXIUM_INVOICE_EXTENSION.to_string();
 }
@@ -258,6 +263,7 @@ fn main() {
             get_names_from_login,
             load_invoice_from_file,
             get_invoice_extension,
+            get_balance,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())
