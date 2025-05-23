@@ -198,7 +198,6 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         ) {
             Ok(res) => {
                 if res {
-                    println!("J'ai trouvé la clé publique du serveur de {}.\nCette clé est : {}", server_login, key);
                     return Ok(key);
                 }
             }
