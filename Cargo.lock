@@ -2418,6 +2418,7 @@ dependencies = [
  "json",
  "log",
  "nexium",
+ "num-bigint 0.4.6",
  "reqwest",
  "serde",
  "serde_json",

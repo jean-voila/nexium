@@ -1,12 +1,16 @@
 use super::config::*;
+use json;
+use log::kv::Key;
 use nexium::blockchain::transaction::*;
 use nexium::defaults::*;
 use nexium::gitlab::*;
 use nexium::rsa::*;
+use num_bigint::BigUint;
+use reqwest::blocking::Client;
 use reqwest::header::PUBLIC_KEY_PINS_REPORT_ONLY;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::{collections::HashMap, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TransactionInOrOout {
@@ -60,7 +64,12 @@ fn build_headers(
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(
         "Login",
-        reqwest::header::HeaderValue::from_str(&config.user_login).unwrap(),
+        match reqwest::header::HeaderValue::from_str(&config.user_login) {
+            Ok(l) => l,
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        },
     );
 
     let private_key = match KeyPair::priv_from_pem(
@@ -108,46 +117,100 @@ fn build_url(config: &Config, endpoint: &str) -> String {
 }
 
 pub fn get_server_pub_key(config: Config) -> Result<String, String> {
-    return Ok("".to_string());
-    let headers = build_headers(&config);
+    let headers = match build_headers(&config) {
+        Ok(h) => h,
+        Err(e) => return Err(e.to_string()),
+    };
+    dbg!(headers.clone());
     let url = build_url(&config, "/nexium");
-    /*
+
     let client = Client::new();
-    let response = match client.get(&url).headers(headers?).send() {
-        Ok(resp) => resp,
+    let response = match client.get(&url).headers(headers).send() {
+        Ok(r) => r,
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
+    dbg!("C'est bon, on a la reponse");
 
-    let json: serde_json::Value = match response.json() {
+    let client_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    match response.status() {
+        reqwest::StatusCode::OK => {}
+        _ => {
+            return Err(NexiumAPIError::UnknownError.to_string());
+        }
+    }
+
+    let response_text = match response.text() {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+    };
+    dbg!("C'est bon, on a le texte de la reponse");
+    dbg!(response_text.clone());
+
+    let decrypted_response = match client_key.decrypt_split(&response_text) {
+        Ok(d) => d,
+        Err(e) => return Err(e.to_string()),
+    };
+    dbg!("C'est bon, on a le texte de la reponse decrypté");
+
+    let json = match json::parse(&decrypted_response) {
         Ok(j) => j,
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
+    dbg!("C'est bon, on a le json de la reponse decrypté");
 
-    let login = match json.get("login").and_then(|v| v.as_str()) {
+    let server_login = match json["login"].as_str() {
         Some(l) => l.to_string(),
         None => return Err(NexiumAPIError::UnknownError.to_string()),
     };
 
-    let sig_sample = match json.get("sigSample").and_then(|v| v.as_str()) {
+    let sig_sample = match json["sigSample"].as_str() {
         Some(s) => s.to_string(),
         None => return Err(NexiumAPIError::UnknownError.to_string()),
     };
 
-    let gpg_keys = match nexium::gitlab::get_gpg_keys(&config, &login) {
+    let gitlab_client =
+        GitlabClient::new(config.gitlab_token, config.gitlab_token_type);
+
+    let gpg_keys = match gitlab_client.get_gpg_keys(&server_login) {
         Ok(keys) => keys,
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
 
     for key in gpg_keys {
-        if let Ok(pub_key) = GPGPublicKey::from_armored(&key) {
-            if pub_key.verify(SIG_SAMPLE, &sig_sample).unwrap_or(false) {
-                return Ok(key);
+        let server_key = match KeyPair::pub_from_pem(&key, &server_login) {
+            Ok(k) => k,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        let sig_sample_biguint = match BigUint::from_str(&sig_sample) {
+            Ok(b) => b,
+            Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+        };
+        match server_key.check_signature(
+            SIG_SAMPLE.as_bytes().to_vec(),
+            &sig_sample_biguint,
+        ) {
+            Ok(res) => {
+                if res {
+                    println!("J'ai trouvé la clé publique du serveur de {}.\nCette clé est : {}", server_login, key);
+                    return Ok(key);
+                }
+            }
+            Err(e) => {
+                return Err(e.to_string());
             }
         }
     }
 
-    Err(NexiumAPIError::NoServerPublicKey.to_string())*/
-    todo!();
+    return Err(NexiumAPIError::NoServerPublicKey.to_string());
 }
 
 pub fn send_transaction(
