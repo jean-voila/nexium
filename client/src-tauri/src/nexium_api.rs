@@ -49,6 +49,11 @@ pub struct ClassicTransactionReceived {
     pub in_or_out: TransactionInOrOout,
 }
 
+pub fn get_server_pub_key(config: Config) -> Result<String, String> {
+    let headers = build_headers(&config);
+    todo!();
+}
+
 pub fn send_transaction(
     pub_key: String,
     transaction: ClassicTransactionSent,

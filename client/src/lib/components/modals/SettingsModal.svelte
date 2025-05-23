@@ -14,7 +14,7 @@
 	import { save } from '@tauri-apps/plugin-dialog';
 	import { Unplug } from 'lucide-svelte';
 
-	import { globalConfig, isConfigSet } from '$lib/stores/settings.js';
+	import { globalConfig, isConfigSet, serverPublicKey } from '$lib/stores/settings.js';
 
 	import { invoke } from '@tauri-apps/api/core';
 
@@ -177,6 +177,14 @@
 			}
 			config.port = parsedPort;
 			await invoke('check_config_values', { config });
+
+			const server_pub_key = await invoke('get_server_infos', { config });
+			if (server_pub_key) {
+				serverPublicKey.set(server_pub_key);
+			} else {
+				throw new Error('Server public key not found.');
+			}
+
 			globalConfig.set(config);
 			isConfigSet.set(true);
 			showSettingsModal = false;

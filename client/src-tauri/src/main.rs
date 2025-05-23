@@ -283,6 +283,14 @@ async fn is_testnet() -> bool {
     return IS_TESTNET;
 }
 
+#[tauri::command]
+async fn get_server_infos(config: Config) -> Result<String, String> {
+    match nexium_api::get_server_pub_key(config) {
+        Ok(pub_key) => Ok(pub_key),
+        Err(e) => Err(e),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -304,6 +312,7 @@ fn main() {
             send_transaction,
             get_transactions,
             is_testnet,
+            get_server_infos,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())
