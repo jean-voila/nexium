@@ -56,6 +56,18 @@ fn main() {
     let gitlab =
         GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
+    print!("Checking Gitlab token...");
+    match gitlab.check_token() {
+        Ok(_) => {
+            println!("\rChecking Gitlab token: {}", "OK".green());
+        }
+        Err(e) => {
+            println!();
+            eprintln!("Failed to check Gitlab token: {}", e.to_string().red());
+            return;
+        }
+    }
+
     let mut blockchain = match Blockchain::init() {
         Ok(b) => b,
         Err(e) => {

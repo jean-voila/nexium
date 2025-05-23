@@ -3,6 +3,7 @@ use crate::{
     blockchain::{blockchain::Blockchain, cache::cache::Cache},
     config::Config,
 };
+use colored::Colorize;
 use nexium::{gitlab::GitlabClient, rsa::KeyPair};
 use std::{net::TcpListener, process};
 
@@ -52,7 +53,11 @@ impl<'a> Server<'a> {
                 process::exit(1);
             }
         };
-        println!("Server listening on {addr}");
+        println!(
+            "Server listening on {}:{}",
+            self.address.green(),
+            self.port.to_string().yellow()
+        );
 
         for s in listener.incoming() {
             match s {

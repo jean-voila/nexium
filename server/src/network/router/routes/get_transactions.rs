@@ -1,7 +1,5 @@
 use nexium::blockchain::{
-    consts::TRANSACTION_RECEIVER,
-    data_type::DataType,
-    transaction_data::{TransactionData, RECEIVER},
+    consts::TRANSACTION_RECEIVER, transaction_data::TransactionData,
 };
 
 use crate::network::{

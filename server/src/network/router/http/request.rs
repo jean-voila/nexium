@@ -64,7 +64,13 @@ impl<'a> Request<'a> {
             return Err(String::from("Request too long"));
         }
 
-        let s = String::from_utf8(buff.to_vec()).expect("convertion failed");
+        let s = match String::from_utf8(buff.to_vec()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(format!("Failed to convert request: {}", e));
+            }
+        };
+
         res.push_str(s.as_str());
         return Ok(res);
     }
