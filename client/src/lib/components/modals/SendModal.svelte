@@ -61,9 +61,7 @@
 				globalConfig: $globalConfig
 			});
 			handleClose();
-		} catch (e) {
-			console.error('Error sending transaction:', e);
-		}
+		} catch (e) {}
 	}
 </script>
 

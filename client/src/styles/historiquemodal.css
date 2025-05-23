@@ -16,14 +16,13 @@
 
 .history-modal-content {
     max-height: 80vh;
-    /* Limite visuelle */
     overflow-y: auto;
-    /* Active le scroll */
+    display: flex;
+    flex-direction: column;
 
     padding: 1.2rem;
     width: 48rem;
-    max-height: 20rem;
-    /* plus large que les 26rem actuels */
+
     border-radius: 1.3rem;
     background-color: var(--color-blanc-primaire);
 }
@@ -119,20 +118,23 @@
 }
 
 .description-scroll-cell {
-    max-height: 6rem;
-    min-height: 6rem;
+    height: 2.5rem;
     max-width: 15rem;
     padding: 0;
 }
 
 .description-scroll-content {
-    overflow-y: auto;
-    max-height: 100%;
-    padding: 0.5rem;
-    white-space: normal;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    max-height: 1.7rem;
     max-width: 100%;
+    padding-inline: 0.3rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
 }
 
 .history-modal table td,
@@ -163,4 +165,10 @@
     font-family: 'Inconsolata', monospace;
     font-weight: 500;
     font-size: 15px;
+}
+
+.scrollable-table {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-top: 1rem;
 }

@@ -111,6 +111,11 @@
 		});
 		if (path) {
 			try {
+				const parsedPort = Number(config.port);
+				if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
+					throw new Error('Invalid port number.');
+				}
+				config.port = parsedPort.toString();
 				await invoke('save_config_to_file', {
 					pathString: path,
 					config: config
@@ -175,7 +180,9 @@
 			if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
 				throw new Error('Invalid port number.');
 			}
-			config.port = parsedPort;
+
+			config.port = parsedPort.toString();
+
 			await invoke('check_config_values', { config });
 
 			const server_pub_key = await invoke('get_server_infos', { config });
@@ -188,13 +195,17 @@
 			globalConfig.set(config);
 			isConfigSet.set(true);
 			showSettingsModal = false;
-			console.log(config.gitlab_token_type);
 		} catch (error) {
 			errorMessage = String(error);
 		} finally {
 			isValidating = false;
 			isValidatingAndDone = false;
 		}
+	}
+
+	function closeAndCancel() {
+		config = get(globalConfig);
+		showSettingsModal = false;
 	}
 
 	async function setLoginFromToken() {
@@ -255,7 +266,7 @@
 					id="gitlab-token"
 					type="text"
 					bind:value={config.gitlab_token}
-					on:input={setLoginFromToken}
+					oninput={setLoginFromToken}
 					class="input-field"
 					placeholder="Token Gitlab"
 					disabled={config.gitlab_token_type === 'OAuth'}
@@ -266,7 +277,7 @@
 
 				<div class="flex flex-col items-center">
 					<button
-						on:click={() => {
+						onclick={() => {
 							handleGitlabOAuth();
 						}}
 						class="group flex items-center transition {config.gitlab_token_type === 'OAuth'
@@ -323,7 +334,7 @@
 
 						<button
 							class="bouton-keypair flex items-center transition"
-							on:click={handleKeyGeneration}
+							onclick={handleKeyGeneration}
 							hidden={config.gitlab_token === '' ||
 								(config.pub_key !== '' && config.priv_key !== '') ||
 								config.user_login.trim() === ''}
@@ -353,7 +364,7 @@
 				<div class="flex gap-4">
 					<button
 						class="pillule-bouton-sauvercharger flex items-center justify-center transition"
-						on:click={() => {
+						onclick={() => {
 							handleLoadFile();
 						}}
 					>
@@ -362,7 +373,7 @@
 
 					<button
 						class="pillule-bouton-sauvercharger flex items-center justify-center transition"
-						on:click={() => {
+						onclick={() => {
 							handleSaveFile();
 						}}
 					>
@@ -379,9 +390,15 @@
 					{/if}
 				</div>
 
-				<div class="flex flex-col items-end">
+				<div class="flex items-center gap-2">
 					<button
-						on:click={() => {
+						class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
+						onclick={closeAndCancel}
+					>
+						<span class="texte-bouton-settings texte-bouton-password-blanc">Annuler</span>
+					</button>
+					<button
+						onclick={() => {
 							handleDone();
 						}}
 						class="pillule-bouton-settings bouton-noir-settings flex items-center transition"

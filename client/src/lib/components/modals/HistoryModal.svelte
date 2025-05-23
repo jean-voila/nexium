@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Minus } from 'lucide-svelte';
 	import { Plus } from 'lucide-svelte';
+	import { RefreshCw } from 'lucide-svelte';
 
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
@@ -23,6 +24,9 @@
 		TableHead,
 		TableHeadCell
 	} from 'flowbite-svelte';
+
+	const canRefresh = writable(true);
+
 	/*
     Quand tu vas get le invoke get_transactions, tu vas recevoir une liste de transactions, chaque transaction sera dans ce format JS :
     transaction = {
@@ -69,6 +73,36 @@
 			}
 		} catch (e) {}
 	});
+	async function refreshList() {
+		if (!$canRefresh) return;
+		canRefresh.set(false);
+
+		setTimeout(async () => {
+			try {
+				const config = $globalConfig;
+				const login = config.user_login || '';
+				const n = '';
+				const result = await invoke('get_transactions', { config, login, n });
+				if (Array.isArray(result)) {
+					transactions.set(
+						result.map((t: any) => ({
+							emitter: t.emitter || '',
+							receiver: t.receiver || '',
+							description: t.description || '',
+							date: t.date || '',
+							amount: t.amount || '',
+							inOrOut: t.inOrOut || 'OUT'
+						}))
+					);
+				} else {
+					transactions.set([]);
+				}
+			} catch (e) {
+			} finally {
+				canRefresh.set(true);
+			}
+		}, 5000);
+	}
 	transactions.set([
 		{
 			emitter: 'jean.herail',
@@ -128,7 +162,7 @@
 <div class="history-modal" transition:fade={{ duration: 200 }}>
 	<div class="history-modal-content" transition:fly={{ y: 30, duration: 200 }}>
 		<h3 class="history-titre">Historique des transactions</h3>
-		<div class="contenu-tableau">
+		<div class="contenu-tableau scrollable-table">
 			<!-- Tableau avec les transactions-->
 			<!--
             type (moins ou plus en rouge ou vert) | emetteur | recepteur | description | date | montant
@@ -169,6 +203,9 @@
 		</div>
 
 		<div class="mt-4 flex justify-end gap-2">
+			<button onclick={refreshList} disabled={!$canRefresh}>
+				<RefreshCw strokeWidth={3} size={17} class="bouton-action" />
+			</button>
 			<button
 				class="pillule-bouton-history pillule-bouton-history-noir bouton-noir-settings flex items-center transition"
 				onclick={handleClose}

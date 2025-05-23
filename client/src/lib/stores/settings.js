@@ -13,7 +13,7 @@ export const serverPublicKey = writable('');
 
 export const globalConfig = writable({
     server_address: '',
-    port: 0,
+    port: '',
     user_login: '',
     pub_key: '',
     priv_key: '',
