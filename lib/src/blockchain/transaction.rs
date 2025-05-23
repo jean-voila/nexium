@@ -1,7 +1,13 @@
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::rsa::KeyPair;
+use crate::{
+    blockchain::{
+        consts::{DESCRIPTION_SIZE, TRANSACTION_EMITTER, TRANSACTION_RECEIVER},
+        transaction_data::RECEIVER,
+    },
+    rsa::KeyPair,
+};
 
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
@@ -31,18 +37,71 @@ impl Default for Transaction {
 }
 
 impl Transaction {
-    // Create transaction from user-firendly values
-    pub fn new_classic(
-        receiver: &String,
+    // Create transaction from user-friendly values
+    pub fn new_classic<T>(
+        receiver: T,
         amount: u32,
-        has_description: bool,
-        description: &String,
+        description: T,
         fees: u16,
-        emitter: &String,
-        data_type: DataType,
+        emitter: T,
         key: &KeyPair,
-    ) -> Result<Self, String> {
-        todo!();
+    ) -> Result<Self, String>
+    where
+        T: Into<String>,
+    {
+        let receiver_str = receiver.into();
+        let emitter_str = emitter.into();
+        let description_str = description.into();
+
+        if receiver_str.len() > TRANSACTION_RECEIVER {
+            return Err(format!(
+                "Receiver too long, max size is {}",
+                TRANSACTION_RECEIVER
+            ));
+        }
+
+        if emitter_str.len() > TRANSACTION_EMITTER {
+            return Err(format!(
+                "Emitter too long, max size is {}",
+                TRANSACTION_EMITTER
+            ));
+        }
+
+        if description_str.len() > DESCRIPTION_SIZE {
+            return Err(format!(
+                "Description too long, max size is {}",
+                DESCRIPTION_SIZE
+            ));
+        }
+
+        let mut receiver_buff = [0; TRANSACTION_RECEIVER];
+        let mut emitter_buff = [0; TRANSACTION_EMITTER];
+        receiver_buff[..receiver_str.len()]
+            .copy_from_slice(receiver_str.as_bytes());
+        emitter_buff[..emitter_str.len()]
+            .copy_from_slice(emitter_str.as_bytes());
+
+        let has_description = !description_str.is_empty();
+        let mut description_buff = [0; DESCRIPTION_SIZE];
+        if has_description {
+            description_buff[..description_str.len()]
+                .copy_from_slice(description_str.as_bytes());
+        }
+
+        let data = TransactionData::ClassicTransaction {
+            receiver: receiver_buff,
+            amount,
+            has_description,
+            description: description_buff,
+        };
+
+        Transaction::new(
+            data.to_buffer(),
+            fees,
+            emitter_str,
+            DataType::ClassicTransaction,
+            key,
+        )
     }
 
     pub fn new<T>(
@@ -138,7 +197,7 @@ impl core::fmt::Debug for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\n")?;
         write!(f, "header: {:?},\n", self.header)?;
-        // write!(f, "transactions: [{:?}],\n", self.data)?;
+        write!(f, "data: [{:?}],\n", self.get_data())?;
         write!(f, "signature: {:?},\n", self.signature)?;
         write!(f, "}}")?;
         Ok(())

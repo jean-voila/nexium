@@ -10,7 +10,7 @@ use crate::blockchain::consts::{
 pub type DESCRIPTION = [u8; DESCRIPTION_SIZE];
 pub type RECEIVER = [u8; TRANSACTION_RECEIVER];
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[derive(Debug)]
 pub enum TransactionData {
     ClassicTransaction {
         // #[serde(with = "serde_receiver")]
@@ -25,6 +25,7 @@ pub enum TransactionData {
     },
 }
 
+#[derive(Debug)]
 pub enum TransactionDataError {
     InvalidData,
 }
@@ -128,6 +129,41 @@ impl TransactionData {
             TransactionData::ClassicTransaction { .. } => 1,
             TransactionData::Unknown { .. } => 0,
         }
+    }
+}
+
+impl core::fmt::Debug for TransactionData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\n")?;
+        write!(f, "type: {:?},\n", self.get_type())?;
+        match self {
+            TransactionData::ClassicTransaction {
+                receiver,
+                amount,
+                has_description,
+                description,
+            } => {
+                write!(
+                    f,
+                    "receiver: {},\n",
+                    String::from_utf8_lossy(receiver)
+                )?;
+                write!(f, "amount: {:?},\n", amount)?;
+                write!(f, "has_description: {:?},\n", has_description)?;
+                if *has_description {
+                    write!(
+                        f,
+                        "description: {},\n",
+                        String::from_utf8_lossy(description)
+                    )?;
+                }
+            }
+            TransactionData::Unknown { data } => {
+                write!(f, "data: {:?},\n", data)?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
     }
 }
 

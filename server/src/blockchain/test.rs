@@ -17,6 +17,51 @@ use nexium::{
 const KEY_FILE: &str = ".nexiumlocal/private-key.pem";
 
 pub fn main() {
+    let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
+        .expect("Failed to load private key from file");
+
+    let tr = Transaction::new_classic(
+        "jean.herail",
+        50,
+        "",
+        100,
+        "william.valenduc",
+        &key,
+    )
+    .expect("Failed to create transaction");
+
+    // let tr = Transaction::new_classic(
+    //     "jean.herail",
+    //     50,
+    //     "usdfviosb",
+    //     100,
+    //     "william.valenduc",
+    //     &key,
+    // )
+    // .expect("Failed to create transaction");
+
+    // let tr = Transaction::new_classic(
+    //     "sqsjeaoidhfsiufpsfusdfgfusifn.hersuigfbsflgsfosiufgsfsydfgfvdsifail",
+    //     50,
+    //     "usdfviosb",
+    //     100,
+    //     "william.valenduc",
+    //     &key,
+    // )
+    // .expect("Failed to create transaction");
+
+    // let tr = Transaction::new_classic(
+    //     "jean.herail",
+    //     50,
+    //     "suidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifgsuidfbsducnsodifg",
+    //     100,
+    //     "william.valenduc",
+    //     &key,
+    // )
+    // .expect("Failed to create transaction");
+    dbg!(&tr);
+
+    return;
     let mut bc = Blockchain::init().expect("Failed to initialize blockchain");
     // let b1 = match bc.read_block(0) {
     //     Ok(b) => b,
@@ -42,8 +87,6 @@ pub fn main() {
     // println!("Key creation");
     // let key = KeyPair::generate(KEYPAIR_BIT_SIZE, "");
     // println!("Key created");
-    let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
-        .expect("Failed to load private key from file");
 
     let h = [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
     let transactions = vec![Transaction::new(
