@@ -5,6 +5,7 @@ use nexium::rsa::*;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TransactionInOrOout {
@@ -15,12 +16,16 @@ pub enum TransactionInOrOout {
 #[derive(Debug)]
 pub enum NexiumAPIError {
     UnknownError,
+    InvalidPrivateKeyOrPassword,
 }
 
 impl fmt::Display for NexiumAPIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
-            NexiumAPIError::UnknownError => "Unknown error occurred.",
+            NexiumAPIError::UnknownError => "Erreur inconnue.",
+            NexiumAPIError::InvalidPrivateKeyOrPassword => {
+                "Clé privée ou mot de passe invalide."
+            }
         };
         write!(f, "{}", msg)
     }
@@ -47,14 +52,16 @@ pub struct ClassicTransactionReceived {
 pub fn send_transaction(
     transaction: ClassicTransactionSent,
     config: Config,
-) -> Result<(), NexiumAPIError> {
+) -> Result<(), String> {
+    let headers = build_headers(&config);
     todo!();
 }
 
 pub fn get_balance(
     login: String,
     config: Config,
-) -> Result<(String, String), NexiumAPIError> {
+) -> Result<(String, String), String> {
+    let headers = build_headers(&config);
     todo!();
 }
 
@@ -62,6 +69,51 @@ pub fn get_transactions(
     config: Config,
     login: String,
     n: String,
-) -> Result<Vec<ClassicTransactionReceived>, NexiumAPIError> {
+) -> Result<Vec<ClassicTransactionReceived>, String> {
+    let headers = build_headers(&config);
     todo!();
+}
+
+fn build_headers(
+    config: &Config,
+) -> Result<reqwest::header::HeaderMap, String> {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        "Login",
+        reqwest::header::HeaderValue::from_str(&config.user_login).unwrap(),
+    );
+
+    let private_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    let signature = match private_key.sign(SIG_SAMPLE) {
+        Ok(sig) => sig,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    headers.insert(
+        "Sig-Sample",
+        match reqwest::header::HeaderValue::from_str(&signature.to_string()) {
+            Ok(sig) => sig,
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        },
+    );
+
+    headers.insert(
+        "Content-Type",
+        reqwest::header::HeaderValue::from_static("text/plain"),
+    );
+    return Ok(headers);
 }

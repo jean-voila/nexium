@@ -19,6 +19,7 @@ pub struct Config {
     pub gitlab_token: String,
     pub gitlab_token_type: gitlab::TokenType,
     pub is_testnet: bool,
+    pub password: String,
 }
 
 #[derive(Debug)]

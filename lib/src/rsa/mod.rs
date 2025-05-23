@@ -6,6 +6,7 @@ use num_primes::Generator;
 use rand::Rng;
 use sha1::Digest;
 use sha1::Sha1;
+use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -18,6 +19,20 @@ pub enum RSAError {
     FileWriteError,
     FileReadError,
     BadPEMFormat,
+}
+
+impl fmt::Display for RSAError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let msg = match self {
+            RSAError::MessageTooBig => "Message trop grand",
+            RSAError::EmptyMessage => "Message vide",
+            RSAError::BadSignatureFormat => "Mauvais format de signature",
+            RSAError::FileWriteError => "Erreur d'écriture dans le fichier",
+            RSAError::FileReadError => "Erreur de lecture du fichier",
+            RSAError::BadPEMFormat => "Erreur de format PEM",
+        };
+        write!(f, "{}", msg)
+    }
 }
 
 pub enum PEMType {

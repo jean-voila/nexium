@@ -9,6 +9,8 @@ export const showHistoryModal = writable(false);
 export const userBalanceInt = writable('');
 export const userBalanceDec = writable('');
 
+export const serverPublicKey = writable('');
+
 export const globalConfig = writable({
     url_server: '',
     port: 0,
@@ -18,5 +20,6 @@ export const globalConfig = writable({
     gitlab_token: '',
     gitlab_token_type: 'Classic',
     is_testnet: false,
+    password: '',
 });
 

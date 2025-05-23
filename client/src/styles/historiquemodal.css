@@ -15,15 +15,17 @@
 }
 
 .history-modal-content {
-    background-color: var(--color-blanc-primaire);
-    border-radius: 1.3rem;
-    /* équivalent à rounded-3xl */
-    padding: 1.2rem;
-    /* équivalent à p-8 */
-    width: 26rem;
-    /* équivalent à max-w-md */
+    max-height: 80vh;
+    /* Limite visuelle */
+    overflow-y: auto;
+    /* Active le scroll */
 
-    /* équivalent à w-full */
+    padding: 1.2rem;
+    width: 48rem;
+    max-height: 20rem;
+    /* plus large que les 26rem actuels */
+    border-radius: 1.3rem;
+    background-color: var(--color-blanc-primaire);
 }
 
 
@@ -33,7 +35,7 @@
     font-size: 25px;
     color: var(--color-noir-primaire);
     line-height: 30px;
-
+    padding-bottom: 1.4rem;
     letter-spacing: -0.03em;
 }
 
@@ -101,4 +103,64 @@
     padding-bottom: 5%;
     letter-spacing: -0.03em;
     color: var(--color-gris-primaire);
+}
+
+
+.icon-in {
+    color: var(--color-vert-primaire);
+    display: inline-flex;
+    align-items: center;
+}
+
+.icon-out {
+    color: var(--color-rouge-primaire);
+    display: inline-flex;
+    align-items: center;
+}
+
+.description-scroll-cell {
+    max-height: 6rem;
+    min-height: 6rem;
+    max-width: 15rem;
+    padding: 0;
+}
+
+.description-scroll-content {
+    overflow-y: auto;
+    max-height: 100%;
+    padding: 0.5rem;
+    white-space: normal;
+    max-width: 100%;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.history-modal table td,
+.history-modal table th {
+    text-align: center;
+    vertical-align: middle;
+    border-right: 2px solid #e0e0e0;
+    border-bottom: 2px solid #e0e0e0;
+    /* ligne horizontale légère */
+}
+
+.history-modal table td:last-child,
+.history-modal table th:last-child {
+    border-right: none;
+}
+
+.history-modal table tr:last-child td {
+    border-bottom: none;
+}
+
+.contenu-tableau {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.login {
+    font-family: 'Inconsolata', monospace;
+    font-weight: 500;
+    font-size: 15px;
 }

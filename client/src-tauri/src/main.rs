@@ -248,7 +248,7 @@ async fn get_balance(
 ) -> Result<(String, String), String> {
     match nexium_api::get_balance(login, config) {
         Ok((int, dec)) => Ok((int, dec)),
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     }
 }
 
@@ -259,7 +259,7 @@ async fn send_transaction(
 ) -> Result<String, String> {
     match nexium_api::send_transaction(transaction, config) {
         Ok(_) => Ok("".to_string()),
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     }
 }
 
@@ -271,7 +271,7 @@ async fn get_transactions(
 ) -> Result<Vec<nexium_api::ClassicTransactionReceived>, String> {
     match nexium_api::get_transactions(config, login, n) {
         Ok(transactions) => Ok(transactions),
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     }
 }
 

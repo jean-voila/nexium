@@ -127,6 +127,7 @@
 	async function handleKeyGeneration() {
 		isValidating = true;
 		password = await promptPassword();
+		config.password = password;
 
 		isGenerating = true;
 		generationMessage = 'Génération de vos clés...';
