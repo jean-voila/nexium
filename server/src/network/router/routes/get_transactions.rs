@@ -55,7 +55,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         for tr in b.transactions.iter().rev() {
             if tr.header.get_login() == *login {
                 // take the transaction
-            } else if tr.header.data_type == DataType::ClassicTransaction {
+            } else {
                 match tr.get_data() {
                     Ok(tr_data) => match tr_data {
                         TransactionData::ClassicTransaction {
