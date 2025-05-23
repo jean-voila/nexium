@@ -121,7 +121,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         Ok(h) => h,
         Err(e) => return Err(e.to_string()),
     };
-    dbg!(headers.clone());
+
     let url = build_url(&config, "/nexium");
 
     let client = Client::new();
@@ -129,7 +129,6 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         Ok(r) => r,
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
-    dbg!("C'est bon, on a la reponse");
 
     let client_key = match KeyPair::priv_from_pem(
         &config.priv_key,
@@ -142,29 +141,28 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 
     match response.status() {
         reqwest::StatusCode::OK => {}
-        _ => {
-            return Err(NexiumAPIError::UnknownError.to_string());
+        e => {
+            return Err(format!(
+                "Erreur lors de la connexion au serveur : {}",
+                e.to_string()
+            ));
         }
     }
 
     let response_text = match response.text() {
         Ok(t) => t,
-        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+        Err(e) => return Err(e.to_string()),
     };
-    dbg!("C'est bon, on a le texte de la reponse");
-    dbg!(response_text.clone());
 
     let decrypted_response = match client_key.decrypt_split(&response_text) {
         Ok(d) => d,
         Err(e) => return Err(e.to_string()),
     };
-    dbg!("C'est bon, on a le texte de la reponse decrypté");
 
     let json = match json::parse(&decrypted_response) {
         Ok(j) => j,
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
-    dbg!("C'est bon, on a le json de la reponse decrypté");
 
     let server_login = match json["login"].as_str() {
         Some(l) => l.to_string(),
