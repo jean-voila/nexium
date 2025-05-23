@@ -31,6 +31,20 @@ impl Default for Transaction {
 }
 
 impl Transaction {
+    // Create transaction from user-firendly values
+    pub fn new_classic(
+        receiver: &String,
+        amount: u32,
+        has_description: bool,
+        description: &String,
+        fees: u16,
+        emitter: &String,
+        data_type: DataType,
+        key: &KeyPair,
+    ) -> Result<Self, String> {
+        todo!();
+    }
+
     pub fn new<T>(
         data: Vec<u8>,
         fees: u16,

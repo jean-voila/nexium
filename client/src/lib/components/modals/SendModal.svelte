@@ -2,7 +2,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
-	import { userBalance, isConfigSet } from '$lib/stores/settings.js';
+	import { isConfigSet } from '$lib/stores/settings.js';
 
 	let { oncancel } = $props();
 
@@ -72,8 +72,7 @@
 
 <div class="transaction-modal" transition:fade={{ duration: 200 }}>
 	<div class="transaction-modal-content" transition:fly={{ y: 30, duration: 200 }}>
-		<h3 class="password-titre">Nouvelle transaction</h3>
-		<p class="password-texte"></p>
+		<h3 class="transaction-titre">Nouvelle transaction</h3>
 
 		<div class="settings-item">
 			<div class="flex flex-col gap-4">
@@ -132,25 +131,29 @@
 			</div>
 		</div>
 		<div class="mt-6 flex items-center justify-end">
-			<div class="flex gap-2">
-				<button
-					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-					onclick={handleLoadFile}
-				>
-					<span class="texte-bouton-settings texte-bouton-password-blanc">Importer</span>
-				</button>
-				<button
-					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-					onclick={handleClose}
-					><span class="texte-bouton-settings texte-bouton-password-blanc">Annuler</span>
-				</button>
-				<button
-					onclick={handleSend}
-					class="pillule-bouton-settings bouton-noir-settings flex items-center transition"
-					disabled={isUserLoginValid}
-				>
-					<span class="texte-bouton-settings">Envoyer</span>
-				</button>
+			<div class="flex w-full">
+				<div class="flex flex-1 justify-start">
+					<button
+						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
+						onclick={handleLoadFile}
+					>
+						<span class="texte-bouton-password texte-bouton-password-blanc">Importer</span>
+					</button>
+				</div>
+				<div class="flex justify-end gap-2">
+					<button
+						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
+						onclick={handleClose}
+					>
+						<span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
+					</button>
+					<button
+						class="pillule-bouton-password pillule-bouton-password-noir bouton-noir-settings flex items-center transition"
+						onclick={handleSend}
+					>
+						<span class="texte-bouton-password texte-bouton-password-noir">Envoyer</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>

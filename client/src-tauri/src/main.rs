@@ -237,7 +237,7 @@ async fn get_names_from_login(
 }
 
 #[tauri::command]
-async fn get_balance(login: String) -> Result<String, String> {
+async fn get_balance(login: String) -> Result<(String, String), String> {
     todo!()
 }
 

@@ -45,8 +45,7 @@
 
 <div class="transaction-modal" transition:fade={{ duration: 200 }}>
 	<div class="transaction-modal-content" transition:fly={{ y: 30, duration: 200 }}>
-		<h3 class="password-titre">Nouvelle facture</h3>
-		<p class="password-texte"></p>
+		<h3 class="transaction-titre">Nouvelle facture</h3>
 
 		<div class="settings-item">
 			<div class="flex flex-wrap gap-4 md:flex-nowrap">
@@ -59,7 +58,7 @@
 							inputmode="decimal"
 							pattern="[0-9]*"
 							bind:value={montant}
-							class="input-field flex-1"
+							class="input-field input- input-field-montant flex-1"
 							placeholder="0.00"
 						/>
 						<span class="text-sm text-gray-500">NXM</span>
@@ -74,22 +73,22 @@
 					class="input-field w-full resize-none"
 					placeholder="Description (facultative)"
 					maxlength="256"
-					rows="7"
+					rows="4"
 				></textarea>
 			</div>
 		</div>
 		<div class="mt-6 flex justify-end">
 			<div class="flex gap-2">
 				<button
-					class="pillule-bouton-settings pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
+					class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
 					onclick={handleClose}
-					><span class="texte-bouton-settings texte-bouton-password-blanc">Annuler</span>
+					><span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
 				</button>
 				<button
+					class="pillule-bouton-password pillule-bouton-password-noir bouton-noir-settings flex items-center transition"
 					onclick={handleExport}
-					class="pillule-bouton-settings bouton-noir-settings flex items-center transition"
 				>
-					<span class="texte-bouton-settings">Exporter</span>
+					<span class="texte-bouton-password texte-bouton-password-noir">Exporter</span>
 				</button>
 			</div>
 		</div>

@@ -1,35 +1,7 @@
 <script>
 	import { globalConfig, isConfigSet } from '$lib/stores/settings.js';
 	import { invoke } from '@tauri-apps/api/core';
-	import { userBalance } from '$lib/stores/settings.js';
-	let userBalanceDecimals = '';
-	let userBalanceInteger = '';
-
-	$: if ($globalConfig?.user_login) {
-		invoke('get_balance', { login: $globalConfig.user_login })
-			.then((balance) => {
-				userBalance.set(balance);
-			})
-			.catch(() => {});
-	}
-	$: userBalance.subscribe((val) => {
-		if (val) {
-			[userBalanceInteger, userBalanceDecimals] = splitBalance(val);
-		}
-	});
-
-	/**
-	 * @param {string} userBalance
-	 * @returns {[string, string]}
-	 */
-	function splitBalance(userBalance) {
-		if (userBalance) {
-			const parts = userBalance.toString().split('.');
-			return [parts[0], parts[1] ? parts[1].slice(0, 2) : '00'];
-		} else {
-			return ['0', '00'];
-		}
-	}
+	import { userBalanceInt, userBalanceDec } from '$lib/stores/settings.js';
 </script>
 
 <div class="relative h-80 w-80">
@@ -46,8 +18,8 @@
 	<div class="absolute inset-0 flex flex flex-col items-center justify-center">
 		{#if $isConfigSet}
 			<div class="text-4xl text-white">
-				<span class="solde-unit solde">{userBalanceInteger}</span>.<span class="solde-deci solde"
-					>{userBalanceDecimals}</span
+				<span class="solde-unit solde">{$userBalanceInt}</span>.<span class="solde-deci solde"
+					>{$userBalanceDec}</span
 				>
 			</div>
 			<span class="sous-titre">NXM</span>

@@ -3,6 +3,7 @@
 	import { SendHorizontal } from 'lucide-svelte';
 	import { HandCoins } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import { RefreshCw } from 'lucide-svelte';
 
 	import { Copy } from 'lucide-svelte';
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
@@ -12,7 +13,7 @@
 
 	import { invoke } from '@tauri-apps/api/core';
 
-	let showCopyMessage = false;
+	let showCopyMessage = '';
 	let tooltipX = 0;
 	let tooltipY = 0;
 
@@ -20,8 +21,11 @@
 		globalConfig,
 		isConfigSet,
 		showReceiveModal,
-		showSendModal
+		showSendModal,
+		userBalanceInt,
+		userBalanceDec
 	} from '$lib/stores/settings.js';
+	import { on } from 'svelte/events';
 
 	let firstName = '';
 	let lastName = '';
@@ -39,6 +43,7 @@
 
 	// Réagit aux changements de login utilisateur
 	$: if ($globalConfig?.user_login) {
+		balanceUpdate();
 		invoke('get_names_from_login', { login: $globalConfig.user_login })
 			.then(([first, last]) => {
 				firstName = first;
@@ -48,6 +53,17 @@
 				firstName = '';
 				lastName = '';
 			});
+	}
+
+	async function balanceUpdate() {
+		invoke('get_balance', { login: $globalConfig.user_login })
+			.then((balance) => {
+				if (balance) {
+					userBalanceInt.set(balance[0]);
+					userBalanceDec.set(balance[1]);
+				}
+			})
+			.catch(() => {});
 	}
 </script>
 
@@ -66,18 +82,30 @@
 				</div>
 			{/if}
 		</div>
-		<div class="flex gap-1">
+		<div class="flex gap-2">
 			<button
 				onclick={copyLogin}
-				onmouseenter={() => (showCopyMessage = true)}
-				onmouseleave={() => (showCopyMessage = false)}
+				onmouseenter={() => (showCopyMessage = $globalConfig.user_login)}
+				onmouseleave={() => (showCopyMessage = '')}
 				onmousemove={(e) => {
 					tooltipX = e.clientX;
 					tooltipY = e.clientY;
 				}}
 				hidden={!$isConfigSet}
 			>
-				<Copy strokeWidth={2.4} size={25} class="bouton-action" />
+				<Copy strokeWidth={2.6} size={24} class="bouton-action" />
+			</button>
+			<button
+				onclick={balanceUpdate}
+				hidden={!$isConfigSet}
+				onmouseenter={() => (showCopyMessage = 'Rafraîchir')}
+				onmouseleave={() => (showCopyMessage = '')}
+				onmousemove={(e) => {
+					tooltipX = e.clientX;
+					tooltipY = e.clientY;
+				}}
+			>
+				<RefreshCw strokeWidth={2.6} size={24} class="bouton-action" />
 			</button>
 		</div>
 	</div>
@@ -102,7 +130,7 @@
 			class:opacity-100={!copied}
 			class:opacity-0={copied}
 		>
-			{$globalConfig.user_login}
+			{showCopyMessage}
 		</span>
 		<span
 			class="absolute transition-all duration-500 ease-in-out"

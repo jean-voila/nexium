@@ -354,6 +354,17 @@ body {
     letter-spacing: -0.03em;
 }
 
+.transaction-titre {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    color: var(--color-noir-primaire);
+    line-height: 30px;
+    padding-bottom: 0.3rem;
+
+    letter-spacing: -0.03em;
+}
+
 .pillule-bouton-settings {
     background-color: var(--color-noir-primaire);
     color: var(--color-blanc-primaire);
@@ -452,6 +463,10 @@ body {
     font-size: 15px;
     transform: scale(100%);
     transition: all 0.1s ease-in-out;
+}
+
+.input-field-montant {
+    text-align: end;
 }
 
 
