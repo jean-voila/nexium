@@ -19,6 +19,7 @@ use nexium::{
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
+    hash::Hash,
     io::Write,
     os::unix::fs::FileExt,
 };
@@ -100,11 +101,11 @@ impl Blockchain {
             b.cache.insert(b.last_hash, b.size);
             b.size += BLOCK_HEADER_SIZE as u64
                 + block.header.transactions_size as u64;
-            dbg!(b.size, blockchain_size, block.size());
+            // dbg!(b.size, blockchain_size, block.size());
         }
 
         // dbg!(&b.cache);
-        dbg!(&b.cache.len());
+        // dbg!(&b.cache.len());
         Ok(b)
     }
 
@@ -130,23 +131,42 @@ impl Blockchain {
             transactions
                 .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
 
-            //
+            let mut balances: HashMap<String, u32> = HashMap::new();
 
-            let a = transactions.iter().filter_map(|tr| match tr.get_data() {
-                Ok(data) => match data {
-                    TransactionData::ClassicTransaction {
-                        receiver,
-                        amount,
-                        has_description,
-                        description,
-                    } => {
-                        todo!();
-                        Some(())
-                    }
-                    _ => None,
-                },
-                Err(_) => None,
-            });
+            // let res =
+            //     transactions.iter().filter_map(|tr| match tr.get_data() {
+            //         Ok(data) => match data {
+            //             TransactionData::ClassicTransaction {
+            //                 receiver,
+            //                 amount,
+            //                 ..
+            //             } => {
+            //                 let em = tr.header.get_login();
+            //                 let mut be = match balances.get(&em) {
+            //                     Some(b) => *b,
+            //                     None => INITIAL_BALANCE,
+            //                 };
+
+            //                 let r = String::from_utf8_lossy(&receiver);
+            //                 let mut br = match balances.get(r.as_ref()) {
+            //                     Some(b) => *b,
+            //                     None => INITIAL_BALANCE,
+            //                 };
+
+            //                 if (be as i64 - amount as i64) < 0 {
+            //                     None
+            //                 } else {
+            //                     be -= amount;
+            //                     br += amount;
+            //                     balances.insert(em, be);
+            //                     balances.insert(r.to_string(), br);
+            //                     Some(())
+            //                 }
+            //             }
+            //             _ => Some(()),
+            //         },
+            //         Err(_) => Some(()),
+            //     });
 
             let block = Block::new(self.last_hash, &transactions);
             // dbg!(&block);

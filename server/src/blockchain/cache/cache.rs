@@ -28,9 +28,9 @@ impl<'a> Cache<'a> {
         }
     }
 
-    pub fn get(&self, login: &String) -> Option<User> {
-        self.data.get(login).cloned()
-    }
+    // pub fn get(&self, login: &String) -> Option<User> {
+    //     self.data.get(login).cloned()
+    // }
 
     fn get_user(&self, login: &String) -> User {
         match self.data.get(login) {

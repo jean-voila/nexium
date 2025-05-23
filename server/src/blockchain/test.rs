@@ -29,7 +29,8 @@ pub fn main() {
     //     }
     // };
     // dbg!(&b1);
-    // // dbg!(&bc.last_hash);
+    // dbg!(&bc.last_hash);
+    // return;
 
     // let b2 = match bc.get_block(&bc.last_hash.clone()) {
     //     Ok(b) => b,
@@ -40,7 +41,7 @@ pub fn main() {
     // };
     // dbg!(&b2);
     // dbg!(&b1 == &b2);
-    return;
+    // return;
 
     let login1 = "william.valenduc";
     let login2 = "jean.herail";
@@ -53,7 +54,7 @@ pub fn main() {
         .get_user_balance(login2)
         .expect("Failed to get user balance");
     println!("Balance: {} {}", login2, balance);
-    return;
+    // return;
 
     //////////////////
 
@@ -67,44 +68,36 @@ pub fn main() {
     // .expect("Failed to create transaction");
     // dbg!(&t);
 
-    // let mut vec = t.header.to_buffer().to_vec();
-    // vec.extend(&t.data);
-    // let check = key.check_signature(vec, &t.signature).unwrap();
-    // println!("Check signature: {}", check);
-
-    // println!("data: {}", String::from_utf8_lossy(&t.data));
-    // let json =
-    //     serde_json::to_string(&t).expect("Failed to serialize transaction");
-    // println!("Transaction: {}", json);
-
     // bc.add_transaction(t);
-    // return;
+    return;
 
     ///////////////
 
-    // let h = [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
-    // let transactions = vec![t];
-    // let block = Block::new(h, &transactions);
-    // bc.append(&block);
-
-    ///////////////
-
-    // let tr = Transaction::new_classic(
-    //     "jean.herail",
-    //     50,
-    //     "TEST",
-    //     0,
-    //     "william.valenduc",
-    //     &key,
-    // );
     let tr = Transaction::new_classic(
-        "william.valenduc",
-        50,
-        "TEST_ERROR",
-        0,
         "jean.herail",
+        100,
+        "TEST_2",
+        0,
+        "william.valenduc",
         &key,
     );
+
+    // let tr = Transaction::new_classic(
+    //     "william.valenduc",
+    //     50,
+    //     "TEST_ERROR",
+    //     0,
+    //     "jean.herail",
+    //     &key,
+    // );
+
+    // let tr = Transaction::new(
+    //     "This is a test".as_bytes().to_vec(),
+    //     0,
+    //     "william.valenduc",
+    //     DataType::Unknown,
+    //     &key,
+    // );
 
     let tr1 = match tr {
         Ok(t) => t,
