@@ -20,7 +20,7 @@ impl<'a> Server<'a> {
         config: &Config,
         gitlab: &'a GitlabClient,
         key: &'a KeyPair,
-        blockchain: &'a mut Blockchain,
+        blockchain: &'a mut Blockchain<'a>,
     ) -> Result<Self, String> {
         Ok(Self {
             cache: Cache::new(gitlab, blockchain),

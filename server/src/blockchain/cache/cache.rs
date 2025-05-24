@@ -1,20 +1,20 @@
 use crate::blockchain::blockchain::Blockchain;
 
 use super::user::User;
-use nexium::{ defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
+use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
 use num_bigint::BigUint;
 use std::{collections::HashMap, str::FromStr};
 
 pub struct Cache<'a> {
     pub data: HashMap<String, User>,
     pub gitlab: &'a GitlabClient,
-    pub blockchain: &'a mut Blockchain,
+    pub blockchain: &'a mut Blockchain<'a>,
 }
 
 impl<'a> Cache<'a> {
     pub fn new(
         gitlab: &'a GitlabClient,
-        blockchain: &'a mut Blockchain,
+        blockchain: &'a mut Blockchain<'a>,
     ) -> Self {
         Self {
             data: HashMap::new(),

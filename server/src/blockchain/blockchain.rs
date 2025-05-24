@@ -12,6 +12,7 @@ use nexium::{
         transaction::Transaction, transaction_data::TransactionData,
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
+    gitlab::GitlabClient,
     sha256::sha256,
 };
 use std::{
@@ -20,16 +21,17 @@ use std::{
     io::{Read, Seek, SeekFrom, Write},
 };
 
-pub struct Blockchain {
+pub struct Blockchain<'a> {
     pub cache: HashMap<HeaderPreviousBlockHash, u64>,
     file: File,
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,
     pub size: u64,
+    gitlab: &'a GitlabClient,
 }
 
-impl Blockchain {
-    pub fn init() -> Result<Self, String> {
+impl<'a> Blockchain<'a> {
+    pub fn init(gitlab: &'a GitlabClient) -> Result<Self, String> {
         let r = OpenOptions::new()
             .read(true)
             .write(true)
@@ -55,6 +57,7 @@ impl Blockchain {
             last_hash: HeaderPreviousBlockHash::default(),
             mempool: Mempool::new(),
             size: 0,
+            gitlab,
         };
 
         let blockchain_size = match b.file.metadata() {
@@ -136,10 +139,18 @@ impl Blockchain {
                         ..
                     } => {
                         if amount <= 0 as f32 {
-                            return false;
+                            return false; // Invalid transaction amount
                         }
 
                         let em = tr.header.get_login();
+                        let r = String::from_utf8_lossy(&receiver)
+                            .trim_end_matches('\0')
+                            .to_string();
+
+                        if em == r {
+                            return false; // Cannot send money to yourself
+                        }
+
                         let mut be = match balances.get(&em) {
                             Some(b) => *b,
                             None => match self.get_user_balance(&em) {
@@ -150,10 +161,9 @@ impl Blockchain {
                             },
                         };
 
-                        let r = String::from_utf8_lossy(&receiver);
-                        let mut br = match balances.get(r.as_ref()) {
+                        let mut br = match balances.get(&r) {
                             Some(b) => *b,
-                            None => match self.get_user_balance(r.as_ref()) {
+                            None => match self.get_user_balance(&r) {
                                 Ok(b) => b,
                                 Err(_) => {
                                     return false;

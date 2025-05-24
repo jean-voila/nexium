@@ -231,7 +231,7 @@ fn main() {
     };
 
     print!("Reading blockchain...");
-    let mut blockchain = match Blockchain::init() {
+    let mut blockchain = match Blockchain::init(&gitlab) {
         Ok(b) => {
             println!("\rReading blockchain: {: >5}", "OK".green());
             b
