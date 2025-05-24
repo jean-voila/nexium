@@ -14,7 +14,8 @@
 		isConfigSet,
 		showHistoryModal,
 		showReceiveModal,
-		showSendModal
+		showSendModal,
+		globalErrorMessage
 	} from '$lib/stores/settings.js';
 	import HistoryModal from '$lib/components/modals/HistoryModal.svelte';
 
@@ -54,6 +55,15 @@
 				<CircleAlert strokeWidth={3.7} size={20} class="icon" id="missing-config-icon" />Aucune
 				configuration</button
 			>
+		</div>
+	{:else if $globalErrorMessage}
+		<div class="missing-config-container">
+			<CircleAlert
+				strokeWidth={3.7}
+				size={20}
+				class="icon"
+				id="missing-config-icon"
+			/>{$globalErrorMessage}
 		</div>
 	{/if}
 </div>

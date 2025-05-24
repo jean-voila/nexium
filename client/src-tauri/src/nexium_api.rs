@@ -3,6 +3,7 @@ use json;
 use log::kv::Key;
 use nexium::blockchain::transaction::*;
 use nexium::defaults::*;
+use nexium::gitlab;
 use nexium::gitlab::*;
 use nexium::rsa::*;
 use num_bigint::BigUint;
@@ -23,6 +24,15 @@ pub enum NexiumAPIError {
     UnknownError,
     InvalidPrivateKeyOrPassword,
     NoServerPublicKey,
+    NoServerResponse,
+    InvalidResponseFromServer,
+    InvalidJsonResponse,
+    NoServerLogin,
+    NoServerSigSample,
+    NoServerGpgKeys,
+    InvalidSigSample,
+    NoBalanceField,
+    InvalidBalanceFormat,
 }
 
 impl fmt::Display for NexiumAPIError {
@@ -35,6 +45,25 @@ impl fmt::Display for NexiumAPIError {
             NexiumAPIError::NoServerPublicKey => {
                 "Impossible de récupérer la clé publique du serveur."
             }
+            NexiumAPIError::NoServerResponse => "Aucune réponse du serveur.",
+            NexiumAPIError::InvalidResponseFromServer => {
+                "Réponse invalide du serveur"
+            }
+            NexiumAPIError::InvalidJsonResponse => "Réponse JSON invalide.",
+            NexiumAPIError::NoServerLogin => {
+                "Impossible de récupérer le login du serveur."
+            }
+            NexiumAPIError::NoServerSigSample => {
+                "Impossible de récupérer le sample de signature du serveur."
+            }
+            NexiumAPIError::NoServerGpgKeys => {
+                "Impossible de récupérer les clés GPG du serveur."
+            }
+            NexiumAPIError::InvalidSigSample => "Sample de signature invalide.",
+            NexiumAPIError::NoBalanceField => {
+                "Impossible de récupérer le champ de solde."
+            }
+            NexiumAPIError::InvalidBalanceFormat => "Format de solde invalide.",
         };
         write!(f, "{}", msg)
     }
@@ -127,7 +156,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
     let client = Client::new();
     let response = match client.get(&url).headers(headers).send() {
         Ok(r) => r,
-        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
     };
 
     let client_key = match KeyPair::priv_from_pem(
@@ -143,7 +172,8 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         reqwest::StatusCode::OK => {}
         e => {
             return Err(format!(
-                "Erreur lors de la connexion au serveur : {}",
+                "{}: {}",
+                NexiumAPIError::InvalidResponseFromServer.to_string(),
                 e.to_string()
             ));
         }
@@ -151,7 +181,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 
     let response_text = match response.text() {
         Ok(t) => t,
-        Err(e) => return Err(e.to_string()),
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
     };
 
     let decrypted_response = match client_key.decrypt_split(&response_text) {
@@ -161,17 +191,19 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 
     let json = match json::parse(&decrypted_response) {
         Ok(j) => j,
-        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+        Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
     };
+
+    dbg!(&json);
 
     let server_login = match json["login"].as_str() {
         Some(l) => l.to_string(),
-        None => return Err(NexiumAPIError::UnknownError.to_string()),
+        None => return Err(NexiumAPIError::NoServerLogin.to_string()),
     };
 
     let sig_sample = match json["sigSample"].as_str() {
         Some(s) => s.to_string(),
-        None => return Err(NexiumAPIError::UnknownError.to_string()),
+        None => return Err(NexiumAPIError::NoServerSigSample.to_string()),
     };
 
     let gitlab_client =
@@ -179,7 +211,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 
     let gpg_keys = match gitlab_client.get_gpg_keys(&server_login) {
         Ok(keys) => keys,
-        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+        Err(_) => return Err(NexiumAPIError::NoServerGpgKeys.to_string()),
     };
 
     for key in gpg_keys {
@@ -190,7 +222,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 
         let sig_sample_biguint = match BigUint::from_str(&sig_sample) {
             Ok(b) => b,
-            Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+            Err(_) => return Err(NexiumAPIError::InvalidSigSample.to_string()),
         };
         match server_key.check_signature(
             SIG_SAMPLE.as_bytes().to_vec(),
@@ -224,8 +256,65 @@ pub fn get_balance(
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
-    let headers = build_headers(&config);
-    todo!();
+    let headers = match build_headers(&config) {
+        Ok(h) => h,
+        Err(e) => return Err(e),
+    };
+
+    let url = build_url(&config, &format!("/balance/{}", login));
+
+    let client = Client::new();
+    let response = match client.get(&url).headers(headers).send() {
+        Ok(r) => r,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "{}: {}",
+            NexiumAPIError::InvalidResponseFromServer.to_string(),
+            response.status()
+        ));
+    }
+
+    let response_text = match response.text() {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
+    };
+    let client_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let uncrypted_response = match client_key.decrypt_split(&response_text) {
+        Ok(d) => d,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let json = match json::parse(&uncrypted_response) {
+        Ok(j) => j,
+        Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
+    };
+
+    dbg!(&json);
+
+    let balance_str = match json["balance"].as_str() {
+        Some(b) => b.to_string(),
+        None => {
+            return Err(NexiumAPIError::NoBalanceField.to_string());
+        }
+    };
+
+    let parts: Vec<&str> = balance_str.split('.').collect();
+    if parts.len() != 2 {
+        return Err(NexiumAPIError::InvalidBalanceFormat.to_string());
+    }
+
+    Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
 pub fn get_transactions(

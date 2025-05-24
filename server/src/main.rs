@@ -9,6 +9,7 @@ use network::server::Server;
 use nexium::{
     defaults::*,
     gitlab::{GitlabClient, TokenType},
+    rsa::KeyPair,
 };
 use std::{env, path::Path};
 

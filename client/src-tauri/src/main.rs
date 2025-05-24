@@ -243,23 +243,33 @@ async fn get_invoice_extension() -> String {
 
 #[tauri::command]
 async fn get_balance(
-    pub_key: String,
+    server_pubkey: String,
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
-    match nexium_api::get_balance(pub_key, login, config) {
-        Ok((int, dec)) => Ok((int, dec)),
-        Err(e) => Err(e),
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        match nexium_api::get_balance(server_pubkey, login, config) {
+            Ok((int, dec)) => Ok((int, dec)),
+            Err(e) => Err(e),
+        }
+    })
+    .await;
+    match result {
+        Ok(r) => match r {
+            Ok(soldes) => Ok(soldes),
+            Err(e) => Err(e),
+        },
+        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
     }
 }
 
 #[tauri::command]
 async fn send_transaction(
-    pub_key: String,
+    server_pubkey: String,
     config: Config,
     transaction: nexium_api::ClassicTransactionSent,
 ) -> Result<String, String> {
-    match nexium_api::send_transaction(pub_key, transaction, config) {
+    match nexium_api::send_transaction(server_pubkey, transaction, config) {
         Ok(_) => Ok("".to_string()),
         Err(e) => Err(e),
     }

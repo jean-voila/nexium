@@ -9,6 +9,8 @@ export const showHistoryModal = writable(false);
 export const userBalanceInt = writable('');
 export const userBalanceDec = writable('');
 
+export const globalErrorMessage = writable('');
+
 export const serverPublicKey = writable('');
 
 export const globalConfig = writable({

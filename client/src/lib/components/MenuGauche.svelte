@@ -25,7 +25,9 @@
 		showSendModal,
 		userBalanceInt,
 		userBalanceDec,
-		showHistoryModal
+		showHistoryModal,
+		serverPublicKey,
+		globalErrorMessage
 	} from '$lib/stores/settings.js';
 	import { on } from 'svelte/events';
 
@@ -61,20 +63,26 @@
 
 	async function balanceUpdate() {
 		if (!canRefresh) return;
+
 		canRefresh = false;
-		invoke('get_balance', { login: $globalConfig.user_login })
-			.then((balance) => {
-				if (balance) {
-					userBalanceInt.set(balance[0]);
-					userBalanceDec.set(balance[1]);
-				}
-			})
-			.catch(() => {})
-			.finally(() => {
-				setTimeout(() => {
-					canRefresh = true;
-				}, 6000);
+		try {
+			const balance = await invoke('get_balance', {
+				serverPubkey: $serverPublicKey,
+				login: $globalConfig.user_login,
+				config: $globalConfig
 			});
+			if (balance) {
+				userBalanceInt.set(balance[0]);
+				userBalanceDec.set(balance[1]);
+			}
+			globalErrorMessage.set('');
+		} catch (error) {
+			globalErrorMessage.set(String(error));
+		} finally {
+			setTimeout(() => {
+				canRefresh = true;
+			}, 6000);
+		}
 	}
 </script>
 
