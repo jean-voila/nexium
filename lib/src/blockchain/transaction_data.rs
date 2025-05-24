@@ -5,19 +5,15 @@ use super::{
 use crate::blockchain::consts::{
     CLASSIC_TRANSACTION_MAX_SIZE, CLASSIC_TRANSACTION_MIN_SIZE,
 };
-// use serde::{Deserialize, Serialize};
 
 pub type DESCRIPTION = [u8; DESCRIPTION_SIZE];
 pub type RECEIVER = [u8; TRANSACTION_RECEIVER];
 
-// #[derive(Debug)]
 pub enum TransactionData {
     ClassicTransaction {
-        // #[serde(with = "serde_receiver")]
         receiver: RECEIVER,
-        amount: u32,
+        amount: f32,
         has_description: bool,
-        // #[serde(with = "serde_description")]
         description: DESCRIPTION,
     },
     Unknown {
@@ -50,7 +46,7 @@ impl TransactionData {
 
                 receiver.copy_from_slice(&buffer[0..amount_start]);
 
-                let amount = u32::from_le_bytes(
+                let amount = f32::from_le_bytes(
                     buffer[amount_start..has_description_start]
                         .try_into()
                         .unwrap(),
@@ -166,33 +162,3 @@ impl core::fmt::Debug for TransactionData {
         Ok(())
     }
 }
-
-// mod serde_description {
-
-//     use serde::{Deserialize, Deserializer, Serializer};
-
-//     use crate::blockchain::consts::DESCRIPTION_SIZE;
-
-//     use super::DESCRIPTION;
-
-//     pub fn serialize<S>(
-//         sig: DESCRIPTION,
-//         serializer: S,
-//     ) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         let s = sig.iter().map(|e| *e as char).collect::<String>();
-//         serializer.serialize_str(s.as_str())
-//     }
-
-//     pub fn deserialize<'de, D>(deserializer: D) -> Result<DESCRIPTION, D::Error>
-//     where
-//         D: Deserializer<'de>,
-//     {
-//         let s: &str = Deserialize::deserialize(deserializer)?;
-//         let mut description = [0; DESCRIPTION_SIZE];
-//         description.copy_from_slice(s.as_bytes());
-//         Ok(description)
-//     }
-// }

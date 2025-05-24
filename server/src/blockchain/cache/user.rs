@@ -2,7 +2,8 @@ use nexium::rsa::KeyPair;
 
 #[derive(Clone)]
 pub struct User {
-    pub balance: Option<u32>,
+    #[allow(unused)]
+    pub balance: Option<f32>,
     pub keys: Vec<KeyPair>,
 }
 

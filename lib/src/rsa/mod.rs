@@ -165,19 +165,15 @@ impl KeyPair {
         Ok(m.modpow(&self.d, &self.n))
     }
 
-    pub fn check_signature<T>(
+    pub fn check_signature(
         &self,
-        message: T,
+        message: &Vec<u8>,
         signature: &BigUint,
-    ) -> Result<bool, RSAError>
-    where
-        T: AsRef<Vec<u8>>,
-    {
-        let msg = message.as_ref();
-        if msg.is_empty() {
+    ) -> Result<bool, RSAError> {
+        if message.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
-        let hash = sha256(msg);
+        let hash = sha256(message);
         let m = BigUint::from_bytes_be(&hash);
         let decrypted_signature = signature.modpow(&self.e, &self.n);
 

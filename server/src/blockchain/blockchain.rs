@@ -3,15 +3,13 @@ use super::{
     structure::{
         block::Block,
         block_header::{BlockHeader, HeaderPreviousBlockHash},
-        consts::{BLOCK_HEADER_SIZE, HEADER_PREVIOUS_BLOCK_HASH_SIZE},
+        consts::BLOCK_HEADER_SIZE,
     },
 };
 use nexium::{
     blockchain::{
-        consts::TRANSACTION_RECEIVER,
-        data_type::DataType,
-        transaction::Transaction,
-        transaction_data::{TransactionData, RECEIVER},
+        consts::TRANSACTION_RECEIVER, data_type::DataType,
+        transaction::Transaction, transaction_data::TransactionData,
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     sha256::sha256,
@@ -19,9 +17,7 @@ use nexium::{
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
-    hash::Hash,
-    io::Write,
-    os::unix::fs::FileExt,
+    io::{Read, Seek, SeekFrom, Write},
 };
 
 pub struct Blockchain {
@@ -87,8 +83,8 @@ impl Blockchain {
             };
 
             match block.header.previous_block_hash {
-                x if x == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE]
-                    && b.last_hash == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] => {}
+                // x if x == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE]
+                //     && b.last_hash == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] => {}
                 x if x == b.last_hash => {}
                 _ => {
                     return Err("Invalid previous block hash".to_string());
@@ -125,50 +121,70 @@ impl Blockchain {
 
     pub fn add_transaction(&mut self, transaction: Transaction) {
         self.mempool.add(transaction);
-        dbg!(self.mempool.is_full());
+        // dbg!(self.mempool.is_full());
         if self.mempool.is_full() {
+            println!("Mempool is full, creating a new block");
+
             let mut transactions = self.mempool.dump();
             transactions
                 .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
 
-            let mut balances: HashMap<String, u32> = HashMap::new();
+            let mut balances: HashMap<String, f32> = HashMap::new();
 
-            // let res =
-            //     transactions.iter().filter_map(|tr| match tr.get_data() {
-            //         Ok(data) => match data {
-            //             TransactionData::ClassicTransaction {
-            //                 receiver,
-            //                 amount,
-            //                 ..
-            //             } => {
-            //                 let em = tr.header.get_login();
-            //                 let mut be = match balances.get(&em) {
-            //                     Some(b) => *b,
-            //                     None => INITIAL_BALANCE,
-            //                 };
+            let valid_trs: Vec<Transaction> = transactions
+                .into_iter()
+                .filter(|tr| match tr.get_data() {
+                    Ok(data) => match data {
+                        TransactionData::ClassicTransaction {
+                            receiver,
+                            amount,
+                            ..
+                        } => {
+                            let em = tr.header.get_login();
+                            let mut be = match balances.get(&em) {
+                                Some(b) => *b,
+                                None => match self.get_user_balance(&em) {
+                                    Ok(b) => b,
+                                    Err(_) => {
+                                        return false;
+                                    }
+                                },
+                            };
 
-            //                 let r = String::from_utf8_lossy(&receiver);
-            //                 let mut br = match balances.get(r.as_ref()) {
-            //                     Some(b) => *b,
-            //                     None => INITIAL_BALANCE,
-            //                 };
+                            let r = String::from_utf8_lossy(&receiver);
+                            let mut br = match balances.get(r.as_ref()) {
+                                Some(b) => *b,
+                                None => match self.get_user_balance(r.as_ref())
+                                {
+                                    Ok(b) => b,
+                                    Err(_) => {
+                                        return false;
+                                    }
+                                },
+                            };
 
-            //                 if (be as i64 - amount as i64) < 0 {
-            //                     None
-            //                 } else {
-            //                     be -= amount;
-            //                     br += amount;
-            //                     balances.insert(em, be);
-            //                     balances.insert(r.to_string(), br);
-            //                     Some(())
-            //                 }
-            //             }
-            //             _ => Some(()),
-            //         },
-            //         Err(_) => Some(()),
-            //     });
+                            if (be as i64 - amount as i64) < 0 {
+                                false
+                            } else {
+                                be -= amount;
+                                br += amount;
+                                balances.insert(em, be);
+                                balances.insert(r.to_string(), br);
+                                true
+                            }
+                        }
+                        _ => true,
+                    },
+                    Err(_) => false,
+                })
+                .collect();
 
-            let block = Block::new(self.last_hash, &transactions);
+            if valid_trs.is_empty() {
+                println!("No valid transactions found: aborting block");
+                return;
+            }
+
+            let block = Block::new(self.last_hash, &valid_trs);
             // dbg!(&block);
             self.append(&block);
         }
@@ -177,7 +193,17 @@ impl Blockchain {
     pub fn read_block(&mut self, offset: u64) -> Result<Block, String> {
         let mut header_buff = [0_u8; BLOCK_HEADER_SIZE];
 
-        let header = match self.file.read_exact_at(&mut header_buff, offset) {
+        match self.file.seek(SeekFrom::Start(offset)) {
+            Ok(_) => (),
+            Err(e) => {
+                return Err(format!(
+                    "Failed to seek in blockchain file: {}",
+                    e
+                ));
+            }
+        };
+
+        let header = match self.file.read_exact(&mut header_buff) {
             Ok(_) => BlockHeader::from_buff(&header_buff),
             Err(e) => {
                 return Err(format!("Error reading blockchain file: {}", e));
@@ -188,8 +214,18 @@ impl Blockchain {
 
         match self
             .file
-            .read_exact_at(&mut block_buff, offset + BLOCK_HEADER_SIZE as u64)
+            .seek(SeekFrom::Start(offset + BLOCK_HEADER_SIZE as u64))
         {
+            Ok(_) => (),
+            Err(e) => {
+                return Err(format!(
+                    "Failed to seek in blockchain file: {}",
+                    e
+                ));
+            }
+        };
+
+        match self.file.read_exact(&mut block_buff) {
             Ok(_) => (),
             Err(e) => {
                 return Err(format!("Failed to read blockchain file: {}", e));
@@ -238,18 +274,16 @@ impl Blockchain {
         Ok(())
     }
 
-    pub fn get_user_balance<T>(&mut self, login: T) -> Result<u32, String>
+    pub fn get_user_balance<T>(&mut self, login: T) -> Result<f32, String>
     where
         T: AsRef<str>,
     {
         let login = login.as_ref();
-        let mut balance = INITIAL_BALANCE;
+        let mut balance = INITIAL_BALANCE as f32;
 
         let res = self.block_foreach(|b| {
             for tr in &b.transactions {
-                if tr.header.get_login() == login
-                    || tr.header.data_type == DataType::ClassicTransaction
-                {
+                if tr.header.data_type == DataType::ClassicTransaction {
                     match tr.get_data() {
                         Ok(data) => {
                             match data {

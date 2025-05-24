@@ -88,10 +88,10 @@ impl core::fmt::Debug for BlockHeader {
         write!(f, "  version: {},\n", self.version)?;
         write!(
             f,
-            "  previous_block_hash: {:?},\n",
-            self.previous_block_hash
+            "  previous_block_hash: {},\n",
+            hex::encode(self.previous_block_hash)
         )?;
-        write!(f, "  merkle_root: {:?},\n", self.merkle_root)?;
+        write!(f, "  merkle_root: {},\n", hex::encode(self.merkle_root))?;
         write!(f, "  timestamp: {},\n", self.timestamp)?;
         write!(f, "  difficulty_target: {},\n", self.difficulty_target)?;
         write!(f, "  nonce: {},\n", self.nonce)?;

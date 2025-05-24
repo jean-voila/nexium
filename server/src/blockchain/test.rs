@@ -11,7 +11,7 @@ use nexium::{
         consts::SIGNATURE_SIZE, data_type::DataType, transaction::Transaction,
     },
     defaults::KEYPAIR_BIT_SIZE,
-    rsa::{self, KeyPair},
+    rsa::KeyPair,
 };
 
 const KEY_FILE: &str = ".nexiumlocal/private-key.pem";
@@ -29,7 +29,7 @@ pub fn main() {
     //     }
     // };
     // dbg!(&b1);
-    // dbg!(&bc.last_hash);
+    dbg!(hex::encode(&bc.last_hash));
     // return;
 
     // let b2 = match bc.get_block(&bc.last_hash.clone()) {
@@ -54,7 +54,7 @@ pub fn main() {
         .get_user_balance(login2)
         .expect("Failed to get user balance");
     println!("Balance: {} {}", login2, balance);
-    // return;
+    return;
 
     //////////////////
 
@@ -69,14 +69,14 @@ pub fn main() {
     // dbg!(&t);
 
     // bc.add_transaction(t);
-    return;
+    // return;
 
     ///////////////
 
     let tr = Transaction::new_classic(
         "jean.herail",
-        100,
-        "TEST_2",
+        100.65489 as f32,
+        "",
         0,
         "william.valenduc",
         &key,

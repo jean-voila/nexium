@@ -1,12 +1,7 @@
 use crate::blockchain::blockchain::Blockchain;
 
 use super::user::User;
-use nexium::{
-    blockchain::{data_type::DataType, transaction_data::TransactionData},
-    defaults::{INITIAL_BALANCE, SIG_SAMPLE},
-    gitlab::GitlabClient,
-    rsa::KeyPair,
-};
+use nexium::{ defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
 use num_bigint::BigUint;
 use std::{collections::HashMap, str::FromStr};
 
@@ -65,54 +60,54 @@ impl<'a> Cache<'a> {
         Ok(keys)
     }
 
-    pub fn update_balance(&mut self, login: &String) -> Result<u32, String> {
-        let mut user = self.get_user(login);
-        let mut offset = 0;
-        let mut balance = INITIAL_BALANCE;
+    // pub fn update_balance(&mut self, login: &String) -> Result<f32, String> {
+    //     let mut user = self.get_user(login);
+    //     let mut offset = 0;
+    //     let mut balance = INITIAL_BALANCE as f32;
 
-        while offset <= self.blockchain.size {
-            let block = match self.blockchain.read_block(offset) {
-                Ok(b) => b,
-                Err(_) => {
-                    return Err("Failed to read blockchain file".to_string());
-                }
-            };
+    //     while offset <= self.blockchain.size {
+    //         let block = match self.blockchain.read_block(offset) {
+    //             Ok(b) => b,
+    //             Err(_) => {
+    //                 return Err("Failed to read blockchain file".to_string());
+    //             }
+    //         };
 
-            for tr in &block.transactions {
-                if tr.header.get_login() == *login
-                    || tr.header.data_type == DataType::ClassicTransaction
-                {
-                    match tr.get_data() {
-                        Ok(data) => match data {
-                            TransactionData::ClassicTransaction {
-                                amount,
-                                receiver,
-                                ..
-                            } => {
-                                if login.as_bytes() == receiver {
-                                    balance += amount;
-                                } else if tr.header.get_login() == *login {
-                                    balance -= amount;
-                                }
-                            }
-                            _ => (),
-                        },
-                        Err(_) => {
-                            return Err(
-                                "Failed to get transaction data".to_string()
-                            );
-                        }
-                    }
-                }
-            }
-            offset += block.size() as u64;
-        }
+    //         for tr in &block.transactions {
+    //             if tr.header.get_login() == *login
+    //                 || tr.header.data_type == DataType::ClassicTransaction
+    //             {
+    //                 match tr.get_data() {
+    //                     Ok(data) => match data {
+    //                         TransactionData::ClassicTransaction {
+    //                             amount,
+    //                             receiver,
+    //                             ..
+    //                         } => {
+    //                             if login.as_bytes() == receiver {
+    //                                 balance += amount;
+    //                             } else if tr.header.get_login() == *login {
+    //                                 balance -= amount;
+    //                             }
+    //                         }
+    //                         _ => (),
+    //                     },
+    //                     Err(_) => {
+    //                         return Err(
+    //                             "Failed to get transaction data".to_string()
+    //                         );
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         offset += block.size() as u64;
+    //     }
 
-        // let balance = INITIAL_BALANCE; //
-        user.balance = Some(balance);
-        self.data.insert(login.clone(), user);
-        return Ok(balance);
-    }
+    //     // let balance = INITIAL_BALANCE; //
+    //     user.balance = Some(balance);
+    //     self.data.insert(login.clone(), user);
+    //     return Ok(balance);
+    // }
 
     fn check_keys(
         &self,
@@ -129,7 +124,7 @@ impl<'a> Cache<'a> {
         };
 
         for key in keys {
-            match key.check_signature(&message, &s) {
+            match key.check_signature(message, &s) {
                 Ok(b) => {
                     if b {
                         return Some(key.clone());

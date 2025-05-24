@@ -1,20 +1,19 @@
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    blockchain::{
-        consts::{DESCRIPTION_SIZE, TRANSACTION_EMITTER, TRANSACTION_RECEIVER},
-        transaction_data::RECEIVER,
-    },
-    rsa::KeyPair,
-};
-
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
     transaction_data::{TransactionData, TransactionDataError},
     transaction_header::TransactionHeader,
 };
+use crate::{
+    blockchain::consts::{
+        DESCRIPTION_SIZE, TRANSACTION_EMITTER, TRANSACTION_RECEIVER,
+    },
+    rsa::KeyPair,
+};
+use hex;
 
 pub type SIGNATURE = [u8; SIGNATURE_SIZE];
 
@@ -40,7 +39,7 @@ impl Transaction {
     // Create transaction from user-friendly values
     pub fn new_classic<T>(
         receiver: T,
-        amount: u32,
+        amount: f32,
         description: T,
         fees: u16,
         emitter: T,
@@ -204,7 +203,11 @@ impl core::fmt::Debug for Transaction {
                 data: self.data.to_vec()
             })
         )?;
-        write!(f, "signature: {:?},\n", self.signature)?;
+        write!(
+            f,
+            "signature: {:?},\n",
+            hex::encode(self.signature.to_bytes_be())
+        )?;
         write!(f, "}}")?;
         Ok(())
     }
@@ -215,7 +218,6 @@ pub fn transaction_vec_size(transactions: &Vec<Transaction>) -> u32 {
 }
 
 mod serde_signature {
-    use std::str::FromStr;
 
     use num_bigint::BigUint;
     use serde::{Deserialize, Deserializer, Serializer};
@@ -224,7 +226,7 @@ mod serde_signature {
     where
         S: Serializer,
     {
-        let s = sig.to_string();
+        let s = hex::encode(sig.to_bytes_be());
         serializer.serialize_str(s.as_str())
     }
 
@@ -233,8 +235,8 @@ mod serde_signature {
         D: Deserializer<'de>,
     {
         let s: &str = Deserialize::deserialize(deserializer)?;
-        match BigUint::from_str(s) {
-            Ok(res) => Ok(res),
+        match hex::decode(s) {
+            Ok(h) => Ok(BigUint::from_bytes_be(&h)),
             Err(_) => {
                 return Err(serde::de::Error::custom("Invalid signature"))
             }

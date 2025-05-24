@@ -27,7 +27,8 @@ pub struct Config {
 impl Config {
     /// Create a new Config object with default values
     pub fn generate(path: &Path) -> Config {
-        let user_login = ask("Enter your login (format: first.last): ");
+        let user_login =
+            Self::get_user_input("Enter your login (format: first.last): ");
         if !_check_login_syntax(user_login.clone()) {
             panic!("Invalid login format");
         }
@@ -37,16 +38,18 @@ impl Config {
                 println!("Using GITLAB_TOKEN from environment variable");
                 t
             }
-            Err(_) => match ask("Enter Gitlab token: ").as_str() {
-                "" => {
-                    println!("Empty token, using default");
-                    String::from("")
+            Err(_) => {
+                match Self::get_user_input("Enter Gitlab token: ").as_str() {
+                    "" => {
+                        println!("Empty token, using default");
+                        String::from("")
+                    }
+                    s => s.to_string(),
                 }
-                s => s.to_string(),
-            },
+            }
         };
 
-        let listen: String = match ask(&format!(
+        let listen: String = match Self::get_user_input(&format!(
             "Enter address (default: {}): ",
             DEFAULT_LISTEN
         ))
@@ -59,18 +62,20 @@ impl Config {
             s => s.to_string(),
         };
 
-        let port: u16 =
-            match ask(&format!("Enter port (default: {}): ", DEFAULT_PORT))
-                .parse()
-            {
-                Ok(p) => p,
-                Err(_) => {
-                    println!("Empty or invalid port, using default");
-                    DEFAULT_PORT
-                }
-            };
+        let port: u16 = match Self::get_user_input(&format!(
+            "Enter port (default: {}): ",
+            DEFAULT_PORT
+        ))
+        .parse()
+        {
+            Ok(p) => p,
+            Err(_) => {
+                println!("Empty or invalid port, using default");
+                DEFAULT_PORT
+            }
+        };
 
-        let key_filepath = match ask(&format!(
+        let key_filepath = match Self::get_user_input(&format!(
             "Enter key directory path (default: {}): ",
             DEFAULT_KEY_PATH
         ))
@@ -83,13 +88,14 @@ impl Config {
             s => s.to_string(),
         };
 
-        let key_password = match ask("Enter key password: ").as_str() {
-            "" => {
-                println!("Empty password, using default");
-                String::new()
-            }
-            s => s.to_string(),
-        };
+        let key_password =
+            match Self::get_user_input("Enter key password: ").as_str() {
+                "" => {
+                    println!("Empty password, using default");
+                    String::new()
+                }
+                s => s.to_string(),
+            };
 
         let res = Config {
             key_filepath,
@@ -99,9 +105,8 @@ impl Config {
             user_login,
             gitlab_token,
         };
-
+        
         res.to_file(path);
-
         return res;
     }
 
@@ -109,7 +114,7 @@ impl Config {
     pub fn from_file(path: &Path) -> Config {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
-            Err(_) => panic!("Error reading config file: file not found. Try --generate-config."),
+            Err(e) => panic!("Error reading config file: {}", e),
         };
 
         let parsed = json::parse(content.as_str()).unwrap();
@@ -155,21 +160,23 @@ impl Config {
         fs::write(path, config_obj.pretty(4).as_bytes())
             .expect("Error writing config file");
     }
-}
 
-fn ask(ask: &str) -> String {
-    print!("{}", ask);
-    match io::stdout().flush() {
-        Ok(_) => {}
-        Err(e) => eprintln!("Failed to flush stdout: {}", e),
+    pub fn get_user_input(ask: &str) -> String {
+        let mut line = String::new();
+
+        if !ask.is_empty() {
+            print!("{}", ask);
+        }
+
+        io::stdout().flush().unwrap();
+        match io::stdin().read_line(&mut line) {
+            Ok(_) => {}
+            Err(e) => {
+                panic!("Error reading input: {}", e)
+            }
+        };
+        line.trim().to_string()
     }
-
-    let mut line = String::new();
-    io::stdin()
-        .read_line(&mut line)
-        .expect("Error reading line");
-
-    return line.trim().to_string();
 }
 
 fn _check_login_syntax(login: String) -> bool {

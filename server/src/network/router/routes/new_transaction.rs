@@ -6,15 +6,6 @@ use crate::network::{
 };
 
 pub fn handler(req: &mut Request, server: &mut Server) {
-    // let key = match req.check(&mut server.cache) {
-    //     Ok(k) => k,
-    //     Err(e) => {
-    //         let res = Response::new(Status::BadRequest, e);
-    //         let _ = req.send(&res);
-    //         return;
-    //     }
-    // };
-
     let data = match server.key.decrypt_split(&req.body) {
         Ok(res) => res,
         Err(_) => {
@@ -50,7 +41,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         }
     };
 
-    match key.check_signature(message, &tr.signature) {
+    match key.check_signature(&message, &tr.signature) {
         Ok(res) => {
             if !res {
                 let res =

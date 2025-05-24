@@ -12,29 +12,16 @@ pub struct Server<'a> {
     pub login: String,
     address: String,
     port: u16,
-    pub key: KeyPair,
+    pub key: &'a KeyPair,
 }
 
 impl<'a> Server<'a> {
     pub fn new(
         config: &Config,
         gitlab: &'a GitlabClient,
+        key: &'a KeyPair,
         blockchain: &'a mut Blockchain,
     ) -> Result<Self, String> {
-        let key = match KeyPair::priv_from_file(
-            &config.key_filepath.to_string(),
-            &config.user_login.to_string(),
-            &config.key_password.to_string(),
-        ) {
-            Ok(key) => key,
-            Err(e) => {
-                return Err(format!(
-                    "Failed to load private key from file: {}",
-                    e
-                ));
-            }
-        };
-
         Ok(Self {
             cache: Cache::new(gitlab, blockchain),
             login: config.user_login.clone(),
