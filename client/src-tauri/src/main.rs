@@ -283,14 +283,20 @@ async fn send_transaction(
 
 #[tauri::command]
 async fn get_transactions(
-    pub_key: String,
     config: Config,
     login: String,
     n: String,
 ) -> Result<Vec<nexium_api::ClassicTransactionReceived>, String> {
-    match nexium_api::get_transactions(pub_key, config, login, n) {
-        Ok(transactions) => Ok(transactions),
-        Err(e) => Err(e),
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        match nexium_api::get_transactions(config, login, n) {
+            Ok(transactions) => Ok(transactions),
+            Err(e) => Err(e),
+        }
+    })
+    .await;
+    match result {
+        Ok(r) => r,
+        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
     }
 }
 

@@ -7,7 +7,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import { writable, type Writable } from 'svelte/store';
 
-	import { globalConfig } from '$lib/stores/settings.js';
+	import { globalConfig, showHistoryModal } from '$lib/stores/settings.js';
 	import { invoke } from '@tauri-apps/api/core';
 
 	let { oncancel } = $props();
@@ -25,149 +25,74 @@
 		TableHeadCell
 	} from 'flowbite-svelte';
 
-	const canRefresh = writable(true);
-
-	/*
-    Quand tu vas get le invoke get_transactions, tu vas recevoir une liste de transactions, chaque transaction sera dans ce format JS :
-    transaction = {
-        receiver: String,
-        emitter: String,
-        description: String,
-        amount: String,
-        date: String,
-        inOrOut: String,
-    }
-
-    inOrOut = "IN" ou "OUT"
-    */
 	type Transaction = {
-		emitter: string;
 		receiver: string;
+		emitter: string;
 		description: string;
 		amount: string;
 		date: string;
-		inOrOut: 'IN' | 'OUT';
+		inOrOut: string;
 	};
+
+	let n = '10';
 
 	const transactions: Writable<Transaction[]> = writable([]);
 
-	onMount(async () => {
+	async function refreshList() {
 		try {
-			const config = $globalConfig;
-			const login = '';
-			const n = '';
-			const result = await invoke('get_transactions', { config, login, n });
+			const result = await invoke('get_transactions', {
+				config: $globalConfig,
+				login: $globalConfig.user_login,
+				n: n
+			});
 			if (Array.isArray(result)) {
 				transactions.set(
 					result.map((t: any) => ({
-						emitter: t.emitter || '',
 						receiver: t.receiver || '',
+						emitter: t.emitter || '',
 						description: t.description || '',
-						date: t.date || '',
 						amount: t.amount || '',
+						date: t.date || '',
 						inOrOut: t.inOrOut || 'OUT'
 					}))
 				);
 			} else {
 				transactions.set([]);
 			}
-		} catch (e) {}
-	});
-	async function refreshList() {
-		if (!$canRefresh) return;
-		canRefresh.set(false);
-
-		setTimeout(async () => {
-			try {
-				const config = $globalConfig;
-				const login = config.user_login || '';
-				const n = '';
-				const result = await invoke('get_transactions', { config, login, n });
-				if (Array.isArray(result)) {
-					transactions.set(
-						result.map((t: any) => ({
-							emitter: t.emitter || '',
-							receiver: t.receiver || '',
-							description: t.description || '',
-							date: t.date || '',
-							amount: t.amount || '',
-							inOrOut: t.inOrOut || 'OUT'
-						}))
-					);
-				} else {
-					transactions.set([]);
-				}
-			} catch (e) {
-			} finally {
-				canRefresh.set(true);
-			}
-		}, 5000);
-	}
-	transactions.set([
-		{
-			emitter: 'jean.herail',
-			receiver: 'milo.delbos',
-			description: 'Pour le café du matin',
-			amount: '42.50',
-			date: '2025-05-23',
-			inOrOut: 'OUT'
-		},
-		{
-			emitter: 'milo.delbos',
-			receiver: 'jean.herail',
-			description: 'Pour le café du matin',
-			amount: '42.50',
-			date: '2025-05-23',
-			inOrOut: 'IN'
-		},
-		{
-			emitter: 'jean.herail',
-			receiver: 'milo.delbos',
-			description:
-				'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. ',
-			amount: '42.50',
-			date: '2025-05-23',
-			inOrOut: 'OUT'
-		},
-		{
-			emitter: 'milo.delbos',
-			receiver: 'jean.herail',
-			description:
-				'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. ',
-			amount: '42.50',
-			date: '2025-05-23',
-			inOrOut: 'IN'
-		},
-		{
-			emitter: 'jean.herail',
-			receiver: 'milo.delbos',
-			description:
-				'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. ',
-			amount: '75.00',
-			date: '2025-05-20',
-			inOrOut: 'OUT'
-		},
-		{
-			emitter: 'william.valenduc',
-			receiver: 'jean.herail',
-			description:
-				'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. ',
-			amount: '75.00',
-			date: '2025-05-20',
-			inOrOut: 'IN'
+		} catch (e) {
+			console.log(e);
 		}
-	]);
+	}
+
+	let interval: number | null = null;
+
+	onMount(() => {
+		const unsubscribe = showHistoryModal.subscribe((visible) => {
+			if (visible) {
+				refreshList();
+				if (!interval) {
+					interval = setInterval(refreshList, 10000);
+				}
+			} else if (interval) {
+				clearInterval(interval);
+				interval = null;
+			}
+		});
+
+		return () => {
+			unsubscribe();
+			if (interval) {
+				clearInterval(interval);
+				interval = null;
+			}
+		};
+	});
 </script>
 
 <div class="history-modal" transition:fade={{ duration: 200 }}>
 	<div class="history-modal-content" transition:fly={{ y: 30, duration: 200 }}>
 		<h3 class="history-titre">Historique des transactions</h3>
 		<div class="contenu-tableau scrollable-table">
-			<!-- Tableau avec les transactions-->
-			<!--
-            type (moins ou plus en rouge ou vert) | emetteur | recepteur | description | date | montant
-        -->
-
 			<Table>
 				<TableHead>
 					<TableHeadCell>Type</TableHeadCell>
@@ -203,9 +128,6 @@
 		</div>
 
 		<div class="mt-4 flex justify-end gap-2">
-			<button onclick={refreshList} disabled={!$canRefresh}>
-				<RefreshCw strokeWidth={3} size={17} class="bouton-action" />
-			</button>
 			<button
 				class="pillule-bouton-history pillule-bouton-history-noir bouton-noir-settings flex items-center transition"
 				onclick={handleClose}

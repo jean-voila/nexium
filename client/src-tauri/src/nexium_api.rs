@@ -1,6 +1,10 @@
 use super::config::*;
+
+use chrono::DateTime;
+
 use json;
 use nexium::blockchain::transaction::*;
+use nexium::blockchain::transaction_data::*;
 use nexium::defaults::*;
 use nexium::gitlab::*;
 use nexium::rsa::*;
@@ -9,12 +13,6 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum TransactionInOrOout {
-    IN,
-    OUT,
-}
 
 #[derive(Debug)]
 pub enum NexiumAPIError {
@@ -90,7 +88,7 @@ pub struct ClassicTransactionReceived {
     pub description: String,
     pub amount: String,
     pub date: String,
-    pub in_or_out: TransactionInOrOout,
+    pub in_or_out: String,
 }
 
 fn build_headers(
@@ -410,11 +408,118 @@ pub fn get_balance(
 }
 
 pub fn get_transactions(
-    _pub_key: String,
     config: Config,
-    _login: String,
-    _n: String,
+    login: String,
+    n: String,
 ) -> Result<Vec<ClassicTransactionReceived>, String> {
-    let _headers = build_headers(&config);
-    todo!();
+    let headers = match build_headers(&config) {
+        Ok(h) => h,
+        Err(e) => return Err(e),
+    };
+
+    let url = build_url(&config, &format!("/transactions/{}?n={}", login, n));
+
+    let client = Client::new();
+    let response = match client.get(&url).headers(headers).send() {
+        Ok(r) => r,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "{}: {}",
+            NexiumAPIError::InvalidResponseFromServer.to_string(),
+            response.status()
+        ));
+    }
+
+    let response_text = match response.text() {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
+    };
+    let client_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let uncrypted_response = match client_key.decrypt_split(&response_text) {
+        Ok(d) => d,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let json = match json::parse(&uncrypted_response) {
+        Ok(j) => j,
+        Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
+    };
+
+    let mut transactions: Vec<ClassicTransactionReceived> = vec![];
+
+    for tr_json in json.members() {
+        let tr_str = match tr_json.as_str() {
+            Some(s) => s,
+            None => continue,
+        };
+
+        let tr: Transaction = match serde_json::from_str(tr_str) {
+            Ok(t) => t,
+            Err(_) => {
+                return Err(NexiumAPIError::InvalidJsonResponse.to_string());
+            }
+        };
+        let data = match Transaction::get_data(&tr) {
+            Ok(d) => d,
+            Err(_) => {
+                return Err(NexiumAPIError::InvalidJsonResponse.to_string());
+            }
+        };
+
+        match data {
+            TransactionData::ClassicTransaction {
+                receiver,
+                amount,
+                has_description,
+                description,
+            } => {
+                let receiver = String::from_utf8_lossy(&receiver).to_string();
+                let description = if has_description {
+                    String::from_utf8_lossy(&description).to_string()
+                } else {
+                    "".to_string()
+                };
+
+                let in_or_out = if receiver == config.user_login {
+                    "IN".to_string()
+                } else {
+                    "OUT".to_string()
+                };
+
+                let datetime: Option<DateTime<chrono::Utc>> =
+                    DateTime::from_timestamp(tr.header.timestamp as i64, 0);
+
+                let formatted_date = match datetime {
+                    Some(dt) => dt.format("%d/%m/%Y").to_string(),
+                    None => "Inconnue".to_string(),
+                };
+
+                let transaction = ClassicTransactionReceived {
+                    receiver: receiver.clone(),
+                    emitter: config.user_login.clone(),
+                    description,
+                    amount: amount.to_string(),
+                    date: formatted_date,
+                    in_or_out,
+                };
+                transactions.push(transaction);
+            }
+            _ => {
+                continue; // Skip non-classic transactions
+            }
+        }
+    }
+
+    Ok(transactions)
 }
