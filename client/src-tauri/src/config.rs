@@ -19,12 +19,12 @@ pub struct Config {
     pub gitlab_token_type: gitlab::TokenType,
     pub is_testnet: bool,
     pub password: String,
+    pub server_login: String,
 }
 
 #[derive(Debug)]
 pub enum ConfigError {
     FileNotFound,
-
     InvalidAddress,
     InvalidPort,
     InvalidGitlabToken,
@@ -114,6 +114,7 @@ impl Config {
                 return Err(e.to_string());
             }
         }
+
         match self.port.parse::<u16>() {
             Ok(_) => {}
             Err(_) => {

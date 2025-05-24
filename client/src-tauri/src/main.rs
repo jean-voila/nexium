@@ -268,9 +268,16 @@ async fn send_transaction(
     config: Config,
     transaction: nexium_api::ClassicTransactionSent,
 ) -> Result<String, String> {
-    match nexium_api::send_transaction(server_pubkey, transaction, config) {
-        Ok(_) => Ok("".to_string()),
-        Err(e) => Err(e),
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        match nexium_api::send_transaction(server_pubkey, transaction, config) {
+            Ok(_) => Ok("".to_string()),
+            Err(e) => Err(e),
+        }
+    })
+    .await;
+    match result {
+        Ok(r) => r,
+        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
     }
 }
 
@@ -293,17 +300,17 @@ async fn is_testnet() -> bool {
 }
 
 #[tauri::command]
-async fn get_server_infos(config: Config) -> Result<String, String> {
+async fn get_server_infos(config: Config) -> Result<(String, String), String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_server_pub_key(config) {
-            Ok(pub_key) => Ok(pub_key),
+        match nexium_api::get_server_key_login(config) {
+            Ok(resp) => Ok(resp),
             Err(e) => Err(e),
         }
     })
     .await;
     match result {
         Ok(r) => match r {
-            Ok(pub_key) => Ok(pub_key),
+            Ok(resp) => Ok(resp),
             Err(e) => Err(e),
         },
         Err(_) => Err(GitlabError::UserNotFound.to_string()),

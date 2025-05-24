@@ -3,7 +3,7 @@
 	import { SendHorizontal } from 'lucide-svelte';
 	import { HandCoins } from 'lucide-svelte';
 	import { onMount } from 'svelte';
-	import { RefreshCw } from 'lucide-svelte';
+
 	import { History } from 'lucide-svelte';
 
 	import { Copy } from 'lucide-svelte';
@@ -36,8 +36,6 @@
 
 	let copied = false;
 
-	let canRefresh = true;
-
 	async function copyLogin() {
 		if (!$globalConfig?.user_login) return;
 		await writeText($globalConfig.user_login);
@@ -62,9 +60,7 @@
 	}
 
 	async function balanceUpdate() {
-		if (!canRefresh) return;
-
-		canRefresh = false;
+		if ($isConfigSet === false) return;
 		try {
 			const balance = await invoke('get_balance', {
 				login: $globalConfig.user_login,
@@ -77,12 +73,13 @@
 			globalErrorMessage.set('');
 		} catch (error) {
 			globalErrorMessage.set(String(error));
-		} finally {
-			setTimeout(() => {
-				canRefresh = true;
-			}, 6000);
 		}
 	}
+
+	onMount(() => {
+		const interval = setInterval(balanceUpdate, 5000);
+		return () => clearInterval(interval);
+	});
 </script>
 
 <div class="flex flex-col justify-center gap-14">
@@ -112,19 +109,6 @@
 				hidden={!$isConfigSet}
 			>
 				<Copy strokeWidth={2.6} size={24} class="bouton-action" />
-			</button>
-			<button
-				onclick={balanceUpdate}
-				hidden={!$isConfigSet}
-				disabled={!canRefresh}
-				onmouseenter={() => (showCopyMessage = 'Rafraîchir')}
-				onmouseleave={() => (showCopyMessage = '')}
-				onmousemove={(e) => {
-					tooltipX = e.clientX;
-					tooltipY = e.clientY;
-				}}
-			>
-				<RefreshCw strokeWidth={2.6} size={24} class="bouton-action" />
 			</button>
 
 			<button hidden={!$isConfigSet} onclick={() => showHistoryModal.set(true)}>

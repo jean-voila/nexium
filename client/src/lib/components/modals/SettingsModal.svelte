@@ -185,9 +185,10 @@
 
 			await invoke('check_config_values', { config });
 
-			const server_pub_key = await invoke('get_server_infos', { config });
-			if (server_pub_key) {
-				serverPublicKey.set(server_pub_key);
+			const server_pub_key_login = await invoke('get_server_infos', { config });
+			if (server_pub_key_login) {
+				serverPublicKey.set(server_pub_key_login[0]);
+				config.server_login = server_pub_key_login[1];
 			} else {
 				throw new Error('Server public key not found.');
 			}

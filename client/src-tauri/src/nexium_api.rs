@@ -8,7 +8,7 @@ use num_bigint::BigUint;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::{collections::HashMap, str::FromStr};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TransactionInOrOout {
@@ -151,7 +151,9 @@ fn build_url(config: &Config, endpoint: &str) -> String {
     )
 }
 
-pub fn get_server_pub_key(config: Config) -> Result<String, String> {
+pub fn get_server_key_login(
+    config: Config,
+) -> Result<(String, String), String> {
     let headers = match build_headers(&config) {
         Ok(h) => h,
         Err(e) => return Err(e.to_string()),
@@ -234,7 +236,7 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         ) {
             Ok(res) => {
                 if res {
-                    return Ok(key);
+                    return Ok((key, server_login));
                 }
             }
             Err(e) => {
@@ -296,9 +298,37 @@ pub fn send_transaction(
         Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
     };
 
-    let url = build_url(&config, "/new_transaction");
+    let server_pubkey =
+        match KeyPair::pub_from_pem(&server_pubkey, &config.server_login) {
+            Ok(k) => k,
+            Err(e) => return Err(e.to_string()),
+        };
 
-    todo!();
+    let encrypted_body = match server_pubkey.crypt_split(&body) {
+        Ok(e) => e,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let url = build_url(&config, "/new_transaction");
+    let client = Client::new();
+    let response = match client
+        .post(&url)
+        .headers(headers.unwrap_or_default())
+        .body(encrypted_body)
+        .send()
+    {
+        Ok(r) => r,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "{}: {}",
+            NexiumAPIError::InvalidResponseFromServer.to_string(),
+            response.status()
+        ));
+    };
+    return Ok(());
 }
 
 pub fn get_balance(
