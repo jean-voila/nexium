@@ -99,8 +99,8 @@ fn main() {
                     return;
                 }
 
-                let key_path = local_path.join(DEFAULT_KEY_PATH);
                 let config = Config::from_file(&config_path);
+                let key_path = Path::new(&config.key_filepath);
                 let gitlab = GitlabClient::new(
                     config.gitlab_token.clone(),
                     TokenType::Classic,
