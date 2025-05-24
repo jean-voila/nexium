@@ -34,7 +34,11 @@ impl<'a> Request<'a> {
     fn parse_info(line: &String) -> (String, String) {
         let info: Vec<&str> = line.split_ascii_whitespace().collect();
         let method = info[0].to_string();
-        let path_query = info[1].to_string();
+        let path_query = if info.len() > 1 {
+            info[1].to_string()
+        } else {
+            String::new()
+        };
         (method, path_query)
     }
 

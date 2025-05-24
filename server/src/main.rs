@@ -213,14 +213,9 @@ fn main() {
         }
     }
 
-    let key_path = local_path
-        .join(&config.key_filepath)
-        .to_str()
-        .unwrap()
-        .to_string();
     print!("Loading private key...");
     let key = match KeyPair::priv_from_file(
-        &key_path,
+        &config.key_filepath,
         &config.user_login,
         &config.key_password,
     ) {
@@ -229,6 +224,7 @@ fn main() {
             k
         }
         Err(e) => {
+            println!();
             eprintln!("Failed to load private key: {}", e.to_string().red());
             return;
         }
