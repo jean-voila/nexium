@@ -319,7 +319,7 @@ pub fn get_balance(
     };
     let part1 = match parts.get(1) {
         Some(p) => p.to_string(),
-        None => "".to_string(),
+        None => "0".to_string(),
     };
 
     if part1.len() > 2 {
