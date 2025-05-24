@@ -77,7 +77,7 @@ async fn load_invoice_from_file(
 ) -> Result<Invoice, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         if Path::new(&path_string).exists() == false {
-            return Err(InvoiceError::FileNotFound);
+            return Err(InvoiceError::FileNotFound.to_string());
         }
         let path = Path::new(&path_string);
         match Invoice::from_file(path) {
@@ -243,12 +243,11 @@ async fn get_invoice_extension() -> String {
 
 #[tauri::command]
 async fn get_balance(
-    server_pubkey: String,
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_balance(server_pubkey, login, config) {
+        match nexium_api::get_balance(login, config) {
             Ok((int, dec)) => Ok((int, dec)),
             Err(e) => Err(e),
         }

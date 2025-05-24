@@ -1,5 +1,5 @@
+use nexium::login::*;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fmt;
 use std::fs;
 use std::path::Path;
@@ -7,7 +7,7 @@ use std::path::Path;
 pub enum InvoiceError {
     InvalidAmount,
     TooLongDescription,
-    InvalidLogin,
+
     FileFormatError,
     FileWriteError,
     FileNotFound,
@@ -18,7 +18,6 @@ impl fmt::Display for InvoiceError {
         let msg = match self {
             InvoiceError::InvalidAmount => "Montant invalide.",
             InvoiceError::TooLongDescription => "Description trop longue.",
-            InvoiceError::InvalidLogin => "Login invalide.",
             InvoiceError::FileFormatError => "Erreur de format de fichier.",
             InvoiceError::FileWriteError => "Erreur d'écriture de fichier.",
             InvoiceError::FileNotFound => "Fichier introuvable.",
@@ -37,33 +36,37 @@ pub struct Invoice {
 }
 
 impl Invoice {
-    pub fn check_values(&self) -> Result<(), InvoiceError> {
+    pub fn check_values(&self) -> Result<(), String> {
+        match Login::new(self.sender_login.clone()) {
+            Ok(_) => {}
+            Err(e) => return Err(e.to_string()),
+        }
         match self.amount.parse::<f64>() {
             Ok(n) => {
                 if n <= 0.0 {
-                    return Err(InvoiceError::InvalidAmount);
+                    return Err(InvoiceError::InvalidAmount.to_string());
                 }
             }
-            Err(_) => return Err(InvoiceError::InvalidAmount),
+            Err(_) => return Err(InvoiceError::InvalidAmount.to_string()),
         }
         match self.description.len() {
             0..=MAX_DESCRIPTION_LENGTH => {}
-            _ => return Err(InvoiceError::TooLongDescription),
+            _ => return Err(InvoiceError::TooLongDescription.to_string()),
         }
         Ok(())
     }
 
-    pub fn from_file(path: &Path) -> Result<Invoice, InvoiceError> {
+    pub fn from_file(path: &Path) -> Result<Invoice, String> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => {
-                return Err(InvoiceError::FileNotFound);
+                return Err(InvoiceError::FileNotFound.to_string());
             }
         };
         let invoice: Invoice = match serde_json::from_str(&content) {
             Ok(c) => c,
             Err(_) => {
-                return Err(InvoiceError::FileFormatError);
+                return Err(InvoiceError::FileFormatError.to_string());
             }
         };
         match invoice.check_values() {

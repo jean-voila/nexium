@@ -2,14 +2,14 @@
 	import { fly, fade } from 'svelte/transition';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
-	import { globalConfig } from '$lib/stores/settings.js';
+	import { globalConfig, serverPublicKey } from '$lib/stores/settings.js';
 
 	let { oncancel } = $props();
 
 	let receiver = $state('');
 	let amount = $state('');
 	let description = $state('');
-	let fees = $state('');
+	let fees = $state('0');
 	let copied = false;
 
 	let tooltipX = $state(0);
@@ -48,7 +48,7 @@
 		} catch (e) {}
 	}
 	async function handleSend() {
-		const transaction = {
+		const classic_transaction_sent = {
 			receiver: receiver,
 			amount: amount,
 			description: description,
@@ -57,11 +57,14 @@
 
 		try {
 			let send_transaction_result = await invoke('send_transaction', {
-				transaction: transaction,
-				globalConfig: $globalConfig
+				serverPubkey: $serverPublicKey,
+				config: $globalConfig,
+				transaction: classic_transaction_sent
 			});
 			handleClose();
-		} catch (e) {}
+		} catch (e) {
+			console.error("Erreur lors de l'envoi de la transaction:", e);
+		}
 	}
 </script>
 

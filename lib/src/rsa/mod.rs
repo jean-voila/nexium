@@ -380,8 +380,10 @@ impl KeyPair {
             i += len_bytes;
             if tag == 6 {
                 i += 1;
-                let timestamp =
-                    u32::from_be_bytes(decoded[i..i + 4].try_into().unwrap());
+                let timestamp = match decoded[i..i + 4].try_into() {
+                    Ok(bytes) => u32::from_be_bytes(bytes),
+                    Err(_) => return Err(RSAError::BadPEMFormat),
+                };
                 i += 4;
                 let _algo = decoded[i];
                 i += 1;
@@ -484,11 +486,16 @@ impl KeyPair {
                     .repeat((iter_count as usize / s2k_input.len()) + 1);
                 let key =
                     &sha256(&repeated[..iter_count as usize].to_vec())[0..16];
-                let key_array: &[u8; 16] = key.try_into().unwrap();
+                let key_array: &[u8; 16] = match key.try_into() {
+                    Ok(arr) => arr,
+                    Err(_) => return Err(RSAError::BadPEMFormat),
+                };
 
                 let cipher = Cipher::new_128(key_array);
-                let decrypted =
-                    cipher.cfb128_decrypt(iv.try_into().unwrap(), encrypted);
+                let decrypted = match iv.try_into() {
+                    Ok(iv_array) => cipher.cfb128_decrypt(iv_array, encrypted),
+                    Err(_) => return Err(RSAError::BadPEMFormat),
+                };
 
                 let mut j = 0;
                 let d = parse_mpi(&decrypted, &mut j);
@@ -537,7 +544,10 @@ impl KeyPair {
     }
 
     pub fn privatepacket(&self, password: &str) -> Vec<u8> {
-        let u = self.q.modinv(&self.p).unwrap();
+        let u = match self.q.modinv(&self.p) {
+            Some(val) => val,
+            None => return Vec::new(),
+        };
         let mut mpis = Vec::new();
         mpis.extend(encode_n_e(&self.d));
         mpis.extend(encode_n_e(&self.p));
@@ -558,8 +568,10 @@ impl KeyPair {
             s2k_input.repeat((iter_count / s2k_input.len()) + 1);
         let digest = sha256(&repeated_input[..iter_count].to_vec());
         let key = &digest[..16];
-        let key_array: &[u8; 16] =
-            key.try_into().expect("Key must be 16 bytes");
+        let key_array: &[u8; 16] = match key.try_into() {
+            Ok(arr) => arr,
+            Err(_) => return Vec::new(), // Ensure the key is 16 bytes
+        };
         let iv: [u8; 16] = rng.random();
         let cipher = Cipher::new_128(key_array);
         let encrypted = cipher.cfb128_encrypt(&iv, &mpis);

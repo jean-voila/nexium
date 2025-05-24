@@ -159,7 +159,10 @@ impl Config {
 
 fn ask(ask: &str) -> String {
     print!("{}", ask);
-    io::stdout().flush().unwrap();
+    match io::stdout().flush() {
+        Ok(_) => {}
+        Err(e) => eprintln!("Failed to flush stdout: {}", e),
+    }
 
     let mut line = String::new();
     io::stdin()

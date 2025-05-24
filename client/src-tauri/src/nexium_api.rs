@@ -1,14 +1,11 @@
 use super::config::*;
 use json;
-use log::kv::Key;
 use nexium::blockchain::transaction::*;
 use nexium::defaults::*;
-use nexium::gitlab;
 use nexium::gitlab::*;
 use nexium::rsa::*;
 use num_bigint::BigUint;
 use reqwest::blocking::Client;
-use reqwest::header::PUBLIC_KEY_PINS_REPORT_ONLY;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::{collections::HashMap, str::FromStr};
@@ -22,7 +19,6 @@ pub enum TransactionInOrOout {
 #[derive(Debug)]
 pub enum NexiumAPIError {
     UnknownError,
-    InvalidPrivateKeyOrPassword,
     NoServerPublicKey,
     NoServerResponse,
     InvalidResponseFromServer,
@@ -33,15 +29,16 @@ pub enum NexiumAPIError {
     InvalidSigSample,
     NoBalanceField,
     InvalidBalanceFormat,
+    NegativeOrZeroAmount,
+    InvalidTransactionAmount,
+    InvalidFees,
 }
 
 impl fmt::Display for NexiumAPIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             NexiumAPIError::UnknownError => "Erreur inconnue.",
-            NexiumAPIError::InvalidPrivateKeyOrPassword => {
-                "Clé privée ou mot de passe invalide."
-            }
+
             NexiumAPIError::NoServerPublicKey => {
                 "Impossible de récupérer la clé publique du serveur."
             }
@@ -64,6 +61,15 @@ impl fmt::Display for NexiumAPIError {
                 "Impossible de récupérer le champ de solde."
             }
             NexiumAPIError::InvalidBalanceFormat => "Format de solde invalide.",
+            NexiumAPIError::NegativeOrZeroAmount => {
+                "Le montant doit être supérieur à zéro."
+            }
+            NexiumAPIError::InvalidTransactionAmount => {
+                "Montant de transaction invalide."
+            }
+            NexiumAPIError::InvalidFees => {
+                "Les frais de transaction doivent être un entier positif."
+            }
         };
         write!(f, "{}", msg)
     }
@@ -241,16 +247,61 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
 }
 
 pub fn send_transaction(
-    pub_key: String,
+    server_pubkey: String,
     transaction: ClassicTransactionSent,
     config: Config,
 ) -> Result<(), String> {
     let headers = build_headers(&config);
+
+    let client_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let amount = match transaction.amount.parse::<u32>() {
+        Ok(n) => {
+            if n <= 0 {
+                return Err(NexiumAPIError::NegativeOrZeroAmount.to_string());
+            }
+            n
+        }
+        Err(_) => {
+            return Err(NexiumAPIError::InvalidTransactionAmount.to_string())
+        }
+    };
+
+    let fees = match transaction.fees.parse::<u16>() {
+        Ok(n) => n,
+        Err(_) => return Err(NexiumAPIError::InvalidFees.to_string()),
+    };
+
+    let transaction = match Transaction::new_classic(
+        &transaction.receiver,
+        amount,
+        &transaction.description,
+        fees,
+        &config.user_login,
+        &client_key,
+    ) {
+        Ok(t) => t,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let body = match serde_json::to_string(&transaction) {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::UnknownError.to_string()),
+    };
+
+    let url = build_url(&config, "/new_transaction");
+
     todo!();
 }
 
 pub fn get_balance(
-    pub_key: String,
     login: String,
     config: Config,
 ) -> Result<(String, String), String> {
@@ -311,7 +362,6 @@ pub fn get_balance(
         }
     };
 
-    dbg!(&balance_str);
     let parts: Vec<&str> = balance_str.split('.').collect();
     let part0 = match parts.get(0) {
         Some(p) => p.to_string(),
@@ -330,11 +380,11 @@ pub fn get_balance(
 }
 
 pub fn get_transactions(
-    pub_key: String,
+    _pub_key: String,
     config: Config,
-    login: String,
-    n: String,
+    _login: String,
+    _n: String,
 ) -> Result<Vec<ClassicTransactionReceived>, String> {
-    let headers = build_headers(&config);
+    let _headers = build_headers(&config);
     todo!();
 }

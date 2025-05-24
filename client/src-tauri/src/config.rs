@@ -1,6 +1,6 @@
 use nexium::gitlab;
 use nexium::gitlab::*;
-use nexium::login;
+
 use nexium::login::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -108,6 +108,12 @@ impl Config {
     }
 
     pub fn check_values(&self) -> Result<(), String> {
+        match Login::new(self.user_login.clone()) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
         match self.port.parse::<u16>() {
             Ok(_) => {}
             Err(_) => {

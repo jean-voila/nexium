@@ -40,18 +40,26 @@ pub enum GitlabError {
     BadGPGFormat,
     NoWebBrowser,
     AbortedLogin,
+    UnauthorizedAccessToPort,
 }
 
 impl fmt::Display for GitlabError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            GitlabError::InvalidToken => write!(f, "Invalid token"),
-            GitlabError::NetworkError => write!(f, "Network error"),
-            GitlabError::UserNotFound => write!(f, "User not found"),
-            GitlabError::UnknownError => write!(f, "Unknown error"),
-            GitlabError::BadGPGFormat => write!(f, "Bad GPG format"),
-            GitlabError::NoWebBrowser => write!(f, "No web browser found"),
-            GitlabError::AbortedLogin => write!(f, "Login aborted"),
+            GitlabError::InvalidToken => write!(f, "Token invalide."),
+            GitlabError::NetworkError => write!(f, "Erreur réseau."),
+            GitlabError::UserNotFound => write!(f, "Utilisateur non trouvé."),
+            GitlabError::UnknownError => write!(f, "Erreur inconnue."),
+            GitlabError::BadGPGFormat => {
+                write!(f, "Format de clé GPG invalide.")
+            }
+            GitlabError::NoWebBrowser => {
+                write!(f, "Aucun navigateur web trouvé.")
+            }
+            GitlabError::AbortedLogin => write!(f, "Connexion annulée."),
+            GitlabError::UnauthorizedAccessToPort => {
+                write!(f, "Accès non autorisé au port.")
+            }
         }
     }
 }
@@ -190,7 +198,6 @@ impl GitlabClient {
                 if resp.status().is_success() {
                     return Ok(());
                 } else if resp.status().as_u16() == 400 {
-                    dbg!(resp.text().unwrap());
                     return Err(GitlabError::BadGPGFormat);
                 }
                 return Err(GitlabError::InvalidToken);
@@ -231,7 +238,13 @@ impl GitlabClient {
         let _ = open_authorization_url(&authorize_url.to_string());
 
         // Démarrage d'un serveur local pour écouter la redirection
-        let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+
+        let listener = match TcpListener::bind("127.0.0.1:8080") {
+            Ok(listener) => listener,
+            Err(_) => {
+                return Err(GitlabError::UnauthorizedAccessToPort);
+            }
+        };
 
         let (code, state) = match listen_for_code(&listener) {
             Ok((code, state)) => (code, state),
@@ -249,8 +262,12 @@ impl GitlabClient {
         let token_result = client
             .exchange_code(AuthorizationCode::new(code))
             .set_pkce_verifier(pkce_verifier)
-            .request(&Client::new())
-            .unwrap();
+            .request(&Client::new());
+
+        let token_result = match token_result {
+            Ok(token) => token,
+            Err(_) => return Err(GitlabError::InvalidToken),
+        };
 
         Ok(token_result.access_token().secret().clone())
     }

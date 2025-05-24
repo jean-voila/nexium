@@ -67,7 +67,6 @@
 		canRefresh = false;
 		try {
 			const balance = await invoke('get_balance', {
-				serverPubkey: $serverPublicKey,
 				login: $globalConfig.user_login,
 				config: $globalConfig
 			});
