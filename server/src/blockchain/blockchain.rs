@@ -119,74 +119,80 @@ impl Blockchain {
         }
     }
 
+    fn create_new_block(&mut self) {
+        let mut transactions = self.mempool.dump();
+        transactions
+            .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
+
+        let mut balances: HashMap<String, f32> = HashMap::new();
+
+        let valid_trs: Vec<Transaction> = transactions
+            .into_iter()
+            .filter(|tr| match tr.get_data() {
+                Ok(data) => match data {
+                    TransactionData::ClassicTransaction {
+                        receiver,
+                        amount,
+                        ..
+                    } => {
+                        if amount <= 0 as f32 {
+                            return false;
+                        }
+
+                        let em = tr.header.get_login();
+                        let mut be = match balances.get(&em) {
+                            Some(b) => *b,
+                            None => match self.get_user_balance(&em) {
+                                Ok(b) => b,
+                                Err(_) => {
+                                    return false;
+                                }
+                            },
+                        };
+
+                        let r = String::from_utf8_lossy(&receiver);
+                        let mut br = match balances.get(r.as_ref()) {
+                            Some(b) => *b,
+                            None => match self.get_user_balance(r.as_ref()) {
+                                Ok(b) => b,
+                                Err(_) => {
+                                    return false;
+                                }
+                            },
+                        };
+
+                        if (be as i64 - amount as i64) < 0 {
+                            false
+                        } else {
+                            be -= amount;
+                            br += amount;
+                            balances.insert(em, be);
+                            balances.insert(r.to_string(), br);
+                            true
+                        }
+                    }
+                    _ => true,
+                },
+                Err(_) => false,
+            })
+            .collect();
+
+        if valid_trs.is_empty() {
+            println!("No valid transactions found: aborting block");
+            return;
+        }
+
+        let block = Block::new(self.last_hash, &valid_trs);
+        // dbg!(&block);
+        self.append(&block);
+    }
+
     pub fn add_transaction(&mut self, transaction: Transaction) {
         self.mempool.add(transaction);
         // dbg!(self.mempool.is_full());
         if self.mempool.is_full() {
             println!("Mempool is full, creating a new block");
-
-            let mut transactions = self.mempool.dump();
-            transactions
-                .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
-
-            let mut balances: HashMap<String, f32> = HashMap::new();
-
-            let valid_trs: Vec<Transaction> = transactions
-                .into_iter()
-                .filter(|tr| match tr.get_data() {
-                    Ok(data) => match data {
-                        TransactionData::ClassicTransaction {
-                            receiver,
-                            amount,
-                            ..
-                        } => {
-                            let em = tr.header.get_login();
-                            let mut be = match balances.get(&em) {
-                                Some(b) => *b,
-                                None => match self.get_user_balance(&em) {
-                                    Ok(b) => b,
-                                    Err(_) => {
-                                        return false;
-                                    }
-                                },
-                            };
-
-                            let r = String::from_utf8_lossy(&receiver);
-                            let mut br = match balances.get(r.as_ref()) {
-                                Some(b) => *b,
-                                None => match self.get_user_balance(r.as_ref())
-                                {
-                                    Ok(b) => b,
-                                    Err(_) => {
-                                        return false;
-                                    }
-                                },
-                            };
-
-                            if (be as i64 - amount as i64) < 0 {
-                                false
-                            } else {
-                                be -= amount;
-                                br += amount;
-                                balances.insert(em, be);
-                                balances.insert(r.to_string(), br);
-                                true
-                            }
-                        }
-                        _ => true,
-                    },
-                    Err(_) => false,
-                })
-                .collect();
-
-            if valid_trs.is_empty() {
-                println!("No valid transactions found: aborting block");
-                return;
-            }
-
-            let block = Block::new(self.last_hash, &valid_trs);
-            // dbg!(&block);
-            self.append(&block);
+            self.create_new_block();
         }
     }
 
