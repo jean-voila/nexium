@@ -26,10 +26,10 @@
 		userBalanceInt,
 		userBalanceDec,
 		showHistoryModal,
-		serverPublicKey,
 		globalErrorMessage
 	} from '$lib/stores/settings.js';
 	import { on } from 'svelte/events';
+	import { get } from 'svelte/store';
 
 	let firstName = '';
 	let lastName = '';
@@ -60,6 +60,7 @@
 	}
 
 	async function balanceUpdate() {
+		if (get(showHistoryModal) || get(showSendModal) || get(showReceiveModal)) return;
 		if ($isConfigSet === false) return;
 		try {
 			const balance = await invoke('get_balance', {
@@ -72,7 +73,7 @@
 			}
 			globalErrorMessage.set('');
 		} catch (error) {
-			globalErrorMessage.set(String(error));
+			globalErrorMessage.set('Erreur lors de la récupération du solde.');
 		}
 	}
 

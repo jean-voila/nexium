@@ -27,7 +27,7 @@
 	}
 
 	function handleDescriptionChange() {
-		description = description.trim();
+		description = description;
 		validateInvoice();
 	}
 

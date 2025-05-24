@@ -37,7 +37,7 @@
 	}
 
 	function handleDescriptionChange() {
-		description = description.trim();
+		description = description;
 		checkTransaction();
 	}
 
@@ -64,6 +64,8 @@
 			receiver = result.sender_login;
 			amount = result.amount;
 			description = result.description;
+
+			checkTransaction();
 		} catch (e) {}
 	}
 

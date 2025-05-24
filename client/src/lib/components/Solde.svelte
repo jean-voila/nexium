@@ -2,6 +2,7 @@
 	import { globalConfig, isConfigSet } from '$lib/stores/settings.js';
 	import { invoke } from '@tauri-apps/api/core';
 	import { userBalanceInt, userBalanceDec } from '$lib/stores/settings.js';
+	import NumberFlow from '@number-flow/svelte';
 </script>
 
 <div class="relative h-80 w-80">
@@ -18,9 +19,27 @@
 	<div class="absolute inset-0 flex flex flex-col items-center justify-center">
 		{#if $isConfigSet}
 			<div class="text-4xl text-white">
-				<span class="solde-unit solde">{$userBalanceInt}</span>{#if $userBalanceDec}.<span
+				<NumberFlow
+					value={$userBalanceInt}
+					format={{ useGrouping: false }}
+					class="solde-unit solde"
+					transformTiming={{ duration: 750, easing: 'ease-in-out' }}
+					spinTiming={{ duration: 750, easing: 'ease-in-out' }}
+					opacityTiming={{ duration: 350, easing: 'ease-out' }}
+				/>
+				{#if $userBalanceDec !== undefined}
+					.<NumberFlow
+						value={$userBalanceDec}
+						format={{ useGrouping: false }}
+						transformTiming={{ duration: 750, easing: 'ease-in-out' }}
+						spinTiming={{ duration: 750, easing: 'ease-in-out' }}
+						opacityTiming={{ duration: 350, easing: 'ease-out' }}
+						class="solde-deci solde"
+					/>
+				{/if}
+				<!---<span class="solde-unit solde">{$userBalanceInt}</span>{#if $userBalanceDec}.<span
 						class="solde-deci solde">{$userBalanceDec}</span
-					>{/if}
+					>{/if}-->
 			</div>
 			<span class="sous-titre">NXM</span>
 		{/if}
