@@ -30,6 +30,11 @@ pub enum NexiumAPIError {
     NegativeOrZeroAmount,
     InvalidTransactionAmount,
     InvalidFees,
+    InsufficientFunds,
+    InvalidAmount,
+    BalanceFetchError,
+    ReceiverNotFound,
+    InvalidReceiver,
 }
 
 impl fmt::Display for NexiumAPIError {
@@ -67,6 +72,19 @@ impl fmt::Display for NexiumAPIError {
             }
             NexiumAPIError::InvalidFees => {
                 "Les frais de transaction doivent être un entier positif."
+            }
+            NexiumAPIError::InsufficientFunds => {
+                "Fonds insuffisants pour effectuer la transaction."
+            }
+            NexiumAPIError::InvalidAmount => "Montant invalide.",
+            NexiumAPIError::BalanceFetchError => {
+                "Erreur lors de la récupération du solde."
+            }
+            NexiumAPIError::ReceiverNotFound => {
+                "Le destinataire de la transaction n'a pas été trouvé."
+            }
+            NexiumAPIError::InvalidReceiver => {
+                "Le destinataire de la transaction est invalide."
             }
         };
         write!(f, "{}", msg)

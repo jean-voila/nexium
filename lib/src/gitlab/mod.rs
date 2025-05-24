@@ -299,6 +299,31 @@ impl GitlabClient {
         }
     }
 
+    pub fn check_user_existence(
+        &self,
+        login: &str,
+    ) -> Result<bool, GitlabError> {
+        let url = format!("{}/users", self.api_url);
+        let client = reqwest::blocking::Client::new();
+        let request = client.get(&url).query(&[("username", login)]);
+
+        let request = self.build_headers(request);
+
+        let response = request.send();
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let users: Vec<serde_json::Value> =
+                        resp.json().unwrap_or(Vec::new());
+                    return Ok(!users.is_empty());
+                }
+                Err(GitlabError::InvalidToken)
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
     fn build_headers(
         &self,
         request: reqwest::blocking::RequestBuilder,

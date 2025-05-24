@@ -282,6 +282,72 @@ async fn send_transaction(
 }
 
 #[tauri::command]
+async fn check_send_transaction(
+    transaction: nexium_api::ClassicTransactionSent,
+    config: Config,
+) -> Result<(), String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let amount = match transaction.amount.parse::<f64>() {
+            Ok(amount) => {
+                if amount <= 0.0 {
+                    return Err(NexiumAPIError::InvalidAmount.to_string());
+                }
+                amount
+            }
+            Err(_) => return Err(NexiumAPIError::InvalidAmount.to_string()),
+        };
+
+        let available_balance = match nexium_api::get_balance(
+            config.user_login.clone(),
+            config.clone(),
+        ) {
+            Ok((int, dec)) => {
+                format!("{}.{}", int, dec).parse::<f64>().unwrap_or(0.0)
+            }
+            Err(_) => return Err(NexiumAPIError::BalanceFetchError.to_string()),
+        };
+
+        if amount > available_balance {
+            return Err(NexiumAPIError::InsufficientFunds.to_string());
+        }
+
+        let rec_login = match Login::new(transaction.receiver.clone()) {
+            Ok(rec) => rec,
+            Err(_) => return Err(NexiumAPIError::InvalidReceiver.to_string()),
+        };
+
+        match rec_login.get_names() {
+            Ok((first_name, last_name)) => {
+                if first_name.chars().count() < 2
+                    || last_name.chars().count() < 2
+                {
+                    return Err(NexiumAPIError::InvalidReceiver.to_string());
+                }
+            }
+            Err(_) => return Err(NexiumAPIError::InvalidReceiver.to_string()),
+        };
+
+        let gitlab_client =
+            GitlabClient::new(config.gitlab_token, config.gitlab_token_type);
+
+        match gitlab_client.check_user_existence(&transaction.receiver) {
+            Ok(exists) => {
+                if !exists {
+                    return Err(NexiumAPIError::ReceiverNotFound.to_string());
+                }
+                return Ok(());
+            }
+            Err(_) => return Err(NexiumAPIError::ReceiverNotFound.to_string()),
+        }
+    })
+    .await;
+    match result {
+        Ok(r) => r,
+        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
+    }
+}
+
+#[tauri::command]
 async fn get_transactions(
     config: Config,
     login: String,
@@ -382,7 +448,8 @@ fn main() {
             is_testnet,
             get_server_infos,
             write_key_to_file,
-            read_key_from_file
+            read_key_from_file,
+            check_send_transaction
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

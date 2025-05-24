@@ -3,6 +3,7 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
 	import { globalConfig, serverPublicKey } from '$lib/stores/settings.js';
+	import { writable } from 'svelte/store';
 	import Spinner from '$lib/components/Spinner.svelte';
 
 	let { oncancel } = $props();
@@ -26,8 +27,24 @@
 	}
 
 	let totalFees = '';
-	let isUserLoginValid = $state(false);
+	let validationError = writable(true);
+
 	let isSending = $state(false);
+
+	function handleMontantChange() {
+		amount = amount.trim();
+		checkTransaction();
+	}
+
+	function handleDescriptionChange() {
+		description = description.trim();
+		checkTransaction();
+	}
+
+	function handleReceiverChange() {
+		receiver = receiver.trim();
+		checkTransaction();
+	}
 
 	async function handleLoadFile() {
 		const path = await open({
@@ -49,6 +66,26 @@
 			description = result.description;
 		} catch (e) {}
 	}
+
+	async function checkTransaction() {
+		const classic_transaction_sent = {
+			receiver: receiver,
+			amount: amount,
+			description: description,
+			fees: fees
+		};
+
+		try {
+			let result = await invoke('check_send_transaction', {
+				config: $globalConfig,
+				transaction: classic_transaction_sent
+			});
+			validationError.set(false);
+		} catch (e) {
+			validationError.set(true);
+		}
+	}
+
 	async function handleSend() {
 		const classic_transaction_sent = {
 			receiver: receiver,
@@ -86,6 +123,7 @@
 						type="text"
 						bind:value={receiver}
 						class="input-field w-full"
+						oninput={handleReceiverChange}
 						placeholder="Login du destinataire"
 					/>
 				</div>
@@ -99,6 +137,7 @@
 								inputmode="decimal"
 								pattern="[0-9]*"
 								bind:value={amount}
+								oninput={handleMontantChange}
 								class="input-field flex-1"
 								placeholder="0.00"
 							/>
@@ -132,6 +171,7 @@
 				<textarea
 					id="description"
 					bind:value={description}
+					oninput={handleDescriptionChange}
 					class="input-field w-full resize-none"
 					placeholder="Description (facultative)"
 					maxlength="256"
@@ -166,7 +206,7 @@
 					<button
 						class="pillule-bouton-password pillule-bouton-password-noir bouton-noir-settings flex items-center transition"
 						onclick={handleSend}
-						disabled={isSending}
+						disabled={isSending || $validationError}
 					>
 						<span class="texte-bouton-password texte-bouton-password-noir">Envoyer</span>
 					</button>

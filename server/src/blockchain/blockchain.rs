@@ -151,6 +151,17 @@ impl<'a> Blockchain<'a> {
                             return false; // Cannot send money to yourself
                         }
 
+                        match self.gitlab.check_user_existence(&r) {
+                            Ok(exists) => {
+                                if !exists {
+                                    return false;
+                                }
+                            }
+                            Err(_) => {
+                                return false;
+                            }
+                        }
+
                         let mut be = match balances.get(&em) {
                             Some(b) => *b,
                             None => match self.get_user_balance(&em) {
