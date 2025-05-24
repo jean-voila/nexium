@@ -2,9 +2,12 @@ use nexium::blockchain::{
     consts::TRANSACTION_RECEIVER, transaction_data::TransactionData,
 };
 
-use crate::network::{
-    router::http::{request::Request, response::Response, status::Status},
-    server::Server,
+use crate::{
+    blockchain::structure::consts::HEADER_PREVIOUS_BLOCK_HASH_SIZE,
+    network::{
+        router::http::{request::Request, response::Response, status::Status},
+        server::Server,
+    },
 };
 
 pub fn handler(req: &mut Request, server: &mut Server) {
@@ -40,7 +43,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     let mut arr = json::array![];
     let mut hash = server.cache.blockchain.last_hash;
 
-    loop {
+    while hash != [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] {
         let b = match server.cache.blockchain.get_block(&hash) {
             Ok(b) => b,
             Err(_) => {
