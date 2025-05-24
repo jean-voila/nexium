@@ -35,6 +35,7 @@ pub enum NexiumAPIError {
     BalanceFetchError,
     ReceiverNotFound,
     InvalidReceiver,
+    SenderAndReceiverSame,
 }
 
 impl fmt::Display for NexiumAPIError {
@@ -85,6 +86,9 @@ impl fmt::Display for NexiumAPIError {
             }
             NexiumAPIError::InvalidReceiver => {
                 "Le destinataire de la transaction est invalide."
+            }
+            NexiumAPIError::SenderAndReceiverSame => {
+                "Le destinataire et l'expéditeur de la transaction sont identiques."
             }
         };
         write!(f, "{}", msg)

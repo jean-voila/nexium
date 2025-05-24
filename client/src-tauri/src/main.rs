@@ -311,6 +311,11 @@ async fn check_send_transaction(
             return Err(NexiumAPIError::InsufficientFunds.to_string());
         }
 
+        // check if the receiver and the sender are not the same
+        if transaction.receiver == config.user_login {
+            return Err(NexiumAPIError::SenderAndReceiverSame.to_string());
+        }
+
         let rec_login = match Login::new(transaction.receiver.clone()) {
             Ok(rec) => rec,
             Err(_) => return Err(NexiumAPIError::InvalidReceiver.to_string()),
