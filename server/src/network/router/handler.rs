@@ -46,7 +46,7 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
         {
             get_transactions::handler(&mut req, &mut server);
         }
-        ("POST", "/transaction") => {
+        ("POST", "/new_transaction") => {
             new_transaction::handler(&mut req, &mut server);
         }
         _ => {

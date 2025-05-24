@@ -231,7 +231,7 @@ pub fn get_server_key_login(
             Err(_) => return Err(NexiumAPIError::InvalidSigSample.to_string()),
         };
         match server_key.check_signature(
-            SIG_SAMPLE.as_bytes().to_vec(),
+            &SIG_SAMPLE.as_bytes().to_vec(),
             &sig_sample_biguint,
         ) {
             Ok(res) => {
@@ -264,9 +264,9 @@ pub fn send_transaction(
         Err(e) => return Err(e.to_string()),
     };
 
-    let amount = match transaction.amount.parse::<u32>() {
+    let amount = match transaction.amount.parse::<f32>() {
         Ok(n) => {
-            if n <= 0 {
+            if n <= 0.0 {
                 return Err(NexiumAPIError::NegativeOrZeroAmount.to_string());
             }
             n
