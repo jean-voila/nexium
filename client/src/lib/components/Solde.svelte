@@ -27,7 +27,7 @@
 					spinTiming={{ duration: 750, easing: 'ease-in-out' }}
 					opacityTiming={{ duration: 350, easing: 'ease-out' }}
 				/>
-				{#if $userBalanceDec !== undefined}
+				{#if $userBalanceDec !== '0'}
 					.<NumberFlow
 						value={$userBalanceDec}
 						format={{ useGrouping: false }}
