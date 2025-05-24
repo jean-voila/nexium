@@ -3,6 +3,7 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
 	import { globalConfig, serverPublicKey } from '$lib/stores/settings.js';
+	import Spinner from '$lib/components/Spinner.svelte';
 
 	let { oncancel } = $props();
 
@@ -26,6 +27,7 @@
 
 	let totalFees = '';
 	let isUserLoginValid = $state(false);
+	let isSending = $state(false);
 
 	async function handleLoadFile() {
 		const path = await open({
@@ -55,6 +57,7 @@
 			fees: fees
 		};
 
+		isSending = true;
 		try {
 			let send_transaction_result = await invoke('send_transaction', {
 				serverPubkey: $serverPublicKey,
@@ -64,12 +67,14 @@
 			handleClose();
 		} catch (e) {
 			console.error("Erreur lors de l'envoi de la transaction:", e);
+		} finally {
+			isSending = false;
 		}
 	}
 </script>
 
-<div class="transaction-modal" transition:fade={{ duration: 200 }}>
-	<div class="transaction-modal-content" transition:fly={{ y: 30, duration: 200 }}>
+<div class="send-modal" transition:fade={{ duration: 200 }}>
+	<div class="send-modal-content" transition:fly={{ y: 30, duration: 200 }}>
 		<h3 class="transaction-titre">Nouvelle transaction</h3>
 
 		<div class="settings-item">
@@ -130,7 +135,7 @@
 					class="input-field w-full resize-none"
 					placeholder="Description (facultative)"
 					maxlength="256"
-					rows="7"
+					rows="2"
 				></textarea>
 			</div>
 		</div>
@@ -140,20 +145,28 @@
 					<button
 						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
 						onclick={handleLoadFile}
+						disabled={isSending}
 					>
 						<span class="texte-bouton-password texte-bouton-password-blanc">Importer</span>
 					</button>
 				</div>
 				<div class="flex justify-end gap-2">
+					{#if isSending}
+						<div class="flex items-center">
+							<Spinner />
+						</div>
+					{/if}
 					<button
 						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
 						onclick={handleClose}
+						disabled={isSending}
 					>
 						<span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
 					</button>
 					<button
 						class="pillule-bouton-password pillule-bouton-password-noir bouton-noir-settings flex items-center transition"
 						onclick={handleSend}
+						disabled={isSending}
 					>
 						<span class="texte-bouton-password texte-bouton-password-noir">Envoyer</span>
 					</button>

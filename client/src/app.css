@@ -45,14 +45,21 @@
     --color-gris-primaire: #616161;
     --color-gris-secondaire: #E8E8E8;
     --color-gris-tertiaire: #B8B8B8;
-    --color-bleu-primaire: #2479d9;
-    --color-bleu-secondaire: #3276FF;
+    --color-bleu-primaire: #0b509e;
+    --color-bleu-secondaire: #0d3b95;
+    --color-bleu-tertiaire: #00378b;
     --color-vert-primaire: #098d37;
     --color-rouge-primaire: #ca2121;
-    --color-orange-primaire: #df8a22;
+    --color-orange-primaire: #b36300;
 }
 
 body {
+
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
 
     background-color: var(--color-blanc-primaire);
 
@@ -113,15 +120,15 @@ body {
 
 
 .icone-bouton-sauvercharger {
-    width: 1.2em;
-    height: 1.2em;
-    color: var(--color-gris-primaire);
+    width: 1.3em;
+    height: 1.3em;
+    color: var(--color-noir-secondaire);
     transition: all 0.1s ease-in-out;
 }
 
 .icone-bouton-sauvercharger:hover {
 
-    color: var(--color-noir-tertiaire);
+    color: var(--color-noir-primaire);
     transition: all 0.1s ease-in-out;
 }
 
@@ -133,7 +140,11 @@ body {
 }
 
 .bouton-action {
-    color: var(--color-gris-primaire);
+    color: var(--color-noir-tertiaire);
+}
+
+.bouton-action-disabled {
+    color: var(--color-gris-tertiaire);
 }
 
 .bouton-action:hover {
@@ -561,20 +572,22 @@ body {
     font-family: 'Work Sans', sans-serif;
     font-weight: 550;
     font-size: 12px;
-    padding: 0.2rem 0.7rem;
+    padding: 0.1rem 0.6rem;
     color: var(--color-blanc-primaire);
     /* équivalent à px-4 py-2 */
 }
 
+
 .bouton-keypair {
     transition: all 0.1s ease-in-out;
-    border-radius: 1.2rem;
-    border-color: var(--color-noir-primaire);
+    border-radius: 0.5rem;
+    border: 3px solid var(--color-noir-primaire);
     background-color: var(--color-noir-secondaire);
     transition: all 0.1s ease-in-out;
 }
 
 .bouton-keypair:hover:enabled {
+    border: 3px solid var(--color-noir-tertiaire);
     background-color: var(--color-noir-tertiaire);
     color: var(--color-blanc-primaire);
     transition: all 0.1s ease-in-out;
@@ -583,6 +596,7 @@ body {
 .bouton-keypair:active:enabled {
     transition: all 0.1s ease-in-out;
     background-color: var(--color-blanc-tertiaire);
+    border: 3px solid var(--color-blanc-tertiaire);
 }
 
 .bouton-keypair:disabled {
@@ -591,6 +605,107 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+
+
+
+
+
+
+.bouton-import-keypair {
+    transition: all 0.1s ease-in-out;
+    border-radius: 0.5rem;
+    background-color: var(--color-noir-primaire);
+    color: var(--color-blanc-primaire);
+
+    border: 3px solid var(--color-noir-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-import-keypair:hover:enabled {
+
+    border: 3px solid var(--color-noir-primaire);
+    background-color: var(--color-blanc-primaire);
+    color: var(--color-noir-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-import-keypair:active:enabled {
+    filter: opacity(0.5);
+    transition: all 0.1s ease-in-out;
+
+}
+
+.bouton-import-keypair:disabled {
+    filter: grayscale(0.8);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.texte-bouton-import-keypair {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 0.1rem 0.6rem;
+
+    /* équivalent à px-4 py-2 */
+}
+
+
+.bouton-export-keypair {
+    transition: all 0.1s ease-in-out;
+    border-radius: 0.5rem;
+    background-color: var(--color-bleu-tertiaire);
+    border: 3px solid var(--color-bleu-tertiaire);
+    color: var(--color-blanc-primaire);
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-export-keypair:hover:enabled {
+
+    border: 3px solid var(--color-bleu-tertiaire);
+    color: var(--color-bleu-tertiaire);
+    background-color: var(--color-blanc-primaire);
+
+
+    transition: all 0.1s ease-in-out;
+}
+
+.bouton-export-keypair:active:enabled {
+    filter: opacity(0.5);
+    transition: all 0.1s ease-in-out;
+
+}
+
+.bouton-export-keypair:disabled {
+    filter: grayscale(0.8);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.texte-bouton-export-keypair {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 0.1rem 0.6rem;
+
+    /* équivalent à px-4 py-2 */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .settings-item {
     /* padding only top and bottom */
@@ -619,7 +734,7 @@ body {
 }
 
 .pillule-bouton-gitlab-checked {
-    background-color: var(--color-noir-quaternaire);
+    background-color: var(--color-noir-primaire);
     transition: all 0.1s ease-in-out;
     border-radius: 0.6rem;
     padding: 0.7rem 0.1rem;
@@ -714,13 +829,39 @@ body {
 
 .surligne {
     font-family: 'Inconsolata', sans-serif;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-noir-primaire);
     font-size: 16px;
     margin-top: 0.5rem;
     background-color: var(--color-gris-secondaire);
     padding: 0.3rem;
     border-radius: 0.5rem;
+}
+
+@keyframes surligneVideShimmer {
+    0% {
+        background-position: -200px 0;
+    }
+
+    100% {
+        background-position: 200px 0;
+    }
+}
+
+.surligne-vide {
+    font-family: 'Inconsolata', sans-serif;
+    font-weight: 500;
+    color: #ffffff00;
+    font-size: 16px;
+    margin-top: 0.5rem;
+    background: linear-gradient(90deg,
+            var(--color-gris-tertiaire) 25%,
+            #d7d7d7 50%,
+            var(--color-gris-tertiaire) 75%);
+    background-size: 400px 100%;
+    padding: 0.3rem;
+    border-radius: 0.5rem;
+    animation: surligneVideShimmer 1.5s infinite linear;
 }
 
 .bouton-noir-settings {
@@ -827,7 +968,26 @@ body {
     letter-spacing: -0.05em;
     font-size: 15px;
     border-radius: 0.6rem;
+}
 
+
+.description-tooltip {
+    white-space: nowrap;
+    width: auto;
+    max-width: none;
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(10px, 10px);
+
+
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    color: var(--color-noir-tertiaire);
+    margin-top: 0.5rem;
+    letter-spacing: -0.05em;
+    font-size: 15px;
+    border-radius: 0.6rem;
 }
 
 .green-icon {
@@ -835,4 +995,11 @@ body {
     height: 1.2em;
     color: var(--color-vert-primaire);
 
+}
+
+.texte-importexport {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--color-noir-secondaire);
 }

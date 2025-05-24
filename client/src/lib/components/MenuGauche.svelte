@@ -77,7 +77,7 @@
 	}
 
 	onMount(() => {
-		const interval = setInterval(balanceUpdate, 5000);
+		const interval = setInterval(balanceUpdate, 10000);
 		return () => clearInterval(interval);
 	});
 </script>

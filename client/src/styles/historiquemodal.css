@@ -93,7 +93,6 @@
 
 
 
-
 .history-texte {
     font-family: 'Work Sans', sans-serif;
     font-weight: 600;
@@ -101,7 +100,7 @@
     line-height: 13px;
     padding-bottom: 5%;
     letter-spacing: -0.03em;
-    color: var(--color-gris-primaire);
+    color: var(--color-noir-primaire);
 }
 
 
@@ -124,14 +123,12 @@
 }
 
 .description-scroll-content {
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: hidden;
-    white-space: nowrap;
     max-height: 1.7rem;
-    max-width: 100%;
-    padding-inline: 0.3rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-inline: 0.5rem;
     scrollbar-width: none;
     /* Firefox */
     -ms-overflow-style: none;
@@ -159,6 +156,7 @@
     font-family: 'Open Sans', sans-serif;
     font-weight: 500;
     font-size: 14px;
+
 }
 
 .login {
@@ -171,4 +169,12 @@
     flex-grow: 1;
     overflow-y: auto;
     margin-top: 1rem;
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+
+
+
 }

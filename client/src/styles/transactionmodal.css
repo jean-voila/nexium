@@ -18,6 +18,32 @@
 .transaction-modal-content {
     background-color: var(--color-blanc-primaire);
     padding: 1.2rem;
-    width: 26rem;
+    width: 30rem;
+    border-radius: 1.3rem;
+}
+
+
+
+.send-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    transition: backdrop-filter 0.3s ease;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+
+}
+
+.send-modal.leave-active {
+    backdrop-filter: blur(5px);
+}
+
+.send-modal-content {
+    background-color: var(--color-blanc-primaire);
+    padding: 1.2rem;
+    width: 30rem;
     border-radius: 1.3rem;
 }

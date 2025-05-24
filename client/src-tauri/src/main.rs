@@ -323,6 +323,42 @@ async fn get_server_infos(config: Config) -> Result<(String, String), String> {
     }
 }
 
+#[tauri::command]
+async fn write_key_to_file(path: String, key: String) -> Result<(), String> {
+    let result =
+        tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+            let path = Path::new(&path);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            std::fs::write(path, key).map_err(|e| e.to_string())?;
+            Ok(())
+        })
+        .await;
+
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn read_key_from_file(path: String) -> Result<String, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&path);
+        if !path.exists() {
+            return Err("Le fichier n'existe pas".to_string());
+        }
+        std::fs::read_to_string(path).map_err(|e| e.to_string())
+    })
+    .await;
+
+    match result {
+        Ok(content) => content,
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -345,6 +381,8 @@ fn main() {
             get_transactions,
             is_testnet,
             get_server_infos,
+            write_key_to_file,
+            read_key_from_file
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

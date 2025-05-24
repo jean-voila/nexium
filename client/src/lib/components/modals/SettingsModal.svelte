@@ -5,14 +5,16 @@
 
 	import { CloudUpload } from 'lucide-svelte';
 	import { fly, fade } from 'svelte/transition';
-	import { Download } from 'lucide-svelte';
-	import { Upload } from 'lucide-svelte';
+	import { FolderOpen } from 'lucide-svelte';
+	import { Save } from 'lucide-svelte';
 	import { CheckCheck } from 'lucide-svelte';
 	import { CircleOff } from 'lucide-svelte';
 	import { CircleAlert } from 'lucide-svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { save } from '@tauri-apps/plugin-dialog';
 	import { Unplug } from 'lucide-svelte';
+
+	import AskPasswordModal from './AskPasswordModal.svelte';
 
 	import { globalConfig, isConfigSet, serverPublicKey } from '$lib/stores/settings.js';
 
@@ -33,7 +35,10 @@
 	let isValidatingAndDone = false;
 
 	let password = '';
-	let showPasswordModal = false;
+
+	let showNewPasswordModal = false;
+	let showAskPasswordModal = false;
+
 	let rejectPassword;
 
 	invoke('is_testnet').then((result) => {
@@ -41,12 +46,23 @@
 	});
 
 	/** @type {(value: string) => void} */
-	let resolvePassword;
+	let resolveNewPassword;
 
-	function promptPassword() {
-		showPasswordModal = true;
+	function promptNewPassword() {
+		showNewPasswordModal = true;
 		return new Promise((resolve, reject) => {
-			resolvePassword = resolve;
+			resolveNewPassword = resolve;
+			rejectPassword = reject;
+		});
+	}
+
+	/** @type {(value: string) => void} */
+	let resolveAskPassword;
+
+	function askPassword() {
+		showAskPasswordModal = true;
+		return new Promise((resolve, reject) => {
+			resolveAskPassword = resolve;
 			rejectPassword = reject;
 		});
 	}
@@ -131,7 +147,7 @@
 
 	async function handleKeyGeneration() {
 		isValidating = true;
-		password = await promptPassword();
+		password = await promptNewPassword();
 		config.password = password;
 
 		isGenerating = true;
@@ -162,13 +178,23 @@
 		}
 	}
 	/** @param {string} pw */
-	function handlePasswordSubmit(pw) {
-		showPasswordModal = false;
-		resolvePassword(pw);
+	function handleNewPasswordSubmit(pw) {
+		showNewPasswordModal = false;
+		resolveNewPassword(pw);
 	}
 
-	function handlePasswordCancel() {
-		showPasswordModal = false;
+	/** @param {string} pw */
+	function handleAskedPasswordSubmit(pw) {
+		showAskPasswordModal = false;
+		resolveAskPassword(pw);
+	}
+
+	function handleNewPasswordCancel() {
+		showNewPasswordModal = false;
+	}
+
+	function handleAskedPasswordCancel() {
+		showAskPasswordModal = false;
 	}
 
 	async function handleDone() {
@@ -190,7 +216,7 @@
 				serverPublicKey.set(server_pub_key_login[0]);
 				config.server_login = server_pub_key_login[1];
 			} else {
-				throw new Error('Server public key not found.');
+				throw new Error('Erreur de récupération des informations du serveur.');
 			}
 
 			globalConfig.set(config);
@@ -228,14 +254,100 @@
 			errorMessage = String(error);
 		}
 	}
+
+	async function handleKeyImport() {
+		try {
+			// Ouvrir le sélecteur de fichier pour la clé publique
+			const pubKeyPath = await open({
+				multiple: false,
+				directory: false,
+				title: 'Sélectionner la clé publique',
+				filters: [
+					{
+						name: 'Clé publique',
+						extensions: ['pub']
+					}
+				]
+			});
+
+			if (pubKeyPath) {
+				const pubKey = await invoke('read_key_from_file', { path: pubKeyPath });
+				config.pub_key = pubKey;
+			}
+			// Ouvrir le sélecteur de fichier pour la clé privée
+			const privKeyPath = await open({
+				multiple: false,
+				directory: false,
+				title: 'Sélectionner la clé privée',
+				filters: [
+					{
+						name: 'Clé privée',
+						extensions: ['priv']
+					}
+				]
+			});
+			if (privKeyPath) {
+				const privKey = await invoke('read_key_from_file', { path: privKeyPath });
+				config.priv_key = privKey;
+			} else {
+				errorMessage = "Les clés n'ont pas été importées correctement.";
+			}
+
+			if (config.pub_key && config.priv_key) {
+				config.password = await askPassword();
+			}
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
+
+	async function handleKeyExport() {
+		try {
+			const pubPath = await save({
+				title: 'Exporter la clé publique',
+				defaultPath: 'public_key.pub',
+				filters: [
+					{
+						name: 'Clé publique',
+						extensions: ['pub']
+					}
+				]
+			});
+
+			if (pubPath) {
+				await invoke('write_key_to_file', {
+					path: pubPath,
+					key: config.pub_key
+				});
+			}
+
+			const privPath = await save({
+				title: 'Exporter la clé privée',
+				defaultPath: 'private_key.priv',
+				filters: [
+					{
+						name: 'Clé privée',
+						extensions: ['priv']
+					}
+				]
+			});
+
+			if (privPath) {
+				await invoke('write_key_to_file', {
+					path: privPath,
+					key: config.priv_key
+				});
+			}
+		} catch (error) {
+			errorMessage = String(error);
+		}
+	}
 </script>
 
 {#if showSettingsModal}
 	<div class="settings-modal" transition:fade={{ duration: 200 }}>
 		<div class="settings-modal-content" transition:fly={{ y: 30, duration: 200 }}>
 			<h2 class="settings-titre">Paramètres</h2>
-
-			<div class="barre-separation"></div>
 
 			<div class="settings-item settings-row flex gap-4">
 				<div class=" flex-1">
@@ -245,19 +357,19 @@
 						type="number"
 						bind:value={config.port}
 						class="input-field"
-						placeholder="3000"
+						placeholder="4242"
 						min="0"
 						max="65535"
 					/>
 				</div>
 				<div class="flex-[4]">
-					<label for="server-url" class="nom-parametre">URL du serveur</label>
+					<label for="server-url" class="nom-parametre">Adresse du serveur</label>
 					<input
 						id="server-url"
 						type="text"
 						bind:value={config.server_address}
 						class="input-field"
-						placeholder="https://server.nexium.com"
+						placeholder="nexium.jeanflix.fr"
 					/>
 				</div>
 			</div>
@@ -315,24 +427,14 @@
 				<span class="nom-parametre">Login: </span>
 				{#if config.user_login !== ''}
 					<span class="surligne transition">{config.user_login}</span>
+				{:else}
+					<span class="surligne-vide transition">---------</span>
 				{/if}
 			</div>
 
 			<div class="settings-item flex-1 transition">
 				<div class="flex items-center gap-4 transition">
 					<div class="flex items-center gap-3 transition">
-						<div class="flex items-center gap-1 transition">
-							{#if config.pub_key !== '' && config.priv_key !== ''}
-								<CheckCheck strokeWidth={3.7} class="blue-icon " />
-								<span class="keypair-status keypair-status-blue transition">Clés définies!</span>
-							{:else}
-								<CircleOff strokeWidth={3.9} class="orange-icon " />
-								<span class="keypair-status keypair-status-orange transition"
-									>Clés non définies</span
-								>
-							{/if}
-						</div>
-
 						<button
 							class="bouton-keypair flex items-center transition"
 							onclick={handleKeyGeneration}
@@ -343,6 +445,22 @@
 						>
 							<span class="texte-bouton-keypair">Générer les clés</span>
 						</button>
+
+						<button
+							class="bouton-import-keypair flex items-center transition"
+							onclick={handleKeyImport}
+							hidden={config.user_login.trim() === ''}
+							disabled={isGenerating}
+						>
+							<span class="texte-bouton-import-keypair">Importer les clés</span>
+						</button>
+
+						<div class="flex items-center gap-1 transition">
+							{#if config.pub_key !== '' && config.priv_key !== ''}
+								<CheckCheck strokeWidth={3.7} class="blue-icon " />
+								<span class="keypair-status keypair-status-blue transition">Clés définies</span>
+							{/if}
+						</div>
 					</div>
 
 					{#if isGenerating}
@@ -353,32 +471,42 @@
 					{:else if sentKeys}
 						<div class="sent-keys flex items-center gap-1 transition">
 							<CloudUpload strokeWidth={3.2} />
-							<span>Clés ajoutées sur Gitlab!</span>
+							<span>Clés ajoutées sur Gitlab</span>
 						</div>
 					{/if}
 				</div>
+				<button
+					class="bouton-export-keypair mt-2 flex items-center transition"
+					onclick={handleKeyExport}
+					hidden={config.pub_key === '' || config.priv_key === ''}
+					disabled={isGenerating}
+				>
+					<span class="texte-bouton-export-keypair">Exporter les clés</span>
+				</button>
 			</div>
 
 			<div class="barre-separation"></div>
 			<!-- Barre du bas -->
 			<div class="mt-6 flex items-center justify-between">
-				<div class="flex gap-4">
+				<div class="flex gap-2">
 					<button
-						class="pillule-bouton-sauvercharger flex items-center justify-center transition"
+						class="pillule-bouton-sauvercharger flex flex-col items-center transition"
 						onclick={() => {
 							handleLoadFile();
 						}}
 					>
-						<Download strokeWidth={3.4} class="icone-bouton-sauvercharger" />
+						<FolderOpen strokeWidth={2.5} class="icone-bouton-sauvercharger" />
+						<span class="texte-importexport text-center">Importer</span>
 					</button>
 
 					<button
-						class="pillule-bouton-sauvercharger flex items-center justify-center transition"
+						class="pillule-bouton-sauvercharger flex flex-col items-center transition"
 						onclick={() => {
 							handleSaveFile();
 						}}
 					>
-						<Upload strokeWidth={3.4} class="icone-bouton-sauvercharger " />
+						<Save strokeWidth={2.5} class="icone-bouton-sauvercharger" />
+						<span class="texte-importexport text-center">Exporter</span>
 					</button>
 				</div>
 
@@ -417,9 +545,16 @@
 		</div>
 	</div>
 {/if}
-{#if showPasswordModal}
+{#if showNewPasswordModal}
 	<PasswordModal
-		onsubmit={(/** @type {string} */ password) => handlePasswordSubmit(password)}
-		oncancel={handlePasswordCancel}
+		onsubmit={(/** @type {string} */ password) => handleNewPasswordSubmit(password)}
+		oncancel={handleNewPasswordCancel}
+	/>
+{/if}
+
+{#if showAskPasswordModal}
+	<AskPasswordModal
+		onsubmit={(/** @type {string} */ password) => handleAskedPasswordSubmit(password)}
+		oncancel={handleAskedPasswordCancel}
 	/>
 {/if}

@@ -81,14 +81,14 @@ pub struct ClassicTransactionSent {
     pub fees: String,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct ClassicTransactionReceived {
     pub receiver: String,
     pub emitter: String,
     pub description: String,
     pub amount: String,
     pub date: String,
-    pub in_or_out: String,
+    pub inorout: String,
 }
 
 fn build_headers(
@@ -391,6 +391,7 @@ pub fn get_balance(
     };
 
     let parts: Vec<&str> = balance_str.split('.').collect();
+
     let part0 = match parts.get(0) {
         Some(p) => p.to_string(),
         None => "0".to_string(),
@@ -400,9 +401,15 @@ pub fn get_balance(
         None => "0".to_string(),
     };
 
-    if part1.len() > 2 {
+    if parts.len() > 2 {
         return Err(NexiumAPIError::InvalidBalanceFormat.to_string());
     }
+
+    let part1 = if part1.len() > 2 {
+        part1.chars().take(2).collect::<String>()
+    } else {
+        part1
+    };
 
     Ok((part0, part1))
 }
@@ -484,14 +491,20 @@ pub fn get_transactions(
                 has_description,
                 description,
             } => {
-                let receiver = String::from_utf8_lossy(&receiver).to_string();
+                let receiver = String::from_utf8_lossy(&receiver)
+                    .to_string()
+                    .trim_end_matches('\0')
+                    .to_string();
+
+                let emitter =
+                    String::from_utf8_lossy(&tr.header.emitter).to_string();
                 let description = if has_description {
                     String::from_utf8_lossy(&description).to_string()
                 } else {
                     "".to_string()
                 };
 
-                let in_or_out = if receiver == config.user_login {
+                let in_or_out = if receiver == login {
                     "IN".to_string()
                 } else {
                     "OUT".to_string()
@@ -501,17 +514,17 @@ pub fn get_transactions(
                     DateTime::from_timestamp(tr.header.timestamp as i64, 0);
 
                 let formatted_date = match datetime {
-                    Some(dt) => dt.format("%d/%m/%Y").to_string(),
+                    Some(dt) => dt.format("%d/%m/%Y %H:%M").to_string(),
                     None => "Inconnue".to_string(),
                 };
 
                 let transaction = ClassicTransactionReceived {
                     receiver: receiver.clone(),
-                    emitter: config.user_login.clone(),
+                    emitter: emitter.clone(),
                     description,
                     amount: amount.to_string(),
                     date: formatted_date,
-                    in_or_out,
+                    inorout: in_or_out,
                 };
                 transactions.push(transaction);
             }
