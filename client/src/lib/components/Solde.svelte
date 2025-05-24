@@ -18,9 +18,9 @@
 	<div class="absolute inset-0 flex flex flex-col items-center justify-center">
 		{#if $isConfigSet}
 			<div class="text-4xl text-white">
-				<span class="solde-unit solde">{$userBalanceInt}</span>.<span class="solde-deci solde"
-					>{$userBalanceDec}</span
-				>
+				<span class="solde-unit solde">{$userBalanceInt}</span>{#if $userBalanceDec}.<span
+						class="solde-deci solde">{$userBalanceDec}</span
+					>{/if}
 			</div>
 			<span class="sous-titre">NXM</span>
 		{/if}

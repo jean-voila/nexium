@@ -194,8 +194,6 @@ pub fn get_server_pub_key(config: Config) -> Result<String, String> {
         Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
     };
 
-    dbg!(&json);
-
     let server_login = match json["login"].as_str() {
         Some(l) => l.to_string(),
         None => return Err(NexiumAPIError::NoServerLogin.to_string()),
@@ -300,21 +298,35 @@ pub fn get_balance(
         Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
     };
 
-    dbg!(&json);
-
     let balance_str = match json["balance"].as_str() {
         Some(b) => b.to_string(),
         None => {
-            return Err(NexiumAPIError::NoBalanceField.to_string());
+            if let Some(num) = json["balance"].as_i64() {
+                num.to_string()
+            } else if let Some(num) = json["balance"].as_f64() {
+                num.to_string()
+            } else {
+                return Err(NexiumAPIError::NoBalanceField.to_string());
+            }
         }
     };
 
+    dbg!(&balance_str);
     let parts: Vec<&str> = balance_str.split('.').collect();
-    if parts.len() != 2 {
+    let part0 = match parts.get(0) {
+        Some(p) => p.to_string(),
+        None => "0".to_string(),
+    };
+    let part1 = match parts.get(1) {
+        Some(p) => p.to_string(),
+        None => "".to_string(),
+    };
+
+    if part1.len() > 2 {
         return Err(NexiumAPIError::InvalidBalanceFormat.to_string());
     }
 
-    Ok((parts[0].to_string(), parts[1].to_string()))
+    Ok((part0, part1))
 }
 
 pub fn get_transactions(
