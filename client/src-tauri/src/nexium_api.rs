@@ -331,14 +331,38 @@ pub fn send_transaction(
 
     let url = build_url(&config, "/new_transaction");
     let client = Client::new();
-    let response = match client
-        .post(&url)
-        .headers(headers.unwrap_or_default())
-        .body(encrypted_body)
-        .send()
-    {
-        Ok(r) => r,
-        Err(e) => return Err(e.to_string()),
+    let mut retries = 0;
+    let max_retries = 4;
+    let response = loop {
+        let resp = client
+            .post(&url)
+            .headers(headers.clone().unwrap_or_default())
+            .body(encrypted_body.clone())
+            .send();
+        match resp {
+            Ok(r) => {
+                if r.status().is_success() {
+                    break r;
+                } else if retries < max_retries {
+                    retries += 1;
+                    continue;
+                } else {
+                    return Err(format!(
+                        "{}: {}",
+                        NexiumAPIError::InvalidResponseFromServer.to_string(),
+                        r.status()
+                    ));
+                }
+            }
+            Err(e) => {
+                if retries < max_retries {
+                    retries += 1;
+                    continue;
+                } else {
+                    return Err(e.to_string());
+                }
+            }
+        }
     };
 
     if !response.status().is_success() {

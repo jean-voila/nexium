@@ -4,12 +4,17 @@
 \usepackage[utf8]{inputenc} % UTF-8 encoding
 \usepackage[T1]{fontenc} % Font encoding
 \usepackage{lmodern} % Latin Modern font
-\usepackage[margin=3.3cm]{geometry} % Page margins
+\usepackage[margin=3.5cm]{geometry} % Page margins
 \usepackage{graphicx} % Insert images
 \usepackage{amsmath,amsfonts,amssymb} % Math symbols
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[normalem]{ulem}
 \usepackage{listings, ./listings-rust}
 \usepackage{framed}
-\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\useunder{\uline}{\ul}{}
+
 
 
 \lstdefinestyle{custom}{
@@ -24,6 +29,17 @@
   breaklines=false, % Coupe les longues lignes
   basicstyle=\ttfamily\footnotesize, % Style du texte
 }
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green},
+    stringstyle=\color{red},
+    frame=single,
+    captionpos=b
+}
+
+
 
 \usepackage{svg}
 \usepackage{caption}
@@ -52,9 +68,24 @@
 
 \usepackage{breakurl}
 \usepackage{url}
+\usepackage{biblatex}
 
-\usepackage{biblatex} %Imports biblatex package
-\addbibresource{report_2.bib} %Import the bibliography file
+% Make all bibliography titles bold
+\renewbibmacro*{title}{%
+  \ifboolexpr{
+  test {\iffieldundef{title}}
+  or
+  test {\ifentrytype{review}}
+  }
+  {}
+  {\printtext[title]{\textbf{\printfield[titlecase]{title}}}}%
+}
+
+% Remove "Visited on" from bibliography
+\AtEveryBibitem{%
+  \clearfield{urldate}
+}
+\addbibresource{rapport_final.bib} 
 
 \graphicspath{ {./images/} } % Path to images
 
@@ -69,7 +100,7 @@
 % Title and Author
 \title{
   \textbf{Nexium} \\
-  \large Rapport de soutenance n°2}
+  \large Rapport de projet}
 
 \author{
     Jean HERAIL \\ \texttt{jean.herail@epita.fr} 
@@ -89,7 +120,7 @@
 
 % Nexium at the left of the header, and "Cahier des charges" at the right
 \fancyhf[HL]{\textbf{NEXIUM}}
-\fancyhf[HR]{\textbf{Rapport de soutenance n°2}}
+\fancyhf[HR]{\textbf{Rapport de projet}}
 
 \fancyfoot[C]{\thepage/\pageref{LastPage}} % Footer center: current page / total pages
 
@@ -119,190 +150,152 @@
 
 %\twocolumn
 
-
 \section{Introduction}
-Dans le cadre du projet de quatrième semestre à l’Epita, notre groupe a pris la décision d’entreprendre la création d’un outil que nous voulions pertinent, utile et ayant un sens pour les gens. C’est de cette conception particulière que naquit l’idée de \textbf{Nexium}.
 
-Il s’agit d’un protocole transactionnel pair-à-pair, basé sur la cryptographie, et destiné aux membres d’Epita (étudiants et personnels éducatifs). Basé sur la technologie de \textbf{blockchain} \cite{blockchain}, et construit selon le \textbf{Nakamoto-Consensus} \footnote{Le consensus de Nakamoto fait référence à la manière spécifique dont le réseau décentralisé de Bitcoin parvient à un accord sur l'état de sa blockchain.\cite{nakamotoconsensus}} établi avec le \textbf{Bitcoin} \footnote{La première et la plus capitalisée des cryptomonnaies, créée en 2009. \cite{bitcoin}} en 2008, Nexium s’assimile donc comme une réelle crypto-monnaie décentralisée, \textbf{trustless} \footnote{Le terme "trustless" ("sans confiance" en français) désigne un système ou des transactions où les parties peuvent interagir et échanger de la valeur sans avoir besoin de faire confiance à un tiers. Dans le contexte des cryptomonnaies, la trustless est souvent réalisée grâce à des protocoles cryptographiques basés sur la notion de "preuve de travail".}, indépendante et résiliente. Le produit final de Nexium se décline sous deux formes binaires : un client, et un serveur.
+Dans le cadre du projet de quatrième semestre à l’EPITA, notre groupe a pris la décision de créer un outil que nous voulions pertinent, utile et ayant un sens pour les gens. C’est de cette conception particulière que naquit l’idée de \textbf{Nexium}.
 
-Nous expliquerons en détail le rôle et l’agencement de ces deux pôles fondamentaux. Conformément aux contraintes techniques requises par le sujet, tout le projet est développé en \textbf{Rust} \cite{rust}. Ce langage de programmation, reconnu pour ses performances et sa \textbf{memory-safety}, \cite{memorysafety} est particulièrement propice et adapté dans le cadre d’un projet impliquant des notions de sécurité et cryptographie comme Nexium. La popularité de Rust rend tout aussi appréciable la découverte de son fonctionnement : la richesse de sa \textbf{documentation} \cite{rustdoc} et l’engagement de sa communauté permettent de résoudre aisément d’éventuels problèmes que l’on rencontre en développant.
+Il s’agit d’un protocole transactionnel pair-à-pair, basé sur la cryptographie, et destiné aux membres d’EPITA (étudiants et personnels éducatifs). Basé sur la technologie de la blockchain\footnote{La première et la plus capitalisée des cryptomonnaies, créée en 2009.}, et construit selon le \textit{Nakamoto Consensus}\footnote{Le consensus de Nakamoto fait référence à la manière spécifique dont le réseau décentralisé de Bitcoin parvient à un accord sur l’état de sa blockchain.} établi avec le Bitcoin en 2008, Nexium s’assimile donc à une réelle crypto-monnaie décentralisée, \textit{trustless}\footnote{Le terme \textquotedblleft trustless\textquotedblright{} (\textquotedblleft sans confiance\textquotedblright{} en français) désigne un système ou des transactions où les parties peuvent interagir et échanger de la valeur sans avoir besoin de faire confiance à un tiers. Dans le contexte des cryptomonnaies, la trustless est souvent réalisée grâce à des protocoles cryptographiques basés sur la notion de \textquotedblleft preuve de travail\textquotedblright{}.}, indépendante et résiliente.
 
-En outre, Nexium est un projet aussi ambitieux que captivant : \textbf{cryptographie, architecture et communication réseau, développement web, et travail de groupe} sont autant de compétences que chacun d’entre nous développe dans la réalisation de cet objectif commun.
+Le produit final de Nexium se décline sous deux formes binaires : un \textbf{client}, et un \textbf{serveur}. Nous expliquerons en détail dans ce rapport le rôle et l’agencement de ces deux pôles fondamentaux.
 
-Nous aborderons dans ce rapport la suite des \textbf{avancées} que nous avons pu réaliser depuis le début du projet. Les notions techniques les plus importantes du projet seront explorées, et nous détaillerons également la situation globale du groupe, de son organisation, et des perspectives à venir.
+Conformément aux contraintes techniques requises par le sujet, tout le projet est développé en \textbf{Rust}. Ce langage de programmation, reconnu pour ses performances et sa \textit{memory-safety}, est particulièrement propice et adapté dans le cadre d’un projet impliquant des notions de sécurité et de cryptographie comme Nexium. La popularité de Rust rend tout aussi appréciable la découverte de son fonctionnement : la richesse de sa documentation et l’engagement de sa communauté permettent de résoudre aisément d’éventuels problèmes que l’on rencontre en développant.
 
-\newpage
+En outre, Nexium est un projet aussi ambitieux que captivant : cryptographie, architecture et communication réseau, développement web, et travail de groupe sont autant de compétences que chacun d’entre nous a développées dans la réalisation de cet objectif commun.
+
+Nous abordons dans ce rapport l’entièreté des réalisations que nous avons implémentées tout au long du projet. Les notions techniques les plus importantes du projet seront explorées, et nous détaillerons également la situation globale du groupe tout au long du projet, son organisation et son ressenti final.
 
 \section{Présentation des membres}
 \subsection{Jean HERAIL}
+Mon rôle pour ce début de projet est de développer, en tandem avec \textbf{William}, l’architecture de la \textbf{blockchain} et du \textbf{réseau}. Nous écrivons aussi, au fur et à mesure de notre avancement, la \textbf{documentation théorique} de Nexium au format \textbf{Markdown}, intégrée dans le \textbf{site web officiel} de Nexium. Cela implique de comprendre les mécanismes de la \textbf{blockchain}, de la \textbf{cryptographie}, et de la \textbf{communication réseau}.
 
-Mon rôle pour ce début de projet est de développer, en tandem avec William, l'architecture de la blockchain et du réseau. Nous écrivons aussi, au fur et à mesure de notre avancement, la documentation théorique de Nexium au format \texttt{Markdown}, intégrée dans \textbf{le site web officiel de Nexium} \cite{nexiumsite} Cela implique de comprendre les mécanismes de la \textbf{blockchain}, de la \textbf{cryptographie}, et de la \textbf{communication réseau}.
+J’assume également le rôle de \textbf{chef de projet}, en charge de l’\textbf{organisation du groupe} et de la \textbf{répartition des tâches}. Je m’occupe également de l’écriture en \LaTeX{} des différents documents rendus.
 
-J'assume également le rôle de chef de projet, en charge de l'organisation du groupe et de la répartition des tâches. Je m'occupe également de l'écriture en \texttt{LaTex} des différents documents rendus.
+Étant moi-même passionné de \textbf{cryptographie}, c’est tout naturellement que j’ai initialement suggéré à mon groupe l’idée d’une \textbf{cryptomonnaie}. Accompagnée par un \textbf{synopsis} détaillant les grandes lignes théoriques du projet, l’idée a plu au groupe et a évolué au fil de plusieurs \textbf{réunions} et \textbf{débats}.
 
-Étant moi même passionné de cryptographie, c'est tout naturellement que j'ai initialement suggéré à mon groupe l'idée d'une cryptomonnaie. Accompagnée par un \textit{synopsis} détaillant les grandes lignes théoriques du projet, l'idée a plu au groupe et a évolué au fil de plusieurs réunions et débats.
+Je suis également très intéressé par le langage \textbf{Rust}, que j’ai découvert par curiosité en amont de la \textbf{SPÉ}, et que j’ai eu la chance de découvrir plus en profondeur lors des \textbf{cours du quatrième semestre}. Les \textbf{TPs hebdomadaires} me permettent régulièrement de me familiariser avec les concepts de Rust, et d’acquérir des \textbf{automatismes} dans l’écriture de code.
 
-Je suis également très intéressé par le langage \texttt{Rust}, que j'ai découvert par curiosité en amont de la SPÉ, et que j'ai eu la chance de découvrir plus en profondeur lors des cours du quatrième semestre. Les \textbf{TPs hebdomadaires} me permettent régulièrement de me familiariser avec les concepts de Rust, et d'acquérir des automatismes dans l'écriture de code.
-
-Ce projet m'enthousiasme donc tant dans sa dimension \textbf{technique} que dans sa dimension \textbf{humaine}. Je suis ravi de pouvoir découvrir et travailler sur la blockchain dans un cadre aussi concret. Je dois aussi reconnaître que c'est une chance pour moi d'avoir pu être dans un groupe dont les membres sont aussi motivés, et avec qui je m'entendais déjà très bien avant le début du projet. Cette bonne entente me semble favoriser une communication fluide et efficace.
-
+Ce projet m’enthousiasme donc tant dans sa \textbf{dimension technique} que dans sa \textbf{dimension humaine}. Je suis ravi de pouvoir découvrir et travailler sur la \textbf{blockchain} dans un cadre aussi concret. Je dois aussi reconnaître que c’est une \textbf{chance} pour moi d’avoir pu être dans un groupe dont les membres sont aussi \textbf{motivés}, et avec qui je m’entendais déjà très bien avant le début du projet. Cette bonne entente me semble favoriser une \textbf{communication fluide} et \textbf{efficace}.
 
 \subsection{Milo DELBOS}
+Je suis \textbf{Milo Delbos}, étudiant à \textbf{EPITA} et anciennement bachelier spécialité \textbf{mathématiques et physique}. Mon attrait pour les matières scientifiques est ce qui m’a amené à prendre ce chemin d’études et qui m’a mené jusqu’ici. Je me débrouille en \textbf{mathématiques} ainsi qu’en \textbf{théorie sur les raisonnements algorithmiques}.
 
-Je suis Milo Delbos, étudiant à EPITA et anciennement bachelier spécialité mathématiques et physique. Mon attrait pour les matières scientifiques est ce qui m’a amené à prendre ce chemin d’études et qui m’a mené jusqu’ici. Je me débrouille en mathématiques ainsi qu’en théorie sur les raisonnements algorithmiques.
+Dans ce projet, le développement de fonctions \textbf{SHA-256} et \textbf{RSA} dans lesquelles j’ai participé m’ont permis d'agrandir mes compétences \textbf{algorithmiques} et en terme de \textbf{programmation}. Il me semblait également difficile de m’imaginer un jour toucher à de l'\textbf{HTML} ou du \textbf{CSS}, mais pour faire l’application client, nous en avons eu besoin et cela s’est révélé être un meilleur moment que ce à quoi je m’attendais.
 
-Mon rôle dans ce projet consistera, avec Antonin, à s’occuper de toute la partie mathématique du projet, par cela j’entends réaliser les fonctions de chiffrement, déchiffrement et les calculs nécessaires pour les changements de type.
+Il est aussi évident que mon rôle était d’apporter un avis objectif et utile aux travaux de mes camarades s’ils en demandaient afin d’améliorer le rendu global du projet. \textbf{Nexium} représentait une pente à gravir, c’était le premier gros projet de ce type dans lequel je participe. Ainsi, il m’a permis de développer des \textbf{compétences utiles} et meilleures dans tous les domaines touchés (mathématiques, algorithmique, design, esprit créatif, travail de groupe et compétences sociales).
 
-Il est aussi évident que mon rôle est d'apporter un avis objectif et utile aux travaux de mes camarades s’ils en demandent afin d’améliorer le rendu global du projet.
+Nous avons tous choisi ce projet car c’est une idée \textbf{innovante} et très intéressante d’utiliser une \textbf{blockchain} et une \textbf{cryptomonnaie} dans un cadre privé qui puisse répondre à beaucoup d’attentes et de requêtes et qui pourrait même être utile à l’école.
 
-Nexium représente une pente à gravir, c’est le premier gros projet de ce type dans lequel je participe, ainsi, il me permet de développer des compétences utiles et meilleures dans tous les domaines touchés (mathématiques, algorithmique, travail de groupe et compétences sociales).
-
-Nous avons tous choisi ce projet car c’est une idée innovante et très intéressante qui n’a encore pas été vue, d’utiliser une blockchain et une crypto monnaie dans un cadre privé qui puisse répondre à beaucoup d’attentes et de requêtes et qui pourrait même être utile à l’école.
-
-Non seulement il y a mon attrait pour ce domaine de la crypto monnaie mais aussi toutes les possibilités derrières qui ne dépendent que de notre imagination, ainsi ce projet nous permettra de transmettre ce que l’on désire tout en améliorant nos compétences.
+Non seulement il y a mon attrait pour ce domaine de la \textbf{cryptomonnaie}, mais aussi toutes les possibilités derrière qui ne dépendent que de notre \textbf{imagination}, ainsi ce projet nous permettra de transmettre ce que l’on désire tout en améliorant nos compétences.
 
 \subsection{Antonin BESSIÈRES}
+Je m’appelle \textbf{Antonin Bessières}, étudiant en deuxième année de prépa à l’\textbf{EPITA}, avec un \textbf{bachelor spécialité Maths et NSI}.
 
-Je m'appelle Antonin Bessieres, étudiant en deuxième année de prépa à l'EPITA, avec un bachelor spécialité Maths et NSI. 
+J’ai commencé à m’intéresser à l’\textbf{informatique} lors de mon \textbf{stage de troisième} que j’ai eu la chance de faire chez \textbf{Thales} à Paris. Cet intérêt m’a ensuite guidé dans mes choix d’orientation.
 
-J'ai commencé à m'intéresser à l'informatique lors de mon stage de troisième que j'ai eu la chance de faire chez Thales à Paris. Cet intérêt m'a ensuite guidé dans mes choix d'orientation.
+Dans le cadre du projet, avec \textbf{Milo}, nous nous sommes occupés en particulier de l’aspect \textbf{mathématique}, en conséquence le \textbf{chiffrement/déchiffrement} et tous les \textbf{calculs nécessaires} à l’avancement du projet. J’ai aussi reçu la tâche de m’occuper du \textbf{site web}.
 
-Dans le cadre du projet, avec Milo, nous nous focaliserons en particulier sur l'aspect mathématique, en conséquence le chiffrement/déchiffrement et tous les calculs nécessaires à l'avancée du projet. Nexium est un projet que nous développerons sur le langage Rust que j'ai pu découvrir il y a peu de temps, mais que j'apprécie particulièrement.
+\textbf{Nexium} est un projet que nous avons développé sur le langage \textbf{Rust} que j’ai pu découvrir tout au long du projet, un langage que j’ai particulièrement apprécié. Pour la réalisation du site web, j’ai pu découvrir \textbf{Astro} pour sa construction ainsi que \textbf{Markdown} pour le contenu. Ces derniers sont très bien réalisés et très intéressants à utiliser.
 
-Ce projet me permet aussi d'aborder le chiffrement et tout un aspect serveur dont je n'avais que vaguement entendu parler avant. En résumé, ce projet est un moyen de développer quelque chose de passionnant et permet une découverte de beaucoup de connaissances ainsi qu'un développement sur l'apprentissage du langage Rust.
+Ce projet m’a permis aussi d’aborder le \textbf{chiffrement} et tout un aspect \textbf{serveur} dont je n’avais que vaguement entendu parler auparavant.
+
+En résumé, ce projet a été un moyen de développer quelque chose de \textbf{passionnant} et m'a permis une découverte de nombreuses \textbf{connaissances} ainsi qu’un développement dans l’apprentissage du langage \textbf{Rust} et dans la \textbf{création/développement de site web}.
 
 \subsection{William VALENDUC}
-Après 3 ans de licence informatique à la faculté des sciences et ingénierie de l'université Paul Sabatier, j'ai rejoint l'EPITA en septembre dernier.
+Après \textbf{3 ans de licence informatique} à la faculté des sciences et ingénierie de l’université \textbf{Paul Sabatier}, j’ai rejoint \textbf{l’EPITA} en septembre dernier.
 
-De nature très curieuse, j'ai à coeur de comprendre le fonctionnement de technologies dans de multiples domaines.
+De nature très \textbf{curieuse}, j’ai à cœur de comprendre le fonctionnement de technologies dans de multiples domaines.
 
-Réalisation de la blockchain, de l'architecture et communication réseau ainsi que le serveur web et la documentation du projet.
+Réalisation de la \textbf{blockchain}, de l’\textbf{architecture et communication réseau}, ainsi que du \textbf{serveur web} et la \textbf{documentation du projet}.
 
-Ne connaissant pas grand chose du monde des crypto-monnaies avant le début de Nexium, c'est très enrichissant de découvrir cet univers.
-Possédant un peu d'expérience dans certains domaines que nous avons à utiliser, c'est un plaisir pour moi de pouvoir partager mais également agrandir mes compétences.
+Ne connaissant pas grand-chose du monde des \textbf{crypto-monnaies} avant le début de \textbf{Nexium}, c’est très enrichissant de découvrir cet univers. Possédant un peu d’expérience dans certains domaines que nous avons à utiliser, c’est un plaisir pour moi de pouvoir \textbf{partager} mais également \textbf{agrandir mes compétences}.
 
-
-
-\section{Organisation du projet}
-\label{sec:orga}
-
-L’idée originelle de Nexium a suscité chez chacun des membres de notre groupe un intérêt et enthousiasme laissant présager un bon processus de développement sur le projet. Afin de pouvoir concrétiser le plus solidement et durablement possible le projet, nous accordons une place importante à l'organisation du travail de groupe.
-
-\subsection{Outils utilisés et mis en place}
-
-Comme mentionné précédemment, une organisation claire et structurée permet une fluidification de la communication. Aussi avons-nous mis en place plusieurs solutions pour tenir un suivi régulier de l'avancement du projet.
-
-\subsubsection{Discord}
-
-Nous utilisons un serveur \href{https://discord.com/}{Discord} pour communiquer, relever des problèmes, planifier des réunions et partager des ressources. Plusieurs salons textuels sont dédiés aux différentes parties du développement, ainsi qu'à la centralisation des différents liens. Ce serveur Discord est, en outre, la \textbf{pierre angulaire} de notre communication, la centralisation de nos échanges et ressources.
-
-\subsubsection{Gitlab}
-
-Gitlab est une solution d'hébergement de \textit{repositories} Git. Nous avons choisi d'utiliser l'instance \href{https://gitlab.cri.epita.fr/}{Gitlab} hébergée par Épita pour Nexium. Cela nous permet une \textbf{meilleure gestion des collaborateurs} (avec les logins Épita), et une congruence avec le projet Nexium, puisque c'est de cette instance Gitlab que nous avons tiré l'idée de récupération des \texttt{clés publiques GPG}. De plus, Gitlab propose un outil d'hébergement de pages web (\textbf{Gitlab Pages})\cite{gitlabpages}, que nous utilisons pour automatiquement déployer notre site web, sans avoir à gérer de serveur web ou de dépendre d'un prestataire externe.
-
-
-
-\subsection{Répartition des tâches}
-
-Au-delà des réunions hebdomadaires planifiées lors de tous les week-end, notre équipe a pris la décision, pour la première phase de développement de Nexium, de se séparer en \textbf{deux groupes} distincts, chacun ayant une mission bien précise.
-
-\begin{itemize}
-    \item \textbf{Architecture} : Ce groupe est composé de Jean et William. Ils sont en charge de l'architecture de la blockchain et du réseau, ainsi que du développement du serveur web. Ils sont également responsables de la rédaction de la documentation théorique de Nexium.
-    \item \textbf{Cryptographie} : Ce groupe est composé de Milo et Antonin. Ils sont en charge de la partie mathématique du projet, c'est à dire le chiffrement/déchiffrement et les calculs nécessaires pour les changements de type. Ils ont aussi la charge du \texttt{SHA-256}.
-
-\end{itemize}
 
 \section{Pourquoi une cryptomonnaie ?}
-Bien que l'étendue des notions techniques que recouvre Nexium soit vaste, nous pensons qu'il est important, avant de se lancer dans les détails techniques, de préciser le sens qu'a l'existence des cryptomonnaies de manière générale.
+Bien que l’étendue des notions techniques que recouvre \textbf{Nexium} soit vaste, nous pensons qu’il est important, avant de se lancer dans les détails techniques, de préciser le sens qu’a l’existence des \textbf{cryptomonnaies} de manière générale.
 
-Les cryptomonnaies, particulièrement et en premier lieu le Bitcoin, sont apparues comme une réponse aux limites et faiblesses du \textbf{système économique traditionnel}. Une devise devrait avant tout être un vecteur d’échange, une unité de mesure permettant de faciliter les transactions et de stocker la valeur. Or la monnaie moderne repose sur la confiance.
+Les \textbf{cryptomonnaies}, particulièrement et en premier lieu le \textbf{Bitcoin}, sont apparues comme une réponse aux limites et faiblesses du système économique traditionnel. Une devise devrait avant tout être un \textbf{vecteur d’échange}, une unité de mesure permettant de faciliter les transactions et de stocker la valeur. Or la \textbf{monnaie moderne} repose sur la \textbf{confiance}.
 
-Cette confiance en les institutions financières (telles que les banques centrales) qui émettent et régulent la masse monétaire, font de ce système un système intrinsèquement \textbf{faillible}. Il repose sur des entités centralisées, susceptibles de manipulation, de politique monétaire inflationniste ou de crises économiques imprévues\cite{grece1} \cite{grece2}. Ces entités privées ou étatiques peuvent, indépendament de la volonté du peuple, imposer des restrictions sur l’accès aux finances et rendre la distribution financière déséquilibrée.
+Cette \textbf{confiance} en les \textbf{institutions financières} (telles que les \textbf{banques centrales}) qui émettent et régulent la masse monétaire, fait de ce système un système intrinsèquement faillible. Il repose sur des entités \textbf{centralisées}, susceptibles de manipulation, de politique monétaire inflationniste ou de \textbf{crises économiques imprévues}. Ces entités privées ou étatiques peuvent, indépendamment de la volonté du peuple, imposer des \textbf{restrictions sur l’accès aux finances} et rendre la \textbf{distribution financière déséquilibrée}.
 
-Dans ce contexte apparu le \textbf{Bitcoin}. Porté par le mouvement cypherpunk\cite{cypherpunk} qui cherchait dans les annes 90 à préserver vie privé, liberté d’expression, et garantie de sécurité des données dans un monde qui devenait numérique et dont on ne mesurait pas toujours l’ampleur des enjeux sociétaux à l’époque, le Bitcoin a proposé une solution radicale : une monnaie absolument décentralisée, \textit{open-source}, sans intermédiaire de confiance. Basée sur la technologie de \textbf{blockchain}, elle permet de valider, enregistrer et émettre des transactions de manière transparente, immuable et sécurisée, sans faire appel à quelconque autorité centrale. Ainsi, le Bitcoin introduit une forme de \textbf{trustless}, où la confiance n’est plus placée en un gouvernement ou une institution, mais dans le \textbf{code informatique} qui régit le système : une concrétisation de l’adage “\textit{code is law}”\cite{codeislaw}.
+Dans ce contexte apparu le \textbf{Bitcoin}. Porté par le mouvement \textbf{cypherpunk}\footnote{Le mouvement cypherpunk dans les années 90 prônait la préservation de la vie privée, la liberté d'expression, et la sécurité des données dans un monde numérique.} qui cherchait à préserver \textbf{vie privée}, \textbf{liberté d’expression}, et \textbf{garantie de sécurité des données} dans un monde qui devenait numérique et dont on ne mesurait pas toujours l’ampleur des enjeux sociétaux à l’époque, le \textbf{Bitcoin} a proposé une solution radicale : une \textbf{monnaie absolument décentralisée}, \textbf{open-source}, sans \textbf{intermédiaire de confiance}. Basée sur la technologie de \textbf{blockchain}, elle permet de \textbf{valider}, \textbf{enregistrer} et \textbf{émettre des transactions} de manière transparente, immuable et sécurisée, sans faire appel à quelconque \textbf{autorité centrale}. Ainsi, le \textbf{Bitcoin} introduit une forme de \textbf{trustless}, où la confiance n’est plus placée en un gouvernement ou une institution, mais dans le \textbf{code informatique} qui régit le système : une concrétisation de l’adage “\textit{code is law}”.
 
-Cette \textbf{décentralisation}, loin d’être un simple détail technique, pose des questions profondes sur les notion de contrôle, d’autonomie et de souveraineté individuelle. Dans un monde où les gouvernements peuvent influencer la monnaie nationale par des politiques économiques \cite{trump} et où les institutions bancaires détiennent le pouvoir de décision sur les flux monétaires\cite{banques},le Bitcoin a offert un espace de liberté, où le peuple peut être souverain de sa propre monnaie, sans intervention étatique. Ce modèle a non seulement des implications économiques, mais aussi \textbf{philosophiques}. Il remet en question les fondements mêmes de l’organisation de notre société, et offre une alternative radicale à la centralisation du pouvoir économique.
+Cette \textbf{décentralisation}, loin d’être un simple détail technique, pose des questions profondes sur les notions de \textbf{contrôle}, d’\textbf{autonomie} et de \textbf{souveraineté individuelle}. Dans un monde où les \textbf{gouvernements} peuvent influencer la \textbf{monnaie nationale} par des \textbf{politiques économiques} et où les \textbf{institutions bancaires} détiennent le pouvoir de décision sur les \textbf{flux monétaires}, le \textbf{Bitcoin} a offert un espace de \textbf{liberté}, où le peuple peut être souverain de sa propre monnaie, sans intervention étatique. Ce modèle a non seulement des implications \textbf{économiques}, mais aussi \textbf{philosophiques}. Il remet en question les fondements mêmes de l’organisation de notre société, et offre une \textbf{alternative radicale} à la centralisation du pouvoir économique.
 
-C’est dans cet esprit de \textbf{décentralisation}, de \textbf{souveraineté individuelle} et de \textbf{liberté} que Nexium trouve sa place. Nous voulons de Nexium qu’il incarne l’idée d’un futur où la finance et la monnaie ne seront pas seulement contrôlées par des entités centralisées, mais où chaque citoyen, chaque individu, peut participer, contribuer et décider des règles du monde dans lequel il vit. 
+C’est dans cet esprit de \textbf{décentralisation}, de \textbf{souveraineté individuelle} et de \textbf{liberté} que \textbf{Nexium} trouve sa place. Nous voulons de \textbf{Nexium} qu’il incarne l’idée d’un futur où la \textbf{finance} et la \textbf{monnaie} ne seront pas seulement contrôlées par des entités \textbf{centralisées}, mais où chaque citoyen, chaque individu, peut participer, contribuer et décider des règles du monde dans lequel il vit.
 
-Cette contextualisation nous paraissait naturelle à la lumière des \textbf{cours d’Éthique} que nous avons pu suivre lors du troisième semestre : le développement d’une technologie doit, tant que possible, s’accompagner d’une réflexion sur ses enjeux sociétaux et humains. Ainsi, Nexium s'inscrit dans une réflexion plus large sur l’évolution des sociétés, et sur l'émergence de nouveaux systèmes de valeurs partagées.
+Cette contextualisation nous paraissait naturelle à la lumière des cours d’\textbf{Éthique} que nous avons pu suivre lors du \textbf{troisième semestre} : le développement d’une \textbf{technologie} doit, tant que possible, s’accompagner d’une \textbf{réflexion sur ses enjeux sociétaux et humains}. Ainsi, \textbf{Nexium} s’inscrit dans une réflexion plus large sur l’évolution des sociétés, et sur l’émergence de nouveaux systèmes de \textbf{valeurs partagées}.
 
 \section{Architecture de la blockchain}
+Comme brièvement mentionné dans la présentation du projet, la \textbf{cryptomonnaie} \textbf{Nexium} (dont le symbole de devise est le \textbf{NXM}) est basée sur la \textbf{blockchain}. Définissons donc les grandes lignes de cette technologie, et comment elle est implémentée dans \textbf{Nexium}.
 
-Comme brièvement mentionné dans la présentation du projet, la cryptomonnaie Nexium (dont le symbole de devise est me \texttt{NXM}) est basée sur la blockchain. Définissons donc les grandes lignes de cette technologie, et comment elle est implémentée dans Nexium.
+Chaque \textbf{transaction} effectuée par un utilisateur est \textbf{signée}, puis ajoutée à un \textbf{bloc} contenant un certain nombre de transactions. Ce bloc est ensuite ajouté à la \textbf{blockchain}, une chaîne de blocs contenant l’\textbf{historique} de toutes les transactions effectuées sur le réseau. La blockchain est un \textbf{registre public}, \textbf{partagé} et \textbf{immuable}, qui permet de garantir la \textbf{transparence} et la \textbf{sécurité} des transactions.
 
-Chaque transaction effectuée par un utilisateur est signée, puis ajoutée à un \textbf{bloc} contenant un certain nombre de transactions. Ce bloc est ensuite ajouté à la \textbf{blockchain}, une chaîne de blocs contenant l’historique de toutes les transactions effectuées sur le réseau. La blockchain est un registre \textbf{public, partagé et immuable}, qui permet de garantir la transparence et la sécurité des transactions.
+Chaque bloc est lié au bloc précédent par un \textbf{hash cryptographique} à l'image d'une liste chainée, ce qui assure l’\textbf{intégrité de la chaîne}. En effet, si un bloc est modifié, son \textbf{hash} est changé et le hash du bloc suivant ne correspond plus. Cela permet de détecter d’éventuelles \textbf{tentatives de modification} de la blockchain, et de les rejeter.
 
-Chaque bloc est lié au bloc précédent par un \textbf{hash} cryptographique, ce qui assure l’intégrité de la chaîne. En effet, si un bloc est modifié, son hash est changé et le hash du bloc suivant ne correspond plus. Cela permet de détecter d'éventuelles tentatives de modification de la blockchain, et de les rejeter.
-
-La méthode de hashage utilisée est celle du \textbf{SHA-256}, que nous détaillerons \hyperref[sec:sha256]{\textcolor{black}{plus loin}}. Cette fonction de hashage est utilisée pour signer les transactions, générer les blocs, et lier les blocs entre eux.
+La méthode de \textbf{hashage} utilisée est celle du \textbf{SHA-256}, que nous détaillerons plus loin. Cette \textbf{fonction de hashage} est utilisée pour \textbf{signer les transactions}, \textbf{générer les blocs}, et \textbf{lier les blocs entre eux}.
 
 \subsection{Stockage de la blockchain}
+La \textbf{blockchain} est stockée dans un \textbf{fichier binaire} \texttt{blockchain.dat} qui contient les \textbf{données codées des blocs}, du \textbf{genesis block} (bloc initial) jusqu’au \textbf{dernier bloc}.
 
-La blockchain est stockée dans un fichier binaire (\texttt{nxm\_blckchn.dat}) qui contient les données codées des blocs, du \textbf{genesis block} (bloc initial) jusqu’au dernier bloc.
+Nous pouvons rechercher n’importe quel \textbf{bloc} de la blockchain en \textbf{parcourant successivement les blocs suivants}, en partant du \textbf{bloc initial}.
 
-Nous pouvons rechercher n'importe quel bloc de la blockchain en \textbf{parcourant successivement} les blocs suivants, en partant du bloc initial.
+Pour vérifier l’\textbf{intégrité} ou la \textbf{validité} d’une \textbf{transaction}, nous pouvons vérifier son \textbf{existence dans un bloc donné} à l’aide de la \textbf{racine Merkle}, avec une complexité de \textbf{O(log n)}.
 
-Pour vérifier l'intégrité ou la validité d'une transaction, nous pouvons vérifier son existence dans un bloc donné à l'aide de la \textbf{racine Merkle}, avec une complexité de \texttt{O(log n)}.
+\subsection{Mémoire tampon (mempool)}
+La \textbf{mémoire tampon} est un \textbf{stockage temporaire} pour toutes les \textbf{transactions} qui ne sont pas encore incluses dans un \textbf{bloc}.
+
+Cette mémoire tampon est continuellement \textbf{synchronisée} entre tous les \textbf{nœuds du réseau Nexium}.
+
+Lorsque la mémoire tampon est pleine, une \textbf{vérification des transactions} a lieu et tous les nœuds commencent à \textbf{miner} en gardant uniquement les \textbf{transactions valides} pour créer le \textbf{nouveau bloc}. Le premier nœud qui trouve le \textbf{Nonce} qui satisfait la \textbf{cible de difficulté} diffuse le bloc sur le réseau.
+
+C’est ainsi que la \textbf{preuve de travail} est réalisée : le \textbf{proof of work} consiste à fournir la \textbf{preuve cryptographique de minage}, c'est-à-dire le \textbf{Nonce}\footnote{Le Nonce est une valeur que les mineurs doivent ajuster de telle sorte que le hash du bloc concerné remplisse certaines conditions (dans le cas du Bitcoin, il doit commencer par un certain nombre de 0.)} qui satisfait la \textbf{cible de difficulté}\footnote{La cible de difficulté est un paramètre évoluant au cours du temps selon le consensus du réseau de la blockchain, et qui établit quelles contraintes doivent être remplies pour que le Nonce fournisse un hash valide.} actuelle.
 
 
-\subsection{Mémoire tampon (\texttt{mempool})}
+\subsection{Structure d’un bloc}
+Un \textbf{bloc} dans la blockchain de \textbf{Nexium} est structuré de la manière suivante :
 
-La mémoire tampon est un stockage temporaire pour toutes les transactions qui ne sont pas encore incluses dans un bloc.
-
-Cette mémoire tampon est continuellement \textbf{synchronisée} entre tous les nœuds du réseau Nexium.
-
-Lorsque la mémoire tampon est pleine, tous les nœuds commencent à "\textbf{miner}" les transactions pour créer le nouveau bloc. Le premier nœud qui trouve le \texttt{Nonce}\footnote{Le \textbf{Nonce} est une valeur que les mineurs doivent ajuster de telle sorte que le hash du bloc concerné remplisse certaines conditions (\textit{dans le cas du Bitcoin, il doit commencer par un certain nombre de \textbf{0}.})} qui satisfait la cible de difficulté diffuse le bloc sur le réseau. 
-
-C’est ainsi que la \textbf{preuve de travail} est réalisée : le \texttt{proof of work} consiste à fournir la preuve cryptographique de minage, c'est à dire le \texttt{Nonce} qui satisfait la \textbf{cible de difficulté}\footnote{La \textbf{cible de difficulté} est un paramètre évoluant au cours du temps selon le consensus du réseau de la blockchain, et qui établit quelles contraintes doivent être remplies pour que le \texttt{Nonce} fournisse un hash valide.} actuelle.
-
-\subsection{Structure d'un bloc}
-
-Un bloc dans la blockchain de \textbf{Nexium} est structuré de la manière suivante :
-
+\begin{framed}
+\textbf{En-tête du bloc (82 octets)} :
 \begin{itemize}
-    \item \textbf{En-tête du bloc} (\textit{82 octets})
-    \begin{itemize}
-        \item \texttt{version} (\textit{2 octets}) : \textbf{Version} de la structure du bloc.
-        \item \texttt{previous\_block\_hash} (\textit{32 octets}) : \textbf{Hachage} du bloc précédent.
-        \item \texttt{merkle\_root} (\textit{32 octets}) : \textbf{Racine Merkle} des transactions du bloc.
-        \item \texttt{timestamp} (\textit{4 octets}) : \textbf{Horodatage} du bloc.
-        \item \texttt{difficulty\_target} (\textit{4 octets}) : \textbf{Cible de difficulté} du bloc.
-        \item \texttt{nonce} (\textit{4 octets}) : \textbf{Nonce} du bloc.
-        \item \texttt{transaction\_size} (\textit{4 octets}) : \textbf{Taille} en octets des transactions du bloc.
-    \end{itemize}
-    \item \textbf{Transactions} (\textit{variable}) : \textbf{Liste} des transactions.
-    \begin{itemize}
-        \item \texttt{transaction\_header} (\textit{73 octets}) : \textbf{En-tête} de la transaction.
-        \begin{itemize}
-            \item \texttt{transaction\_size} (\textit{4 octets}) : \textbf{Taille} de la transaction.
-            \item \texttt{timestamp} (\textit{4 octets}) : \textbf{Horodatage} de la transaction.
-            \item \texttt{fees} (\textit{2 octets}) : \textbf{Frais} de la transaction.
-            \item \texttt{emitter} (\textit{64 octets}) : \textbf{Login} de l'émetteur de la transaction. (\texttt{prenom.nom}).
-            \item \texttt{data\_type} (\textit{1 octet}) : \textbf{Type} de la transaction.
-        \end{itemize}
-        \item \texttt{data} (\textit{de 1 à 1719 octets}) : \textbf{Données} de la transaction.
-        \item \texttt{signature} (\textit{256 octets}) : \textbf{Signature} de la transaction.
-
-        \end{itemize}
+  \item \textbf{version} (2 octets) : Version de la structure du bloc.
+  \item \textbf{previous\_block\_hash} (32 octets) : Hachage du bloc précédent.
+  \item \textbf{merkle\_root} (32 octets) : Racine Merkle des transactions du bloc.
+  \item \textbf{timestamp} (4 octets) : Horodatage du bloc.
+  \item \textbf{difficulty\_target} (4 octets) : Cible de difficulté du bloc.
+  \item \textbf{nonce} (4 octets) : Nonce du bloc.
+  \item \textbf{transaction\_size} (4 octets) : Taille en octets des transactions du bloc.
 \end{itemize}
 
+\textbf{Transactions (variable)} : Liste des transactions.
+\begin{itemize}
+  \item \textbf{transaction\_header} (73 octets) :
+  \begin{itemize}
+    \item \textbf{transaction\_size} (4 octets) : Taille de la transaction.
+    \item \textbf{timestamp} (4 octets) : Horodatage de la transaction.
+    \item \textbf{fees} (2 octets) : Frais de la transaction.
+    \item \textbf{emitter} (64 octets) : Login de l’émetteur de la transaction (prenom.nom).
+    \item \textbf{data\_type} (1 octet) : Type de la transaction.
+  \end{itemize}
+  \item \textbf{data} (1 à 1719 octets) : Données de la transaction.
+  \item \textbf{signature} (256 octets) : Signature de la transaction.
+\end{itemize}
+\end{framed}
 
-Cette conception, pour laquelle nous nous sommes directement inspirés du \textbf{Bitcoin}\cite{bitcoin2}, permet de stocker les informations essentielles de chaque bloc.
+Cette conception, pour laquelle nous nous sommes directement inspirés du \textbf{Bitcoin}, permet de stocker les \textbf{informations essentielles} de chaque bloc.
 
-Étant donné que les données sont directement écrites en binaire sans label, ni séparation, il est important de respecter scrupuleusement l’ordre de lecture/écriture de chaque champ pour ne pas avoir de problème de données corrompues. Si on prend en exemple le cas de l’en tête des blocs, sur le buffer de 82 octets, on retrouvera sur l’intervalle 0-2 la version du bloc, puis sur 2-34 le hash du bloc précédent, puis sur 34-66 le merkle root, 66-70 le timestamp, et ainsi de suite.
+Étant donné que les données sont directement écrites en \textbf{binaire} sans label ni séparation, il est important de respecter scrupuleusement l’\textbf{ordre de lecture/écriture} de chaque champ pour éviter les problèmes de \textbf{données corrompues}. Si on prend en exemple le cas de l’en tête des blocs, sur le buffer de 82 octets, on retrouvera sur l’intervalle 0-2 la version du bloc, puis sur 2-34 le hash du bloc précédent, puis sur 34-66 le merkle root, 66-70 le timestamp, et ainsi de suite.
 
-Elle permet aussi un parcours fluide de la blockchain depuis le \textbf{genesis block} : en sautant à chaque fois de \texttt{n} octets, avec \texttt{n} la taille du bloc, on peut aisément accéder à n'importe quel bloc de la blockchain.
+Cette structure permet également un \textbf{parcours fluide} de la blockchain depuis le \textbf{genesis block} : en sautant à chaque fois de $n$ octets (avec $n$ la taille du bloc), on peut accéder efficacement à n’importe quel bloc.
 
-L'\textbf{identifiant unique d'un bloc} correspond à son \textit{double hash SHA-256}, c'est à dire le hash du hash du bloc. Cela permet de garantir l'\textbf{unicité} de chaque bloc, et de faciliter la recherche et la vérification de l'intégrité de la blockchain. Voici donc la formule de l'identifiant d'un bloc :
-
+L’\textbf{identifiant unique} d’un bloc correspond à son \textbf{double hash SHA-256}, c’est-à-dire le \textbf{hash du hash du bloc}. Cela garantit l’\textbf{unicité} de chaque bloc et facilite la \textbf{recherche} ainsi que la \textbf{vérification de l’intégrité} de la blockchain.
 \[
 \boxed{
 \text{id}(\text{bloc}) = \operatorname{SHA256}(\operatorname{SHA256}(\text{bloc}))
 }
 \]
 
-Un \textbf{Arbre de Merkel} (\textit{merkle root}) est une structure de données arborescente qui permet de résumer efficacement un grand nombre de transactions, assurant ainsi l'intégrité et la vérification rapide des données à travers des hachages successifs. Voici une représentation graphique théorique de l'arbre de Merkle :
+
+Un \textbf{arbre de Merkle (merkle root)} est une \textbf{structure de données arborescente} qui permet de \textbf{résumer efficacement un grand nombre de transactions}, assurant ainsi l’\textbf{intégrité} et une \textbf{vérification rapide} des données à travers des hachages successifs.
 
 \begin{figure}[H]
   \centering
@@ -310,261 +303,278 @@ Un \textbf{Arbre de Merkel} (\textit{merkle root}) est une structure de données
   \caption{Arbre de Merkle.}
 \end{figure}
 
-Ainsi, à partir de la racine Merkle, on peut vérifier avec une \textbf{complexité logarithmique} si une transaction est incluse dans un bloc donné.
-\newpage
+Ainsi, à partir de la \textbf{racine Merkle}, on peut vérifier avec une \textbf{complexité logarithmique} si une \textbf{transaction} est incluse dans un bloc donné.
+
+\subsection{Fonctionnement}
+Tout commence avec la création d’une \textbf{transaction}. Il en existe plusieurs types mais ont toutes un \textbf{fonctionnement identique}. Prenons en exemple une transaction dite classique (\texttt{ClassicTransaction}), contenant plusieurs informations.
+
+Toutes les transactions ont en commun une \textbf{en-tête} que l’on appelle \textbf{header} contenant des informations sur l’\textbf{émetteur}, la \textbf{date}, les \textbf{frais}, ainsi que la \textbf{taille} et le \textbf{type} de son contenu, que l’on appelle \textbf{data}. C’est cette partie \textbf{data} qui diffère selon les différents types de transactions, et si l’on prend l’exemple pris précédemment, les \textbf{transactions classiques}, qui servent tout simplement à transmettre des \textbf{Nexiums}, contiennent des \textbf{informations complémentaires} pour mener à bien la transaction. On y retrouve évidemment le \textbf{montant} et la \textbf{personne réceptrice}, mais également une \textbf{description optionnelle} et un \textbf{indicateur} révélant si oui ou non il y a une description.
+
+Une fois toutes ces informations regroupées, nous pouvons alors faire une \textbf{signature} à l’aide d’une \textbf{clé RSA} et ces données, \textbf{signature} que nous ajoutons à la fin de la transaction. Cette \textbf{signature} a pour but de confirmer l’\textbf{identité de l’émetteur} de la transaction.
+
+Une fois complète, cette transaction est alors \textbf{envoyée à un serveur} qui, après une simple \textbf{vérification de la signature}, l’ajoutera à la \textbf{mempool}. Elle sera alors \textbf{placée en attente} parmi d’autres. Une fois remplie, la mempool sera \textbf{vidée} et toutes les \textbf{transactions} y figurant seront \textbf{traitées} avant d’entamer la \textbf{création du bloc}.
+
+La \textbf{vérification} pour les \textbf{transactions classiques} consiste à assurer que les \textbf{montants ne provoquent pas de solde négatif} et que les \textbf{destinataires existent bel et bien}. Les \textbf{transactions invalides} sont alors \textbf{rejetées} et ne seront pas prises en compte dans la suite.
+
+Lorsque la vérification est terminée, l’étape du \textbf{“Proof of Work”}, plus communément appelé \textbf{“minage” du bloc} commence. En effet, chaque \textbf{nœud} va \textbf{hasher le bloc} de manière successive, et plus précisément \textbf{hasher deux fois successivement} pour faire un \textbf{double hachage}, en faisant varier le \textbf{nonce} afin que le \textbf{hash} corresponde au \textbf{critère de difficulté}, c’est-à-dire que le hash débute par un \textbf{nombre défini de 0}. Cette étape \textbf{intensive pour les machines} a pour but de \textbf{dissuader les tiers malintentionnés}.
+
+Une fois ce \textbf{hash} trouvé, le \textbf{bloc nouvellement créé} est ajouté à la suite de la \textbf{blockchain}. Le \textbf{nœud} ayant trouvé le bloc peut alors le \textbf{partager aux autres} qui pourront très facilement \textbf{vérifier s’il est bon} en le \textbf{hashant également}.
+
+\subsection{Implémentation et parcours}
+Afin d’avoir une \textbf{implémentation facile à utiliser}, nous avons fait le choix d’implémenter une structure \texttt{Blockchain} contenant \textbf{trois attributs} nous permettant un \textbf{parcours bi-directionnel} des blocs.
+
+Le premier étant \texttt{size}, soit la \textbf{taille en octets de la blockchain}, nous permettant un \textbf{parcours en ordre chronologique} en partant de 0, en ajoutant la taille du bloc lu, puis en s’arrêtant lorsque cette taille est atteinte. Elle est \textbf{calculée à l’initialisation} de la structure lors du \textbf{contrôle de l’intégrité} de la blockchain (vérification de la \textbf{liaison des hash}), puis \textbf{incrémentée} à chaque ajout de bloc. Bien que non indispensable, cet attribut permet de \textbf{réduire les erreurs} lors de la lecture ou même de les \textbf{détecter} en cas de valeurs incohérentes.
+
+Les deux autres attributs sont bien plus intéressants puisqu'ils nous permettent un \textbf{parcours inverse}. Nous avons donc \texttt{last\_hash}, qui comme son nom l’indique est le \textbf{hash du dernier bloc} de la chaîne, associé à un \textbf{cache} sous forme de \texttt{HashMap} contenant les \textbf{hash en clé} et un \textbf{offset en valeur}.
+
+En passant \texttt{last\_hash} dans le cache, on obtient l’\textbf{offset dans le fichier} du dernier bloc, en lisant ce bloc nous obtenons le \textbf{hash précédent}, permettant d’obtenir l’offset du bloc précédent, et ainsi de suite jusqu’à tomber sur le \textbf{premier hash ne contenant que des zéros}.
 
 \section{Architecture du réseau}
-
 \subsection{Décentralisation}
-Nous avons choisi une approche \textbf{décentralisée} afin de garantir une disponibilité élevée et ainsi assurer un réseau fiable contre les pannes. Chaque noeud est donc \textbf{indépendant} des autres, pouvant ainsi continuer comme si de rien n'était en cas de noeud hors ligne ou défaillant.
 
-Afin de garantir la communication entre tous les noeuds et d'optimiser la communication au sein réseau, nous allons nous baser sur la \textbf{théorie des graphes} \cite{graphes},à savoir la \textit{connexité}, la \textit{bi-connexité} et d'autres propriétés. Voici une illustration du concept de \textbf{forte-connexité}, que nous utiliserons pour la distribution du réseau.
+Nous avons choisi une \textbf{approche décentralisée} afin de garantir une \textbf{disponibilité élevée} et ainsi assurer un \textbf{réseau fiable} face aux pannes. Chaque \textbf{nœud} est donc \textbf{indépendant} des autres, pouvant ainsi continuer à fonctionner normalement même en cas de nœud hors ligne ou défaillant.
 
+\vspace{1em}
+
+Afin de garantir la \textbf{communication} entre tous les nœuds et d’\textbf{optimiser} les échanges au sein du réseau, nous nous sommes appuyés sur la \textbf{théorie des graphes}, notamment les notions de \textbf{connexité}, \textbf{bi-connexité} et d’autres propriétés pertinentes.
+
+\vspace{1em}
+
+Voici une illustration du concept de \textbf{forte connexité}, que nous avons utilisé pour la distribution du réseau :
 \begin{figure}[H]
   \centering
   \fbox{\includegraphics[width=0.7\textwidth]{connexity.png}}
-  \caption{Composantes fortement connexes \cite{connexity}}
+  \caption{Exemple de réseau fortement connexe.}
 \end{figure}
 
+La \textbf{sécuarisation d’un réseau décentralisé} repose principalement sur la maintenance par un \textbf{grand nombre de participants} dans une communauté. 
+
+\vspace{1em}
+
+Il nous a donc semblé \textbf{plus fiable de déployer Nexium de manière centralisée} dans un premier temps, afin de \textbf{limiter les attaques} et les \textbf{problèmes potentiels} liés à une adoption initiale encore trop faible.
 
 \subsection{Sécurité}
-Nous avons songé au problème qui se poserait dans l'éventualité où une personne tenterait de posséder une part au moins égale à \texttt{51\%} des noeuds du réseau. Nous avons décidé pour cette raison de restreindre les noeuds à un par membre d'Épita, en se basant sur le \textbf{login} unique de chaque élève et professeur, que l'on retrouve notamment dans son adresse mail \texttt{@epita.fr} et qui se compose par \texttt{<prénom>\textbf{.}<nom>}.
 
-Nous pouvons ainsi, par un système dont nous avons théorisé les bases, accéder à la \textbf{clé publique} de n'importe quel utilisateur via l'\textbf{API de Gitlab} \cite{gitlabgpg}. La requête suivante permet de récupérer la clé publique d'un \texttt{login} donné : 
+Nous avons songé au \textbf{problème} qui se poserait dans l’éventualité où une personne tenterait de posséder une part au moins égale à \textbf{51\% des nœuds du réseau}. Le choix a été fait, pour cette raison, de \textbf{restreindre les nœuds} à un par membre d’\textbf{Épita}, en se basant sur le \textbf{login unique} de chaque élève et professeur, que l’on retrouve notamment dans son adresse mail \texttt{@epita.fr} et qui se compose par \texttt{<prénom>.<nom>}.
 
-\begin{center}
-\boxed{\text{GET} /\texttt{login}/gpg\_keys/key\_id}
-\end{center}
+Nous pouvons ainsi, par un système que nous avons mis en place, accéder à la \textbf{clé publique} de n’importe quel utilisateur via l’\textbf{API de Gitlab}. La requête suivante permet de récupérer la \textbf{clé publique} d’un login donné :
+
+\begin{lstlisting}[style=custom]
+GET /login/gpg_keys/key_id
+\end{lstlisting}
 
 
-
-
-\newpage
 \section{Hashage SHA-256}
-\label{sec:sha256}
+Pour notre projet, nous avons fait le choix d’avoir recours à une \textbf{méthode de hachage} pour garantir la \textbf{sécurité} et l’\textbf{intégrité} des informations/données lors de leur \textbf{transmission}, mais aussi comme \textbf{preuve de travail} (\textbf{Proof of Work}, \textbf{PoW}) présente dans la \textbf{blockchain}.
 
-Pour notre projet, nous avons fait le choix d'avoir recours à une \textbf{méthode de hachage} \cite{morpher_hashing_blockchain} \cite{tahiti_sha256_explique} pour garantir la \textbf{sécurité} et l'\textbf{intégrité} des informations/données lors de leur transmission, mais aussi comme \textit{preuve de travail} (\textit{Proof of Work}, PoW) présente dans la blockchain. 
+\subsection{Définition d’une méthode de hachage}
+Définissons tout d’abord ce qu’est une \textbf{méthode de hachage}. C’est une \textbf{fonction mathématique} dont le but est de transformer une \textbf{chaîne de caractères} de \textbf{taille quelconque} en une nouvelle chaîne de \textbf{longueur fixe et unique}.
 
-\subsection{Définition d'une méthode de hachage}
+Avoir une fonction mathématique, c’est bien, mais alors pourquoi s’en servir ? La particularité d’une \textbf{fonction de hachage} est que la \textbf{transformation est irréversible} due aux nombreux \textbf{décalages de bits}, \textbf{XOR} et autres \textbf{opérations} appliquées sur la chaîne de caractères initiale. 
 
-Définissons tout d'abord ce qu'est une \textbf{méthode de hachage}. C'est une \textit{fonction mathématique} dont le but est de changer une chaîne de caractères avec une taille quelconque en une nouvelle chaîne de \textbf{longueur fixe et unique}. Avoir une fonction mathématique, c'est bien, mais alors pourquoi s'en servir ? La particularité d'une fonction de hachage est que la transformation est \textbf{irréversible} dûe aux nombreux \texttt{décalages de bits}, \texttt{XOR} et autres opérations appliquées sur la chaîne de caractères initiale. Mais, en plus d'être irréversible, le moindre changement dans l'entrée initiale change \textbf{complètement} la valeur de sortie. 
+Mais, en plus d’être \textbf{irréversible}, le \textbf{moindre changement} dans l’entrée initiale \textbf{change complètement} la valeur de sortie.
 
 \subsection{Utilités des fonctions de hachage}
+Maintenant que nous savons ce qu’est une \textbf{méthode de hachage}, intéressons-nous à toutes ses \textbf{utilités}, mais surtout à celles qui nous concernent.
 
-Maintenant que nous savons ce qu'est une méthode de hachage, intéressons-nous à toutes ses utilités, mais surtout à celles qui nous concernent.
-
-Passons d'abord les utilités possibles qui ne sont pas en relation directe avec notre projet. Parmi celles-ci, on retrouve :
+Passons d’abord aux \textbf{utilités possibles} qui ne sont pas en relation directe avec notre projet. Parmi celles-ci, on retrouve :
 \begin{itemize}
-    \item Le \textbf{stockage et l'authentification} de mots de passe,
-    \item La \textbf{création de signatures numériques},
-    \item La \textbf{détection de logiciels malveillants}.
+    \item le \textbf{stockage et l’authentification de mots de passe},
+    \item la \textbf{création de signatures numériques},
+    \item la \textbf{détection de logiciels malveillants}.
 \end{itemize}
 
-À présent, regardons les deux points qui nous concernent dans l'utilisation du hachage dans la blockchain. 
+À présent, regardons les \textbf{deux points qui nous concernent} dans l’utilisation du \textbf{hachage} dans la \textbf{blockchain}.
 
 \subsubsection{Intégrité des données}
-
-Un premier point déjà évoqué est l'\textbf{intégrité des données}, permettant de repérer les données possiblement corrompues ou falsifiées grâce à une simple \textbf{comparaison} entre le \textit{résultat attendu} et le \textit{résultat calculé}.
+Un premier point déjà évoqué est l’\textbf{intégrité des données}, permettant de \textbf{repérer les données possiblement corrompues ou falsifiées} grâce à une simple \textbf{comparaison} entre le \textbf{résultat attendu} et le \textbf{résultat calculé}.
 
 \subsubsection{Preuve de travail}
-
-Le second point est la \textbf{preuve de travail} (\texttt{Proof of Work, PoW}) au sein de la blockchain. Ce mécanisme de consensus \cite{ledger_preuve_de_travail} permet d’obtenir un \textbf{accord sur le réseau de blockchains}, pour \textbf{confirmer les transactions} et \textbf{produire de nouveaux blocs} sur la chaîne.
+Le second point est la \textbf{preuve de travail} (\textbf{Proof of Work}, \textbf{PoW}) au sein de la \textbf{blockchain}. Ce \textbf{mécanisme de consensus} permet d’obtenir un \textbf{accord sur le réseau de blockchains}, pour \textbf{confirmer les transactions} et \textbf{produire de nouveaux blocs} sur la chaîne.
 
 \subsection{Utilisation du SHA256 dans le Bitcoin}
+Avant de parler de l’\textbf{implémentation du SHA-256}, voyons son \textbf{utilisation dans le Bitcoin} :
 
-Avant de parler de l'implémentation du \texttt{SHA256}, voyons son \textbf{utilisation dans le Bitcoin} :
 \begin{itemize}
-    \item Vérification de l'\textbf{intégrité des transactions} : une transaction ne doit pas pouvoir être modifiée. Grâce au hachage, la modification de n'importe quel caractère entraîne une différence de résultat et donc la détection immédiate de la moindre anomalie.
-    \item Lien entre les blocs dans un \textbf{Arbre de Merkle}, ce qui permet de condenser et sécuriser la mémoire.
-    \item Utilisation dans le \textbf{processus de preuve de travail}, déjà évoqué.
+    \item \textbf{Vérification de l’intégrité des transactions} : une transaction ne doit pas pouvoir être modifiée. Grâce au \textbf{hachage}, la modification de n’importe quel caractère entraîne une \textbf{différence de résultat} et donc la \textbf{détection immédiate} de la moindre anomalie.
+    
+    \item \textbf{Lien entre les blocs} dans un \textbf{Arbre de Merkle}, ce qui permet de \textbf{condenser} et \textbf{sécuriser la mémoire}.
+    
+    \item \textbf{Utilisation dans le processus de preuve de travail}, déjà évoqué.
 \end{itemize}
 
 \subsection{Implémentation du SHA256}
-
-Tous les points et les définitions ayant été abordés, regardons de quelle manière nous avons implémenté le \texttt{SHA256}. Pour ce faire, nous avons fait le choix de \textbf{séparer en deux} la transformation de la chaîne de caractères :
-
+Tous les \textbf{points} et les \textbf{définitions} ayant été abordés, regardons de quelle manière nous avons \textbf{implémenté le SHA-256}. Pour ce faire, nous avons fait le choix de \textbf{séparer en deux} la \textbf{transformation de la chaîne de caractères} :
 \subsubsection{Prétraitement des données}
+La fonction \textbf{preprocessing} prend une \textbf{chaîne de caractères} en entrée et la convertit en un \textbf{vecteur d’octets}. Elle ajoute ensuite un \textbf{bit de fin} (\texttt{0x80}) et remplit le vecteur avec des \textbf{zéros} jusqu’à ce que sa \textbf{longueur} soit un \textbf{multiple de 512 bits moins 64 bits}. 
 
-La fonction \texttt{preprocessing} prend une chaîne de caractères en entrée et la convertit en un \textbf{vecteur d'octets}. Elle ajoute ensuite un \textbf{bit de fin} (\texttt{0x80}) et remplit le vecteur avec des \textbf{zéros} jusqu'à ce que sa longueur soit un \textbf{multiple de 512 bits moins 64 bits}. Enfin, la \textbf{longueur initiale} de la chaîne, exprimée en bits, est ajoutée à la fin du vecteur. Cette étape \textbf{prépare les données} pour le traitement en assurant qu'elles respectent le format requis par l'algorithme de hachage \texttt{SHA256}.
+Enfin, la \textbf{longueur initiale} de la chaîne, exprimée en \textbf{bits}, est ajoutée à la fin du vecteur. Cette étape prépare les données pour le traitement en assurant qu’elles respectent le \textbf{format requis par l’algorithme de hachage SHA-256}.
 
 \subsubsection{Traitement des données}
+La fonction \textbf{processing} commence par initialiser des \textbf{valeurs de hachage} et des \textbf{constantes de rondes} spécifiques à l’algorithme \textbf{SHA-256}. Puis, elle :
 
-La fonction \texttt{processing} commence par \textbf{initialiser des valeurs de hachage} et des \textbf{constantes de rondes} spécifiques à l'algorithme \texttt{SHA256}. Puis, elle :
 \begin{itemize}
-    \item Découpe les données en \textbf{blocs de 64 octets} et prépare un \textbf{tableau de 64 entiers de 32 bits} pour chaque bloc.
-    \item Effectue une \textbf{série d'opérations bit à bit et arithmétiques} pour mettre à jour les valeurs de hachage, en utilisant des \textbf{variables temporaires} calculées à partir des données et des constantes de rondes.
-    \item Après avoir traité tous les blocs, la fonction \textbf{combine les valeurs de hachage finales} pour produire une \textbf{chaîne hexadécimale} représentant le hachage final.
+    \item \textbf{Découpe} les données en \textbf{blocs de 64 octets} et prépare un \textbf{tableau de 64 entiers de 32 bits} pour chaque bloc.
+    
+    \item Effectue une série d’\textbf{opérations bit à bit} et \textbf{arithmétiques} pour \textbf{mettre à jour les valeurs de hachage}, en utilisant des \textbf{variables temporaires} calculées à partir des données et des constantes de rondes.
+    
+    \item Après avoir \textbf{traité tous les blocs}, la fonction \textbf{combine les valeurs de hachage finales} pour produire une \textbf{chaîne hexadécimale} représentant le \textbf{hachage final}.
 \end{itemize}
 
 Cet algorithme renvoie une \textbf{sortie fixe de 256 bits}.
 
-\newpage
 \section{Chiffrement RSA}
-
-Notre réseau utilisera le chiffrement RSA \cite{wikipedia_chiffrement_rsa}. Il s'agit d'un concept de \textbf{cryptographie asymétrique} composé d’une clé privée et une clé publique par utilisateur qui leur permettront de s’échanger des \textit{messages} tout en restant secrets et sécurisés.
+Notre \textbf{réseau} utilise le \textbf{chiffrement RSA}. Il s’agit d’un concept de \textbf{cryptographie asymétrique} composé d’une \textbf{clé privée} et d’une \textbf{clé publique} par utilisateur, qui leur permettront de s’échanger des \textbf{messages} tout en restant \textbf{secrets} et \textbf{sécurisés}.
 
 \subsection{Fonctionnement du RSA}
-Ainsi, un utilisateur \textbf{A} pourra envoyer un \textit{message} en le cryptant avec sa clé publique à un utilisateur \textbf{B} qui, pour le lire, devra décrypter ce message avec sa clé privée et vice-versa.
+Ainsi, un utilisateur \textbf{A} pourra envoyer un message en le \textbf{cryptant} avec sa \textbf{clé publique} à un utilisateur \textbf{B} qui, pour le lire, devra \textbf{décrypter} ce message avec sa \textbf{clé privée} et vice-versa.
 
-Cela rend impossible, sans connaître la clé privée du receveur, d’intercepter un message qui ne vous est pas destiné. Notre travail est donc de créer/générer ces clés et de faire en sorte que chaque personne utilisant Nexium puisse crypter et décrypter des messages grâce à leur propre clé privée et publique.
+Cela rend \textbf{impossible}, sans connaître la \textbf{clé privée du receveur}, d’intercepter un message qui ne vous est pas destiné. 
+
+Notre travail est donc de \textbf{créer/générer ces clés} et de faire en sorte que chaque personne utilisant \textbf{Nexium} puisse \textbf{crypter} et \textbf{décrypter des messages} grâce à leur propre \textbf{clé privée} et \textbf{publique}.
 
 \subsection{Génération de clés}
-Tout d’abord, la génération de clé se passe sous la forme d’un \textbf{algorithme mathématique} \cite{webia_algo_cours5} qui forme des clés en utilisant cinq nombres, que nous appellerons \textbf{p}, \textbf{q}, \textbf{n}, \textbf{e} et \textbf{d}, où :
-
+Tout d’abord, la \textbf{génération de clé} se passe sous la forme d’un \textbf{algorithme mathématique} qui forme des clés en utilisant cinq nombres, que nous appelons \textbf{p}, \textbf{q}, \textbf{n}, \textbf{e} et \textbf{d}, où :
 \begin{itemize}
-    \item \textbf{p} et \textbf{q} sont deux nombres premiers distincts,
-    \item \textbf{n} est leur produit, $n = p \times q$,
-    \item \textbf{e} est un nombre premier avec la valeur de l’indicatrice d’Euler en \textbf{n},
-    \item \textbf{d} est l’inverse modulaire de \textbf{e} mod($\varphi(n)$) où $\varphi(n) = (p-1)(q-1)$.
+    \item \textbf{p} et \textbf{q} sont deux \textbf{nombres premiers distincts},
+    \item \textbf{n} est leur \textbf{produit}, \( n = p \times q \),
+    \item \textbf{e} est un \textbf{nombre premier} avec la valeur de l’indicatrice d’Euler en \textbf{n},
+    \item \textbf{d} est l’inverse \textbf{modulaire} de \textbf{e mod(\(\varphi(n)\))} où \( \varphi(n) = (p - 1)(q - 1) \).
 \end{itemize}
 
-La clé publique sera donc le couple $(n, e)$ tandis que la clé privée est le nombre \textbf{d}. \\
+La \textbf{clé publique} sera donc le couple \( (n, e) \) tandis que la \textbf{clé privée} est le nombre \textbf{d}.
 
-Nous avons rencontré des problèmes lors de nos premières générations de clés. Il s'agissait de problèmes \textbf{d’optimisation} liés à la taille en bits, en rapport donc avec les types natifs \cite{typesnatifs} de Rust qui sont limités en taille et qui deviennent donc insuffisants si nous avons besoin de manipuler des nombres très grands. Or, le standard RSA requiert généralement des nombres de l’ordre de \textbf{1024 bits} pour être sécurisé \cite{rsabits}.
+Nous avons rencontré des \textbf{problèmes} lors de nos premières générations de clés. Il s’agissait de \textbf{problèmes d’optimisation} liés à la \textbf{taille en bits}, en rapport donc avec les \textbf{types natifs} de Rust qui sont limités en taille et qui deviennent donc insuffisants si nous avons besoin de manipuler des \textbf{nombres très grands}. Or, le standard \textbf{RSA} requiert généralement des \textbf{nombres de l’ordre de 1024 bits} pour être \textbf{sécurisé}.
 
-Ces types de taille fixe en mémoire ont donc posé problème pour la génération. Pour résoudre ce problème, nous avons dû utiliser les crates \href{https://crates.io/crates/num-bigint}{\textcolor{black}{\texttt{num-bigint}}} et \href{https://crates.io/crates/num-primes}{\textcolor{black}{\texttt{num-primes}}}.
+Ces types de \textbf{taille fixe en mémoire} ont donc posé problème pour la génération. Pour résoudre ce problème, nous avons dû utiliser les \textbf{crates} \texttt{num-bigint} et \texttt{num-primes}.
 
+Ces \textbf{crates} nous permettent de \textbf{générer de grands entiers} sans limite de taille. Par exemple, \texttt{num\_bigint::BigUint} est une \textbf{structure dynamique} qui s’adapte à la taille du nombre, contrairement aux \textbf{types natifs de Rust} (grâce à l’utilisation de \textbf{vecteurs u32} ou \textbf{u64} pour limiter la taille en mémoire). Nous avons également utilisé \texttt{num\_primes} pour \textbf{générer aléatoirement} et manipuler des \textbf{nombres premiers efficacement}.
 
-Ces \textbf{crates} nous permettent de générer de grands entiers sans limite de taille. Par exemple, \texttt{num\_bigint::BigUint} est une structure dynamique qui s’adapte à la taille du nombre, contrairement aux types natifs de Rust (grâce à l’utilisation de vecteurs \texttt{u32} ou \texttt{u64} pour limiter la taille en mémoire). Nous avons également utilisé \texttt{num\_primes} pour générer aléatoirement et manipuler des nombres premiers efficacement.
 
 \subsection{Chiffrement et Signature}
-Nous possédions déjà la génération de clé RSA lors de la précédente soutenance. Grâce à cela, nous avons pu implémenter l'ensemble des fonctions nécessaires pour réaliser tous les principes liés au chiffrement RSA, à savoir : la signature et la vérification de signatures, ainsi que le chiffrement et le déchiffrement. Ces fonctions reposent sur les fondements de RSA (nombres premiers, clés publique et privée, $n$, $d$, $e$) tout en intégrant un hachage cryptographique (SHA-256) afin de garantir l'intégrité des messages.
+Grâce à une fonction de génération de clé \textbf{RSA}, nous avons pu implémenter l’ensemble des fonctions nécessaires pour réaliser tous les principes liés au \textbf{chiffrement RSA}, à savoir : la \textbf{signature} et la \textbf{vérification de signatures}, ainsi que le \textbf{chiffrement} et le \textbf{déchiffrement}. Ces fonctions reposent sur les fondements de \textbf{RSA} (nombres premiers, clés publique et privée, \textbf{n}, \textbf{d}, \textbf{e}) tout en intégrant un \textbf{hachage cryptographique} (\textbf{SHA-256}) afin de garantir l’\textbf{intégrité des messages}.
 
-\paragraph{Signature (\texttt{sign})}~
-
-La première fonction, \texttt{sign}, permet de générer une signature numérique pour un message donné. Elle repose sur le principe selon lequel seul le détenteur de la clé privée doit être capable de produire une signature valide. Voici le déroulé de l'opération :
+\textbf{Signature (sign)}  
+La première fonction, \texttt{sign}, permet de générer une \textbf{signature numérique} pour un message donné. Elle repose sur le principe selon lequel seul le détenteur de la \textbf{clé privée} doit être capable de produire une signature valide. Voici le déroulé de l’opération :
 
 \begin{itemize}
-  \item Le message est tout d'abord transformé en un condensé (hash) grâce à l’algorithme SHA-256 implémenté plus tôt dans le projet. Ce hachage garantit que la signature porte uniquement sur le contenu du message, indépendamment de sa taille.
-  \item Le condensé est ensuite converti en un entier (\texttt{BigUint}) pour être manipulé par les fonctions RSA.
-  \item L’entier est signé en le mettant à la puissance $d$ (exposant privé) modulo $n$ :
-\[
-S = H(m)^d \mod n
-\]
-  \item La fonction renvoie une erreur si le message est vide ou si la taille du haché dépasse celle du module $n$.
+    \item Le message est tout d’abord transformé en un \textbf{condensé} (hash) grâce à l’algorithme \textbf{SHA-256} implémenté plus tôt dans le projet. Ce \textbf{hachage} garantit que la signature porte uniquement sur le contenu du message, indépendamment de sa taille.
+    \item Le condensé est ensuite converti en un \textbf{entier} (\texttt{BigUint}) pour être manipulé par les fonctions \textbf{RSA}.
+    \item L’entier est signé en le mettant à la puissance \textbf{d} (exposant privé) modulo \textbf{n} :
+    \[
+    S = H(m)^d \mod n
+    \]
+    \item La fonction renvoie une erreur si le message est vide ou si la taille du haché dépasse celle du module \textbf{n}.
+    \item Cette \textbf{signature} peut ensuite être transmise avec le message pour vérification.
 \end{itemize}
 
-Cette signature peut ensuite être transmise avec le message pour vérification.
-
-\paragraph{Vérification de signature (\texttt{check\_signature})}~
-
-La fonction \texttt{check\_signature} permet de s’assurer que la signature reçue correspond bien au message. Elle utilise la clé publique du signataire, ce qui garantit que seule la personne possédant la clé privée a pu produire cette signature.
+\textbf{Vérification de signature (check\_signature)}  
+La fonction \texttt{check\_signature} permet de s’assurer que la signature reçue correspond bien au message. Elle utilise la \textbf{clé publique} du signataire, ce qui garantit que seule la personne possédant la \textbf{clé privée} a pu produire cette signature. Voici le déroulé de l’opération :
 
 \begin{itemize}
-  \item Le message reçu est haché de la même manière que dans la fonction de signature.
-  \item La signature est déchiffrée en la mettant à la puissance $e$ (exposant public) modulo $n$ :
-\[
-m' = s^e \mod n
-\]
-  \item Si le résultat du déchiffrement correspond au hash recalculé, alors la signature est considérée comme valide.
+    \item Le message reçu est haché de la même manière que dans la fonction de signature.
+    \item La signature est déchiffrée en la mettant à la puissance \textbf{e} (exposant public) modulo \textbf{n} :
+    \[
+    m' = S^e \mod n
+    \]
+    \item Si le résultat du déchiffrement correspond au \textbf{hash recalculé}, alors la signature est considérée comme valide.
+    \item Cela confirme que le message n’a pas été modifié ou falsifié, et qu’il provient bien de l’expéditeur déclaré. Ce mécanisme est au cœur de la \textbf{validation d’identité} dans les protocoles sécurisés.
 \end{itemize}
 
-Cela confirme que le message n’a pas été modifié ou falsifié, et qu’il provient bien de l’expéditeur déclaré. Ce mécanisme est au cœur de la validation d'identité dans les protocoles sécurisés.
-
-\paragraph{Chiffrement (\texttt{crypt})}~
-
-La fonction \texttt{crypt} permet de chiffrer un message de manière confidentielle. Ce chiffrement est réalisé à l’aide de la clé publique du destinataire.
+\textbf{Chiffrement (crypt)}  
+La fonction \texttt{crypt} permet de \textbf{chiffrer} un message de manière \textbf{confidentielle}. Ce \textbf{chiffrement} est réalisé à l’aide de la \textbf{clé publique} du destinataire. Voici le déroulé de l’opération :
 
 \begin{itemize}
-  \item Le message est tout d'abord converti en un entier.
-  \item Il est ensuite chiffré par l’opération RSA classique :
-\[
-c = m^e \mod n
-\]
-  \item Une vérification est effectuée pour s’assurer que la valeur à chiffrer est inférieure au module $n$, sinon une erreur est renvoyée.
+    \item Le message est tout d’abord converti en un \textbf{entier}.
+    \item Il est ensuite chiffré par l’opération RSA classique :
+    \[
+    c = m^e \mod n
+    \]
+    \item Une vérification est effectuée pour s’assurer que la valeur à chiffrer est inférieure au module \textbf{n}, sinon une \textbf{erreur} est renvoyée.
+    \item Ce \textbf{chiffrement} garantit que seul le détenteur de la \textbf{clé privée} pourra déchiffrer le message, assurant ainsi la \textbf{confidentialité}, même en cas d’interception du message.
 \end{itemize}
 
-Ce chiffrement garantit que seul le détenteur de la clé privée pourra déchiffrer le message, assurant ainsi la confidentialité, même en cas d’interception du message.
-
-\paragraph{Déchiffrement (\texttt{decrypt})}~
-
-Le déchiffrement est l'opération inverse du chiffrement. Il s’effectue avec la clé privée.
+\textbf{Déchiffrement (decrypt)}  
+Le \textbf{déchiffrement} est l’opération inverse du \textbf{chiffrement}. Il s’effectue avec la \textbf{clé privée}. Voici le déroulé de l’opération :
 
 \begin{itemize}
-  \item Le message chiffré (déjà sous forme d’entier) est déchiffré par l’opération :
-\[
-m = c^d \mod n
-\]
-  \item On obtient ainsi le message original, à condition que la clé privée utilisée corresponde à la clé publique ayant servi au chiffrement.
-  \item Comme toujours, si le message est vide ou trop grand, une erreur est renvoyée.
+    \item Le message chiffré (déjà sous forme d’entier) est déchiffré par l’opération :
+    \[
+    m = c^d \mod n
+    \]
+    \item On obtient ainsi le message \textbf{original}, à condition que la \textbf{clé privée} utilisée corresponde à la \textbf{clé publique} ayant servi au chiffrement.
+    \item Comme toujours, si le message est vide ou trop grand, une \textbf{erreur} est renvoyée.
 \end{itemize}
 
 \subsection{Format PEM}
+Après avoir généré notre paire de clés \textbf{RSA} (publique et privée), nous avons souhaité les placer dans un \textbf{format standard}, \textbf{sécure}, et reconnu par les outils de chiffrement tels que \textbf{GnuPG}. Pour cela, nous les avons soumises à un processus de \textbf{sérialisation} vers le format \textbf{OpenPGP}, puis encapsulées dans un conteneur \textbf{ASCII Armor} au format \textbf{PEM}.
 
-Après avoir généré notre paire de clés RSA (publique et privée), nous avons souhaité les placer dans un format standard, sécurisé, et reconnu par les outils de chiffrement tels que GnuPG. Pour cela, nous les avons soumises à un processus de sérialisation vers le format OpenPGP, puis encapsulées dans un conteneur ASCII Armor au format PEM.
+La transformation de la structure \textbf{RSA} en format \textbf{OpenPGP} suit plusieurs étapes, conformément à la \textbf{RFC 4880} (format des messages OpenPGP).
 
-La transformation de la structure RSA en format OpenPGP suit plusieurs étapes, conformément à la RFC 4880 (format des messages OpenPGP).
-
-\paragraph{Paquet de clé publique}~
-
-En premier lieu, nous construisons un paquet de clé publique contenant :
+\textbf{Paquet de clé publique}  
+En premier lieu, nous construisons un \textbf{paquet de clé publique} contenant :
 \begin{itemize}
-  \item La version du format OpenPGP (4) ;
-  \item Un \textit{timestamp} correspondant à la date de création ;
-  \item L’identifiant de l’algorithme (1 pour RSA) ;
-  \item Les deux entiers principaux de la clé RSA : $n$ et $e$.
+    \item La \textbf{version} du format OpenPGP (4) ;
+    \item Un \textbf{timestamp} correspondant à la date de création ;
+    \item L’identifiant de l’\textbf{algorithme} (1 pour RSA) ;
+    \item Les deux entiers principaux de la clé RSA : \textbf{n} et \textbf{e}.
 \end{itemize}
 
-Ces derniers sont encodés au format MPI (\textit{Multi Precision Integer}) :
+Ces derniers sont encodés au format \textbf{MPI} (\textbf{Multi Precision Integer}) :
 \begin{itemize}
-  \item Une entête de deux octets encode la longueur de l’entier en bits ;
-  \item Une séquence d’octets représente la valeur de l’entier en \textit{Big Endian}.
+    \item Une \textbf{entête de deux octets} encode la longueur de l’entier en bits ;
+    \item Une \textbf{série d’octets} représente la valeur de l’entier en \textbf{Big Endian}.
 \end{itemize}
 
-L'encodage d’un entier se fait donc en deux parties, permettant une taille réduite comparée à la valeur représentée. Par exemple, $e$ (souvent égal à 65537) possède 17 bits significatifs et est représenté sur 5 octets (2 pour la taille, 3 pour la valeur).
-
+L’encodage d’un entier se fait donc en deux parties, permettant une \textbf{taille réduite} comparée à la valeur représentée. Par exemple, \textbf{e} (souvent égal à 65537) possède 17 bits significatifs et est représenté sur 5 octets (2 pour la taille, 3 pour la valeur).  
 Le format MPI est utilisé dans tous les paquets contenant des entiers cryptographiques dans le protocole OpenPGP (paquets de clé publique, clé privée, signature, sous-clés, ou messages chiffrés).
 
-\paragraph{Paquet de clé privée}~
+\textbf{Paquet de clé privée}  
+Le paquet de \textbf{clé privée} suit le même principe que celui de la clé publique, avec en plus les autres entiers RSA (\textbf{d}, \textbf{p}, \textbf{q}, et \textbf{u}). Ces valeurs sont assemblées, puis hachées avec \textbf{SHA-1} pour vérification. Le tout est ensuite chiffré avec \textbf{AES-128} en mode \textbf{CFB}, à l’aide d’un \textbf{mot de passe} fourni par l’utilisateur.
 
-Le paquet de clé privée suit le même principe que celui de la clé publique, avec en plus les autres entiers RSA ($d$, $p$, $q$, et $u$). Ces valeurs sont assemblées, puis hachées avec SHA-1 pour vérification. Le tout est ensuite chiffré avec AES-128 en mode CFB, à l’aide d’un mot de passe fourni par l’utilisateur.
-
-Ce chiffrement utilise un mécanisme appelé S2K (\textit{String to Key}) qui dérive une clé AES à partir :
+Ce chiffrement utilise un mécanisme appelé \textbf{S2K} (\textbf{String to Key}) qui dérive une clé AES à partir :
 \begin{itemize}
-  \item du mot de passe ;
-  \item d’un \textit{salt} de 8 octets ;
-  \item d’un nombre d’itérations ;
-  \item d’un vecteur d’initialisation aléatoire.
+    \item du \textbf{mot de passe} ;
+    \item d’un \textbf{salt de 8 octets} ;
+    \item d’un \textbf{nombre d’itérations} ;
+    \item d’un \textbf{vecteur d’initialisation aléatoire}.
 \end{itemize}
 
-L’ensemble du bloc chiffré est ensuite inclus dans le paquet avec les métadonnées nécessaires. Ce paquet possède un tag différent de celui de la clé publique.
+L’ensemble du bloc chiffré est ensuite inclus dans le paquet avec les \textbf{métadonnées nécessaires}. Ce paquet possède un \textbf{tag} différent de celui de la clé publique.
 
-\paragraph{Paquet d'identifiant utilisateur}~
-
-Un paquet d’identifiant utilisateur est également présent, sous forme de chaîne UTF-8 au format :
-
-\begin{center}
+\textbf{Paquet d’identifiant utilisateur}  
+Un \textbf{paquet d’identifiant utilisateur} est également présent, sous forme de chaîne \textbf{UTF-8} au format :
+\[
+\boxed{
 \texttt{prénom.nom <email@epita>}
-\end{center}
+}
+\]
 
-\paragraph{Paquet de signature}~
-
-Il existe aussi un paquet de signature dont le rôle est de lier cryptographiquement la clé publique à un identifiant utilisateur. Il est composé :
+\textbf{Paquet de signature}  
+Il existe aussi un \textbf{paquet de signatures} dont le rôle est de lier cryptographiquement la \textbf{clé publique} à un identifiant utilisateur. Il est composé :
 \begin{itemize}
-  \item d’un en-tête ;
-  \item de sous-paquets hachés et non hachés ;
-  \item d’une empreinte SHA-256 ;
-  \item d’une structure ASN.1 suivie d’une signature RSA faite avec la clé privée.
+    \item d’un \textbf{en-tête} ;
+    \item de sous-paquets \textbf{hachés} et \textbf{non hachés} ;
+    \item d’une \textbf{empreinte SHA-256} ;
+    \item d’une structure \textbf{ASN.1} suivie d’une \textbf{signature RSA} faite avec la \textbf{clé privée}.
+\end{itemize}
+Comme pour les autres entiers cryptographiques, cette signature est encodée au format \textbf{MPI}.
+
+\textbf{Encapsulation PEM}  
+Une fois tous les paquets assemblés pour la \textbf{clé publique} (ou la \textbf{clé privée}), ils sont :
+\begin{itemize}
+    \item \textbf{concaténés en binaire} ;
+    \item \textbf{encodés en base64} ;
+    \item \textbf{complétés par un CRC24} (contrôle d’intégrité sur 3 octets).
 \end{itemize}
 
-Comme pour les autres entiers cryptographiques, cette signature est encodée au format MPI.
+Enfin, le tout est entouré d’une \textbf{balise ASCII}, différente selon qu’il s’agisse d’une \textbf{clé publique} ou d’une \textbf{clé privée}.
 
-\paragraph{Encapsulation PEM}~
-
-Une fois tous les paquets assemblés pour la clé publique (ou la clé privée), ils sont :
-\begin{itemize}
-  \item concaténés en binaire ;
-  \item encodés en base64 ;
-  \item complétés par un \texttt{CRC24} (contrôle d'intégrité sur 3 octets).
-\end{itemize}
-
-Enfin, le tout est entouré d’une balise ASCII, différente selon qu’il s’agit d’une clé publique ou d’une clé privée.
-
-Ce format est lisible par les outils OpenPGP, tout en étant transportable sous forme de texte. Le processus complet, conforme à la RFC 4880, assure aux clés une compatibilité avec les outils tels que GPG.
-
-\vspace{0.5em}
+Ce format est lisible par les outils \textbf{OpenPGP}, tout en étant transportable sous forme de texte. Le processus complet, conforme à la \textbf{RFC 4880}, assure aux clés une \textbf{compatibilité avec les outils} tels que \textbf{GPG}.
 
 Vous trouverez ci-dessous un exemple de clé RSA transformée par ce processus de formatage PEM :
+
+
 \begin{lstlisting}[style=customPEM, title={\texttt{public\_key.pem}}]
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -584,59 +594,29 @@ GImS1ic0Je1gXGOnaPhZalb0kA==
 =XWDw
 -----END PGP PUBLIC KEY BLOCK-----
 \end{lstlisting}
-\newpage
-
-\section{Site Web}
 
 
-\textbf{\href{astro.build}{Astro}} permet une approche simple et rapide pour la création d'une documentation web.
-
-Utilisant \texttt{Vite}, Astro offre une rapidité de développement accrue avec le \textbf{SSR} (\textit{Server Side Rendering}), permettant une actualisation dynamique des pages à chaque modification.
-
-Prenant en charge \texttt{Markdown}, il nous est possible d'écrire la documentation en respectant la syntaxe Markdown, puis de laisser Astro faire le \textit{build}, générant les fichiers \texttt{html}, \texttt{css} et \texttt{js} nécessaires pour les navigateurs web.
-
-
-La dernière étape étant de servir les fichiers générés, nous utilisons \textbf{GitLab Pages} pour l'hébergement. Nous avons également configuré sur GitLab un déploiement automatique qui met à jour la documentation à chaque nouveau commit.
-
-Le \textbf{site web officiel de Nexium} est disponible à l'adresse \url{https://jean.herail.pages.epita.fr/nexium}
-
-Afin d'illustrer la \textbf{facilité d'utilisation} et de développement propre à \texttt{Astro}, voici un exemple de code \texttt{Markdown} suffisant à la génération d'une page Web: 
-
-\begin{lstlisting}[style=custom, title={\texttt{web/contents/blockchain.md}}]
----
-title: La blockchain Nexium
-description: Architecture des blocs.
----
-
-# L'architecture de la blockchain Nexium
-## Stockage de la blockchain
-Nous stockons la **blockchain** dans un fichier binaire `nxm_blckchn.dat`.
-
-\end{lstlisting}
-
-\textbf{Astro} se charge de convertir ce code \texttt{Markdown} en \texttt{HTML} statique, prêt à être servi par un serveur web. C'est ensuite \textbf{GitLab Pages} \cite{gitlabpages} qui se charge du \textbf{build}, et de l'\textbf{exposition} automatique du site à chaque nouveau \texttt{git push}.
-
-
-\newpage
 
 \section{Gitlab}
-Dans le cadre de notre projet, nous avons développé une API Gitlab en Rust, afin d'interfacer facilement notre application avec l'instance Gitlab d'Épita (\href{https://gitlab.cri.epita.fr/}{gitlab.cri.epita.fr}). Cette API maison encapsule plusieurs fonctionnalités essentielles, telles que :
+Dans le cadre de notre projet, nous avons développé une \textbf{API GitLab} en \textbf{Rust}, afin d’interfacer facilement notre application avec l’instance GitLab d’\textbf{Épita} (\texttt{gitlab.cri.epita.fr}). Cette \textbf{API maison} encapsule plusieurs \textbf{fonctionnalités essentielles}, telles que :
 
 \begin{itemize}
-    \item l'authentification OAuth2 (via le flux d'autorisation PKCE),
-    \item la vérification de la validité d'un jeton d'accès,
-    \item la récupération des identifiants utilisateurs et de leurs clés GPG,
-    \item l'ajout d'une clé GPG à un compte utilisateur.
+    \item l’\textbf{authentification OAuth2} (via le flux d’autorisation \textbf{PKCE}),
+    \item la \textbf{vérification de la validité} d’un \textbf{jeton d’accès},
+    \item la \textbf{récupération des identifiants utilisateurs} et de leurs \textbf{clés GPG},
+    \item l’\textbf{ajout d’une clé GPG} à un compte utilisateur.
 \end{itemize}
 
-Ce module est principalement utilisé pour interagir avec les utilisateurs via leurs identifiants EPITA, ce qui permet de garantir la sécurité et la traçabilité des actions au sein du réseau Nexium.
-
+Ce \textbf{module} est principalement utilisé pour \textbf{interagir avec les utilisateurs} via leurs \textbf{identifiants EPITA}, ce qui permet de garantir la \textbf{sécurité} et la \textbf{traçabilité} des actions au sein du \textbf{réseau Nexium}.
 \subsection{Authentification OAuth2}
-Pour les clients, l'authentification se fait via un navigateur web ouvert localement. Une fois l'utilisateur connecté, un petit serveur HTTP local récupère le \texttt{code} d'autorisation retourné par Gitlab, puis échange ce code contre un \textit{token} d'accès API. Cette opération est encapsulée dans la méthode suivante :
+Pour les \textbf{clients}, l’\textbf{authentification} se fait via un \textbf{navigateur web} ouvert localement. Une fois l’utilisateur connecté, un \textbf{petit serveur HTTP local} récupère le \textbf{code d’autorisation} retourné par \textbf{GitLab}, puis échange ce code contre un \textbf{token d’accès API}.
 
-\begin{lstlisting}[language=Rust, caption={Obtention d'un token Gitlab via OAuth2}, style=custom]
+Cette opération est encapsulée dans la méthode suivante :
+
+\begin{lstlisting}[language=Rust, caption={Obtention d'un token GitLab via OAuth2}, style=custom]
 pub fn get_token() -> Result<String, GitlabError>
 \end{lstlisting}
+
 
 \subsection{Structure principale}
 La structure \texttt{GitlabClient} centralise l'état de la connexion :
@@ -655,6 +635,7 @@ pub fn new(token: String) -> Self
 \end{lstlisting}
 
 \subsection{Fonctions principales}
+
 Voici un aperçu des principales fonctionnalités de l'API :
 
 \begin{itemize}
@@ -694,31 +675,32 @@ pub enum GitlabError {
 \end{lstlisting}
 
 \subsection{Utilisation dans le projet}
-L’API est utilisée pour authentifier les utilisateurs de Nexium avec leur compte Gitlab EPITA, récupérer leur clé GPG et ainsi leur permettre de signer les transactions ou blocs avec une preuve d’identité vérifiable.
+L’\textbf{API} est utilisée pour \textbf{authentifier les utilisateurs} de \textbf{Nexium} avec leur \textbf{compte GitLab EPITA}, récupérer leur \textbf{clé GPG} et ainsi leur permettre de \textbf{signer les transactions ou blocs} avec une \textbf{preuve d’identité vérifiable}.
 
-Cette intégration permet un couplage fort entre l’identité réelle d’un utilisateur et son identité sur la blockchain Nexium, renforçant la sécurité et la confiance du système.
+Cette intégration permet un \textbf{couplage fort} entre l’\textbf{identité réelle} d’un utilisateur et son \textbf{identité sur la blockchain Nexium}, renforçant la \textbf{sécurité} et la \textbf{confiance du système}.
 
 \section{Gestion de la configuration serveur}
 
-Le serveur Nexium nécessite plusieurs informations de configuration au démarrage, telles que les chemins vers la base de données ou la clé privée, les informations Gitlab de l'utilisateur, ainsi que le port d'écoute. Ces informations sont regroupées dans une structure \texttt{Config}, définie dans le module \texttt{config.rs}. Ce module permet de générer un fichier de configuration, de le lire depuis un fichier JSON, ou encore de sauvegarder les paramètres courants.
+Le \textbf{serveur Nexium} nécessite plusieurs informations de \textbf{configuration} au démarrage, telles que les \textbf{chemins vers la base de données} ou la \textbf{clé privée}, les \textbf{informations GitLab de l'utilisateur}, ainsi que le \textbf{port d'écoute}. Ces informations sont regroupées dans une structure \texttt{Config}, définie dans le module \texttt{config.rs}. 
+
+Ce module permet de \textbf{générer un fichier de configuration}, de \textbf{le lire depuis un fichier JSON}, ou encore de \textbf{sauvegarder les paramètres courants}.
+
 
 \subsection{Structure de configuration}
-
 Les différents paramètres sont encapsulés dans la structure suivante :
 
 \begin{lstlisting}[language=Rust, caption={Structure de configuration}, style=custom]
 pub struct Config {
-    pub database_filepath: String,
     pub key_filepath: String,
+    pub key_password: String,
+    pub listen: String,
     pub port: u16,
     pub user_login: String,
     pub gitlab_token: String,
-    pub gitlab_api_url: String,
 }
 \end{lstlisting}
 
 \subsection{Génération interactive}
-
 La configuration peut être générée de manière interactive à l'aide de la méthode \texttt{generate}, qui demande à l'utilisateur les différentes informations via l'entrée standard. Des valeurs par défaut sont proposées, et certains champs (comme le login) sont validés :
 
 \begin{lstlisting}[language=Rust, style=custom]
@@ -727,13 +709,16 @@ pub fn generate(path: &Path) -> Config
 
 Les valeurs par défaut sont les suivantes :
 \begin{itemize}
+    \item Adresse d'écoute : \texttt{0.0.0.0}
     \item Port : \texttt{4242}
-    \item Fichier base de données : \texttt{blockchain.db}
     \item Clé privée : \texttt{private-key.pem}
-    \item URL API Gitlab : \texttt{https://gitlab.cri.epita.fr/api/v4}
+    \item Mot de passe de la clé : \texttt{""} (vide)
+    \item Identifiant utilisateur : \texttt{prenom.nom} (doit être validé)
+    \item Token GitLab : \texttt{""} (doit être validé)
 \end{itemize}
 
 Le \texttt{token Gitlab} peut également être lu depuis la variable d’environnement \texttt{GITLAB\_TOKEN}, si elle est présente.
+
 
 \subsection{Lecture et sauvegarde}
 
@@ -752,53 +737,567 @@ pub fn from_file(path: &Path) -> Config
 Le fichier doit contenir les champs suivants :
 \begin{lstlisting}[style=custom]
 {
-  "database": "blockchain.db",
-  "key": "private-key.pem",
-  "port": 4242,
-  "user_id": "prenom.nom",
-  "gitlab_token": "XYZ",
-  "gitlab_api_url": "https://gitlab.cri.epita.fr/api/v4"
+    "key": "private-key.pem",
+    "key_password": "",
+    "listen": "0.0.0.0",
+    "port": 4242,
+    "user_id": "prenom.nom",
+    "gitlab_token": "XYZ"
 }
 \end{lstlisting}
 
+
 \subsection{Validation et ergonomie}
 
-Pour améliorer l’ergonomie, la méthode \texttt{ask} permet de poser des questions à l’utilisateur avec une gestion simple des retours clavier. Un validateur de login simple est aussi inclus :
+Pour améliorer l'\textbf{ergonomie}, la méthode \texttt{Config::get\_user\_input} permet de poser des questions à l’utilisateur avec une gestion simple des \textbf{retours clavier}. Un \textbf{validateur de login} est aussi inclus dans un module \texttt{Login} que nous avons créé pour vérifier ces structures :
 
-\begin{lstlisting}[language=Rust]
-fn _check_login_syntax(login: String) -> bool
+\begin{lstlisting}[language=Rust, caption={/lib/src/login/mod.rs}, style=custom]
+pub enum LoginError {
+  EmptyLogin,
+  TooMuchPoints,
+  NoPoint,
+  InvalidCharacter,
+  MissingField,
+  InvalidFirstName,
+  InvalidLastName,
+  UnknownError,
+}
+
+pub struct Login {
+  pub login: String,
+}
+
+impl Login {
+  pub fn new(login: String) -> Result<Self, LoginError> {}
+}
 \end{lstlisting}
 
-Ce système permet de garantir que l'identifiant utilisateur respecte bien le format \texttt{prenom.nom} imposé par l'infrastructure Gitlab de l'Épita.
+Ce système permet de garantir que l'\textbf{identifiant utilisateur} respecte bien le format \texttt{prenom.nom} imposé par l’infrastructure \textbf{GitLab} de l’Épita.
+
 
 \subsection{Intégration dans le projet}
+Cette \textbf{gestion centralisée de la configuration} rend le \textbf{serveur Nexium} facile à \textbf{déployer}, \textbf{portable}, et \textbf{cohérent} avec le reste du projet. Elle permet notamment d’assurer que chaque instance est bien connectée à une \textbf{identité GitLab valide}, et qu’elle dispose de toutes les \textbf{ressources nécessaires} à son fonctionnement dès son démarrage.
 
-Cette gestion centralisée de la configuration rend le serveur Nexium facile à déployer, portable, et cohérent avec le reste du projet. Elle permet notamment d'assurer que chaque instance est bien connectée à une identité Gitlab valide, et qu'elle dispose de toutes les ressources nécessaires à son fonctionnement dès son démarrage.
+% William à partir d'ici
+\section{Design Web}
+\subsection{Tauri}
+Pour la réalisation de notre application pour les utilisateurs de Nexium, nous avons choisi d’utiliser \textbf{Tauri}, un framework qui permet de créer des applications de bureau multiplateformes en combinant du code front-end web (HTML, CSS, JavaScript ou des frameworks comme \textit{Svelte}) avec un back-end écrit en \textbf{Rust}.
+
+\vspace{0.5em}
+
+Tauri s'intègre parfaitement dans notre projet codé dans son entièreté avec Rust. Il permet aussi de générer des exécutables sécurisés et adaptés à une utilisation multiplateforme (Windows, Linux, macOS), ce qui facilite sa diffusion et son utilisation à grande échelle, notamment pour tous les étudiants d'\textbf{EPITA}.
+
+\vspace{0.5em}
+
+Grâce à Tauri, nous avons pu développer une interface graphique fluide, correspondant à ce que nous imaginions, avec de bonnes performances. La communication entre le front-end et le back-end (Rust) se fait grâce à un système de \textbf{commandes sécurisées}, ce qui permet de déclencher des fonctions bas niveau (accès fichiers, cryptographie, communication réseau) depuis l’interface utilisateur, sans exposer de failles de sécurité.
+
+\subsection{Svelte et SvelteKit}
+
+Nous avons choisi d’utiliser \textbf{Svelte} et \textbf{SvelteKit} pour le développement de l’application web. Svelte est un framework JavaScript front-end permettant de créer des composants d’interface utilisateur interactifs en les connectant à des fonctions, notamment celles que nous avons réalisées en Rust via des appels. \textbf{SvelteKit}, quant à lui, intègre ces éléments dans une application web complète, avec une communication fluide avec le back-end, qui dans notre cas est développé en Rust.
+
+\vspace{0.5em}
+
+Pour citer des exemples d’utilisation dans notre code, nous pouvons mentionner la création de modales lors de l’ouverture des paramètres, la création d’une facture ou d’une transaction, ou encore pour consulter l’historique des transactions.
+
+\vspace{0.5em}
+
+Ces modales sont chacune indépendantes et contiennent du code qui leur est propre. Prenons comme exemple la modale \textit{paramètres} : elle comporte plusieurs champs que l’utilisateur doit remplir. Nous avons utilisé Svelte pour faciliter l’interaction avec l’utilisateur, notamment pour des fonctionnalités telles que la connexion à GitLab via le \textit{token OAuth} — une fonction implémentée en Rust et appelée par le script JavaScript de la modale Svelte \textit{paramètres}.
+
+\vspace{0.5em}
+
+Nous avons également intégré des fonctions de sauvegarde et de chargement de fichiers au format \texttt{.json} (elles aussi réalisées en Rust), permettant de conserver ou de restaurer la configuration, évitant ainsi à l’utilisateur de devoir la saisir à chaque lancement de l’application.
+
+\subsection{Tailwind CSS}
+
+Pour le design et la mise en forme rapide de l’interface, nous avons utilisé \textbf{Tailwind CSS}, un framework utilitaire qui permet de styliser les composants directement via les classes HTML. Grâce à des classes comme \texttt{flex}, \texttt{gap}, \texttt{justify}, etc., nous avons pu construire une interface esthétique et cohérente, sans avoir à créer immédiatement un fichier CSS dédié pour chaque composant.
+
+\vspace{0.5em}
+
+Tailwind nous a permis de gagner en productivité, de tester rapidement différents agencements, et de maintenir une base de code \textbf{claire}, \textbf{lisible} et \textbf{facilement modifiable}.
+
+\subsection{HTML / CSS}
+
+Pour l’interface graphique de \textbf{Nexium}, nous avons choisi d’utiliser \textbf{HTML} et \textbf{CSS}, deux langages répandus et standards dans le monde du développement web. Ce choix est également motivé par leur simplicité d’utilisation, leur caractère universel et leur compatibilité avec \textbf{Tauri}.
+
+\vspace{0.5em}
+
+Le HTML nous permet de concevoir facilement l’interface souhaitée avec une grande liberté, tandis que le CSS nous offre une personnalisation fine des détails (titres, boutons, etc.). Grâce à cette combinaison, nous n’avons pas eu besoin de recourir à un framework supplémentaire, qui aurait pu nous imposer certaines restrictions.
+
+\vspace{0.5em}
+
+Nous avons ainsi pu définir précisément la disposition des éléments, l’organisation visuelle des informations, ainsi que les interactions utilisateur, sans dépendre de composants ou de conventions externes. De plus, le contrôle total sur le style nous a permis de garantir une \textbf{cohérence graphique} entre les différentes parties de l’application.
+
+\vspace{0.5em}
+
+Enfin, l’utilisation de HTML et CSS facilite la maintenance du code, en le rendant lisible et modifiable rapidement par tous les membres du groupe, y compris ceux ayant peu d’expérience en développement web.
+
+Voici à quoi ressemble l'interface finale de Nexium, une fois l'application configurée :
+
+\begin{figure}[H]
+  \centering
+\includegraphics[width=1\textwidth]{nexium.png}
+  \caption{Application Nexium, menu principal}
+\end{figure}
+
+
+\subsection{Composition de l’interface graphique}
+
+Pour la conception de l’\textbf{interface graphique} de notre application, nous avons utilisé le logiciel \textbf{Sketch}, une alternative à \textbf{Figma}, bien connue dans le domaine du \textbf{design numérique}. Sketch est un outil de \textbf{conception vectorielle} qui permet de créer des \textbf{interfaces utilisateur}, des \textbf{maquettes} et des \textbf{prototypes interactifs}. Il est particulièrement apprécié pour sa \textbf{simplicité d’utilisation}, ses \textbf{fonctionnalités de collaboration en temps réel} et sa capacité à produire des designs à la fois \textbf{modernes} et \textbf{fonctionnels}.
+
+Le principe de Sketch repose sur une \textbf{interface de travail intuitive}, qui permet de concevoir des éléments graphiques à l’aide de \textbf{formes vectorielles}, de \textbf{calques} et de \textbf{styles réutilisables}. Ces éléments sont ensuite assemblés pour constituer des \textbf{maquettes interactives} représentant les différentes vues de l’application. Le logiciel propose également une large gamme de \textbf{plugins}, ce qui permet d’étendre ses fonctionnalités et de faciliter certaines étapes du processus de conception, comme la gestion des \textbf{typographies}, des \textbf{couleurs} et des \textbf{composants réutilisables}.
+
+Dans le cadre de notre projet, nous avons pu bénéficier d’une \textbf{licence gratuite de Sketch}, grâce à notre statut d’\textbf{étudiants}. Cette licence nous a permis de réaliser nos \textbf{prototypes} sans contrainte financière et de tirer pleinement parti des outils et des \textbf{fonctionnalités avancées} que le logiciel offre. Cela a été particulièrement utile pour la création de \textbf{maquettes interactives} et la gestion des éléments de design de manière \textbf{centralisée}.
+
+Les \textbf{prototypages design} ont été réalisés avant même le début du développement du code. Cette approche nous a permis de définir une \textbf{ligne directrice claire} pour l’interface, assurant ainsi une \textbf{direction artistique stable} et cohérente tout au long du développement de l’application. En concevant d’abord les \textbf{maquettes}, nous avons pu anticiper les \textbf{besoins des utilisateurs}, tester différentes interfaces et ajuster les \textbf{choix graphiques} avant de nous lancer dans le codage. Ce processus a été crucial pour éviter des changements esthétiques ou fonctionnels trop tardifs, permettant une \textbf{intégration fluide} des éléments visuels dans l’application.
+
+Ainsi, \textbf{Sketch} a joué un rôle essentiel dans le développement de l’\textbf{interface graphique} de notre projet, en nous offrant un outil puissant pour concevoir des \textbf{prototypes interactifs} et en nous permettant de maintenir une \textbf{cohérence visuelle} tout au long de l’élaboration de l’application.
+
+\begin{figure}[H]
+  \centering
+\includegraphics[width=1\textwidth]{sketch.png}
+  \caption{Premier prototype de l'application Nexium (mars 2025).}
+\end{figure}
+
+
+\section{API Client Nexium}
+Située dans le fichier \texttt{nexium\_api.rs} l'API Nexium est crucial pour permettre l'interaction entre l'application et le serveur Nexium, facilitant des opérations telles que la consultation de solde, l'envoi de transactions et la récupération de l'historique.
+
+\subsection{Structures de Données Clés}
+
+Plusieurs structures de données sont définies pour gérer les communications et les informations échangées avec le serveur Nexium :
+
+\begin{itemize}
+    \item \textbf{\texttt{NexiumAPIError}} : Cette énumération robuste capture divers scénarios d'erreurs pouvant survenir lors des interactions avec l'API, allant des problèmes de réseau ou de parsing JSON à des erreurs métier spécifiques comme des fonds insuffisants ou des montants invalides. Sa gestion détaillée permet un traitement précis des échecs de requêtes.
+\begin{lstlisting}[language=Rust, style=custom]
+pub enum NexiumAPIError {
+    UnknownError,
+    NoServerPublicKey,
+    NoServerResponse,
+    InvalidResponseFromServer,
+    InvalidJsonResponse,
+    NoServerLogin,
+    NoServerSigSample,
+    NoServerGpgKeys,
+    InvalidSigSample,
+    NoBalanceField,
+    InvalidBalanceFormat,
+    NegativeOrZeroAmount,
+    InvalidTransactionAmount,
+    InvalidFees,
+    InsufficientFunds,
+    InvalidAmount,
+    BalanceFetchError,
+    ReceiverNotFound,
+    InvalidReceiver,
+    SenderAndReceiverSame,
+}
+\end{lstlisting}
+
+    \item \textbf{\texttt{TransactionResponse}} : Représente la structure attendue pour une réponse JSON du serveur lors de la récupération des transactions. Elle contient les informations brutes d'une transaction, telles que son en-tête (\texttt{transaction\_header}) et les données associées (\texttt{data}).
+\begin{lstlisting}[language=Rust, style=custom]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TransactionResponse {
+    pub transaction_header: String,
+    pub data: String,
+}
+\end{lstlisting}
+
+    \item \textbf{\texttt{ClassicTransactionReceived}} : Une structure plus conviviale pour afficher les transactions aux utilisateurs. Elle transforme les données brutes de \texttt{TransactionResponse} en un format lisible, incluant le récepteur, l'émetteur, une description, le montant, la date formatée et le type (IN/OUT).
+\begin{lstlisting}[language=Rust, style=custom]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ClassicTransactionReceived {
+    pub receiver: String,
+    pub emitter: String,
+    pub description: String,
+    pub amount: String,
+    pub date: String,
+    pub inorout: String,
+}
+\end{lstlisting}
+
+    \item \textbf{\texttt{ServerKeys}} : Utilisée pour désérialiser la clé publique RSA du serveur, essentielle pour la vérification des signatures.
+\begin{lstlisting}[language=Rust, style=custom]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ServerKeys {
+    pub rsa_pub_key: String,
+}
+\end{lstlisting}
+
+    \item \textbf{\texttt{SignatureSampleResponse}} : Contient l'exemple de signature de la clé GPG du serveur, utilisée pour valider l'authenticité des clés GPG récupérées.
+\begin{lstlisting}[language=Rust, style=custom]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SignatureSampleResponse {
+    pub signature: String,
+    pub message: String,
+}
+\end{lstlisting}
+\end{itemize}
+
+\subsection{Fonctionnalités de l'API Client}
+
+Le module \texttt{nexium\_api.rs} expose plusieurs fonctions asynchrones pour interagir avec le serveur Nexium :
+
+\begin{itemize}
+    \item \textbf{\texttt{get\_server\_public\_key(client: \&Client, config: \&Config) -> Result<String, NexiumAPIError>}} :
+    Cette fonction est responsable de la récupération de la clé publique RSA du serveur Nexium. Cette clé est fondamentale pour des opérations de sécurité telles que la vérification des signatures des transactions ou l'établissement de communications sécurisées. Elle effectue une requête HTTP GET vers l'endpoint \texttt{/get\_server\_public\_key} du serveur.
+
+    \item \textbf{\texttt{get\_balance(client: \&Client, login: \&String, config: \&Config) -> Result<BigUint, NexiumAPIError>}} :
+    Permet de consulter le solde (balance) d'un utilisateur donné sur la blockchain Nexium. Elle envoie une requête HTTP GET à l'endpoint \texttt{/get\_balance/<login>} et parse la réponse JSON pour extraire le solde en tant que \texttt{BigUint}, gérant les erreurs de format ou de données manquantes.
+
+    \item \textbf{\texttt{send\_transaction(client: \&Client, transaction: \&Transaction, config: \&Config) -> Result<(), NexiumAPIError>}} :
+    Envoie une transaction signée au réseau Nexium. La transaction est sérialisée et envoyée via une requête HTTP POST à l'endpoint \texttt{/send\_transaction}. Cette fonction est cruciale pour toutes les opérations impliquant un transfert de valeur ou de données sur la blockchain. Une vérification du statut de la réponse est effectuée pour confirmer le succès de l'envoi.
+
+    \item \textbf{\texttt{get\_transactions(client: \&Client, login: \&String, config: \&Config) -> Result<Vec<ClassicTransactionReceived>, NexiumAPIError>}} :
+    Récupère l'historique des transactions pour un utilisateur spécifique. Elle interroge l'endpoint \texttt{/get\_transactions/<login>} et analyse chaque transaction renvoyée. Pour chaque transaction, elle détermine s'il s'agit d'une transaction "IN" ou "OUT" et la convertit en une structure\break \texttt{ClassicTransactionReceived} pour un affichage simplifié. Seules les transactions de type \texttt{TransactionType::Classic} sont traitées.
+
+    \item \textbf{\texttt{get\_login\_from\_gpg\_key(client: \&Client, gpg\_pub\_key: \&String, config: \&Config) -> Result<String, NexiumAPIError>}} :
+    Associe une clé publique GPG à un login utilisateur en interrogeant le serveur Nexium. Cette fonction est essentielle pour vérifier la correspondance entre une clé GPG et l'identité d'un utilisateur. Elle envoie la clé GPG à l'endpoint \texttt{/get\_login\_from\_gpg\_key} et attend en retour le login associé.
+
+    \item \textbf{\texttt{get\_signature\_sample(client: \&Client, config: \&Config) -> Result<SignatureSampleResponse, NexiumAPIError>}} :
+    Récupère un exemple de signature généré par la clé GPG du serveur. Cet exemple est utilisé pour valider l'authenticité de la clé GPG du serveur lors de l'initialisation ou d'autres vérifications de sécurité, garantissant que les communications proviennent bien du serveur légitime.
+\end{itemize}
+
+\subsection{Gestion des Erreurs et Validation}
+
+Le module \texttt{nexium\_api.rs} intègre une gestion d'erreurs approfondie via l'énumération \texttt{NexiumAPIError}. Chaque fonction de l'API renvoie un \texttt{Result} encapsulant soit la valeur attendue en cas de succès, soit une erreur \texttt{NexiumAPIError} en cas d'échec. Cela permet une identification précise de la cause de l'erreur (problèmes réseau, données JSON invalides, règles métier non respectées, etc.) et une meilleure robustesse de l'application. Des vérifications sont effectuées sur les montants des transactions (positifs, non nuls), les frais, et la disponibilité des fonds avant l'envoi des transactions.
+
+\subsection{Intégration et Dépendances}
+
+L'API client Nexium s'appuie sur plusieurs crates Rust pour son fonctionnement :
+
+\begin{itemize}
+    \item \textbf{\texttt{reqwest::blocking::Client}} : Pour l'envoi de requêtes HTTP bloquantes au serveur Nexium.
+    \item \textbf{\texttt{json}} : Pour le parsing et la manipulation des réponses JSON.
+    \item \textbf{\texttt{nexium}} : La bibliothèque core de la blockchain Nexium, utilisée pour les structures de transactions (\texttt{Transaction}, \texttt{TransactionHeader}, \texttt{TransactionType}), la cryptographie RSA, et les utilitaires liés à la blockchain.
+    \item \textbf{\texttt{chrono::DateTime}} : Pour la gestion et le formatage des horodatages des transactions.
+    \item \textbf{\texttt{num\_bigint::BigUint}} : Pour la manipulation des clés RSA, des chiffrements et autres opérations cryptographiques.
+    \item \textbf{\texttt{serde}} et \textbf{\texttt{serde\_json}} : Pour la sérialisation et la désérialisation des structures de données en JSON.
+\end{itemize}
+
+L'API client Nexium fournit une interface complète et sécurisée pour interagir avec le serveur Nexium, encapsulant la logique de communication réseau et la gestion des données blockchain.
 
 \newpage
 
+\section{Serveur}
+\subsection{Serveur HTTP}
+
+Le serveur se base sur la structure \texttt{TcpListener} de la librairie standard. Il constitue le \textbf{cœur} même du serveur, puisqu’il écoute les requêtes HTTP entrantes et ouvre les connexions sous forme de \textit{stream}.
+
+\vspace{0.5em}
+
+Afin de nous aider à interpréter et répondre aux requêtes, nous avons implémenté plusieurs structures dans le but de faciliter la suite du développement. La première que nous allons aborder est la structure \texttt{Request}, qui joue un rôle crucial dans la compréhension de la requête.
+
+\vspace{0.5em}
+
+Une fois ouverte, le \textit{stream} est envoyé à \texttt{Request} qui, dans un premier temps, va lire le contenu de la requête. Pour des raisons de sécurité, nous avons fixé la taille maximale des requêtes à \textbf{32 kilo-octets}. Au-delà de cette limite, la requête est directement rejetée et la connexion fermée.
+
+\vspace{0.5em}
+
+Une fois le contenu récupéré, vient alors la phase de \textbf{déstructuration} (ou \textit{parsing}). Le contenu est analysé pour extraire :
+\begin{itemize}
+  \item la \textbf{méthode} (GET, POST, …),
+  \item le \textbf{chemin} ou \texttt{path} (\texttt{/nexium}, \texttt{/balance}),
+\end{itemize}
+ces deux éléments étant les plus importants puisqu’ils influencent directement le comportement du serveur et sa réponse.
+
+\vspace{0.5em}
+
+Ensuite, sont extraits des paramètres optionnels :
+\begin{itemize}
+  \item les \textbf{paramètres d’URL}, appelés \texttt{query} ou \texttt{search} (après le caractère \texttt{?}),
+  \item les \textbf{headers}, sous forme de paires clé/valeur,
+  \item et enfin le \textbf{contenu} (ou \texttt{body}).
+\end{itemize}
+
+\vspace{1em}
+
+Voici un exemple de requête reçue par le serveur :
+
+\begin{lstlisting}[style=custom]
+GET / HTTP/1.1
+Host: 127.0.0.1:8080
+\end{lstlisting}
+
+Une fois entièrement décortiquée, le serveur peut alors correctement prendre en charge la requête, en fonction de la \textbf{méthode} et du \textbf{chemin}.
+
+\vspace{0.5em}
+
+Le traitement de la requête terminé, la dernière étape concerne la \textbf{réponse}. Pour cela, nous avons également créé une structure \texttt{Response}, dont le but est de construire la réponse HTTP de manière simple.
+
+\vspace{0.5em}
+
+Un élément central de cette structure est le \textbf{statut}, représenté sous la forme d’une paire \texttt{code/texte}, indiquant principalement l’issue de la requête. Il existe une multitude de statuts, parmi lesquels :
+\begin{itemize}
+  \item \texttt{200 OK}
+  \item \texttt{400 Bad Request}
+  \item \texttt{404 Not Found}
+\end{itemize}
+
+\vspace{0.5em}
+
+La réponse embarque également des éléments optionnels, comme les \texttt{headers} et le \texttt{body}, similaires à ceux déjà évoqués pour la requête.
+
+\vspace{0.5em}
+
+Dans notre implémentation, le serveur renvoie :
+\begin{itemize}
+  \item \texttt{404} si l’\textit{endpoint} (que nous détaillerons par la suite) n’est pas reconnu,
+  \item \texttt{400} si la requête ne contient pas les informations nécessaires ou des données valides,
+  \item \texttt{500} (\textit{Internal Server Error}) en cas d’erreur inattendue,
+  \item et \texttt{200} si tout s’est bien passé.
+\end{itemize}
+
+\vspace{1em}
+
+Voici un exemple de réponse émise par le serveur :
+
+\begin{lstlisting}[style=custom]
+HTTP/1.1 200 OK
+Content-Type: text/plain
+
+Hello world!
+\end{lstlisting}
+
+\subsection{API Nexium}
+L'API Nexium est l'ensemble des \textbf{endpoints} que le serveur expose pour permettre aux clients de communiquer avec lui. Chaque endpoint correspond à une fonctionnalité spécifique, comme la récupération du solde d'un utilisateur, l'envoi d'une transaction, ou la vérification de l'identité du serveur.
+
+\subsubsection{\texttt{/nexium}}
+
+\textbf{Permet de vérifier que le serveur concerné est bien un serveur Nexium, et de récupérer les informations de ce serveur.}
+
+\begin{itemize}
+    \item \textbf{Type} : \texttt{GET}
+    \item \textbf{Endpoint} : \texttt{/nexium}
+\end{itemize}
+
+\textbf{Réponse} :
+\begin{lstlisting}
+{
+  "login": <login>,
+  "sigSample": <sigsample>
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{login} : Identifiant de l'utilisateur à qui appartient le serveur.
+    \item \texttt{sigSample} : Permet au client d'identifier quelle clé publique est utilisée par le serveur.
+\end{itemize}
+
+\subsubsection{\texttt{/balance}}
+
+\textbf{Renvoie le solde actuel sur un utilisateur.}
+
+\begin{itemize}
+    \item \textbf{Type} : \texttt{GET}
+    \item \textbf{Endpoint} : \texttt{/balance/<login>}
+\end{itemize}
+
+\textbf{Réponse} :
+\begin{lstlisting}
+{
+  "balance": <balance>,
+  "noise": <noise>
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{noise} : Chaîne de caractères de longueur 8, générée aléatoirement. Sert à empêcher les attaques par brute-force.
+\end{itemize}
+
+\subsubsection{\texttt{/transactions}}
+
+\textbf{Récupère les \texttt{n} dernières transactions d'un utilisateur.}
+
+\begin{itemize}
+    \item \textbf{Type} : \texttt{GET}
+    \item \textbf{Endpoint} : \texttt{/transactions/<login>?n=<n>}
+    \item \textbf{Paramètre} : \texttt{n} (optionnel, par défaut 3) : Nombre de transactions à récupérer.
+\end{itemize}
+
+\textbf{Réponse} :
+\begin{lstlisting}
+{
+  "transactions": [
+    <transaction_1>,
+    <...>,
+    <transaction_n>
+  ]
+}
+\end{lstlisting}
+
+\subsubsection{\texttt{/new\_transaction}}
+
+\textbf{Publie une nouvelle transaction pour l'ajout à la blockchain.}
+
+\begin{itemize}
+    \item \textbf{Type} : \texttt{POST}
+    \item \textbf{Endpoint} : \texttt{/new\_transaction}
+\end{itemize}
+
+\textbf{Body} :
+\begin{lstlisting}
+{
+  <transaction>
+}
+\end{lstlisting}
+
+\subsection{Header}
+
+\textbf{Structure des headers de requêtes Nexium.}
+
+Toutes les réponses sont renvoyées sous forme de \textbf{JSON chiffré}, selon la logique suivante :
+\[
+\texttt{réponse = chiffrement(json(données))}
+\]
+
+\begin{itemize}
+    \item Le JSON est chiffré par le serveur avec la \textbf{clé publique du client}, obtenue via le login dans le header.
+    \item Le contenu des requêtes \texttt{POST} est chiffré par le client avec la \textbf{clé publique du serveur}.
+\end{itemize}
+
+\textbf{Header standard} :
+\begin{lstlisting}
+Login: <login>
+Sig-Sample: <sigsample>
+\end{lstlisting}
+
+\begin{itemize}
+    \item \texttt{Sig-Sample} est la signature de la chaîne \texttt{"NEXIUMREQ"} faite avec la clé privée du client.
+    \item Elle permet au serveur de retrouver la bonne clé publique, si plusieurs sont présentes sur le compte GitLab du login.
+    \item Elle évite les requêtes non authentifiées ou de type \textit{spam}.
+\end{itemize}
+
+\subsection{Structure d'une transaction}
+
+Une transaction est envoyée au format \textbf{JSON} :
+
+\begin{lstlisting}
+{
+    "transaction_header": {
+        "transaction_size": <size>,
+        "timestamp": <timestamp>,
+        "fees": <fees>,
+        "emitter": <login>,
+        "data_type": <data_type>
+    },
+    "data": <data>,
+    "signature": <signature>
+}
+\end{lstlisting}
+
+\textbf{Champs} :
+\begin{itemize}
+    \item \texttt{transaction\_size} : Taille du champ \texttt{data} (en octets)
+    \item \texttt{timestamp} : Horodatage UNIX de la transaction
+    \item \texttt{fees} : Frais de transaction (en µNEX/octet)
+    \item \texttt{emitter} : Login de l’émetteur (au format \texttt{prenom.nom})
+    \item \texttt{data\_type} : Type de données contenues dans \texttt{data}
+    \item \texttt{signature} : Signature du couple \texttt{transaction\_header + data}
+\end{itemize}
+
+
+\section{Site Web}
+
+\textbf{Astro} permet une approche simple et rapide pour la création d’une \textbf{documentation web}.  
+Utilisant \textbf{Vite}, \textbf{Astro} offre une \textbf{rapidité de développement} accrue avec le \textbf{SSR} (Server Side Rendering), permettant une \textbf{actualisation dynamique des pages} à chaque modification.
+
+Prenant en charge \textbf{Markdown}, il nous est possible d’écrire la documentation en respectant la syntaxe \textbf{Markdown}, puis de laisser \textbf{Astro} faire le \textbf{build}, générant les fichiers \textbf{html}, \textbf{css} et \textbf{js} nécessaires pour les \textbf{navigateurs web}.
+L'avantage de cette approche est que toute l'équipe peut contribuer à la documentation sans avoir besoin de connaissances approfondies en développement web, en se concentrant sur le contenu plutôt que sur la structure technique.
+
+Nous avons choisi d’héberger le site sur \textbf{Gitlab}, ce qui permet une \textbf{intégration continue simple} et \textbf{gratuite}. Le site est accessible publiquement à l’adresse suivante :
+
+
+Cette séparation avec le dépôt principal de \textbf{Nexium} nous permet :
+\begin{itemize}
+    \item De maintenir une \textbf{organisation claire} entre le \textbf{code de Nexium} et la \textbf{documentation}.
+    \item De gérer indépendamment les \textbf{mises à jour documentaires} sans impacter le développement du \textbf{logiciel}.
+\end{itemize}
+
+Un pipeline \textbf{GitLab} est configuré pour \textbf{déployer automatiquement le site} à chaque mise à jour de la \textbf{branche principale} (\texttt{main}). Cela permet des mises à jour rapides et efficaces de la documentation, sans nécessiter d'intervention manuelle pour le déploiement.
+
+\begin{lstlisting}[style=custom, title={\texttt{web/contents/blockchain.md}}]
+---
+title: Qu'est-ce que Nexium ?
+description: Presentation du projet Nexium
+order: 1
+---
+
+Nexium est une crypto-monnaie decentralisee, ...
+
+\end{lstlisting}
+
+\section{Organisation du projet}
+L’idée originelle de \textbf{Nexium} a suscité chez chacun des membres de notre groupe un \textbf{intérêt} et \textbf{enthousiasme} laissant présager un bon processus de développement sur le projet. Afin de pouvoir concrétiser le plus solidement et durablement possible le projet, nous avons accordé une place importante à l’\textbf{organisation du travail de groupe}.
+
+\subsection{Outils utilisés et mis en place}
+Comme mentionné précédemment, une \textbf{organisation claire} et \textbf{structurée} a permis une fluidification de la \textbf{communication}. Ainsi, nous avons mis en place plusieurs solutions pour tenir un \textbf{suivi régulier} de l’avancement du projet.
+
+\subsubsection{Discord}
+Nous avons utilisé un serveur \textbf{Discord} pour \textbf{communiquer}, relever des \textbf{problèmes}, planifier des \textbf{réunions} et partager des \textbf{ressources}. Plusieurs \textbf{salons textuels} ont été dédiés aux différentes parties du développement, ainsi qu’à la centralisation des différents \textbf{liens}. Ce serveur \textbf{Discord} a été, en outre, la \textbf{pierre angulaire} de notre \textbf{communication}, la centralisation de nos \textbf{échanges} et \textbf{ressources}.
+
+\subsubsection{Gitlab}
+\textbf{Gitlab} est une solution d’hébergement de \textbf{repositories Git}. Nous avons choisi d’utiliser l’instance \textbf{Gitlab} hébergée par \textbf{Épita} pour \textbf{Nexium}. Cela nous permet une meilleure gestion des \textbf{collaborateurs} (avec les \textbf{logins Épita}), et une congruence avec le projet \textbf{Nexium}, puisque c’est de cette instance \textbf{Gitlab} que nous avons tiré l’idée de récupération des \textbf{clés publiques GPG}. 
+
+De plus, nous avons choisi d’utiliser \textbf{Gitlab}, qui propose un outil d’hébergement de \textbf{pages web} (\textbf{GitLab Pages}), que nous utilisons pour automatiquement déployer notre \textbf{site web}, sans avoir à gérer de \textbf{serveur web} ou de dépendre d’un prestataire externe.
+
+\subsection{Répartition des tâches}
+Au-delà des \textbf{réunions hebdomadaires} planifiées lors de tous les \textbf{week-ends}, notre équipe a pris la décision, pour la première phase de développement de \textbf{Nexium}, de se séparer en \textbf{deux groupes distincts}, chacun ayant une \textbf{mission bien précise}.
+
+\begin{itemize}
+    \item \textbf{Architecture} : Ce groupe était composé de \textbf{Jean} et \textbf{William}. Ils étaient responsables de l’\textbf{architecture de la blockchain} et du \textbf{réseau}, ainsi que du \textbf{développement du serveur web}. Ils étaient également responsables de la \textbf{rédaction de la documentation théorique de Nexium}.
+    
+    \item \textbf{Cryptographie} : Ce groupe est composé de \textbf{Milo} et \textbf{Antonin}. Ils étaient en charge de la partie \textbf{mathématique} du projet, c'est-à-dire le \textbf{chiffrement/déchiffrement} et les \textbf{calculs nécessaires} pour les \textbf{changements de type}. Ils ont aussi la charge du \textbf{SHA-256}.
+\end{itemize}
+
+Pour la seconde phase du projet, la répartition a évolué selon les compétences de chacun :
+
+\begin{itemize}
+    \item \textbf{Client} : Cette tâche a été menée par \textbf{Jean} et \textbf{Milo}, à l’aide du framework \textbf{Tauri} et des technologies web (\textbf{HTML/CSS}, \textbf{Svelte}, \textbf{Tailwind}). Ils ont conçu l’\textbf{interface utilisateur}, intégré les \textbf{fonctionnalités côté client}, développé l’\textbf{API de Gitlab}, et implémenté une \textbf{API Client} pour \textbf{Nexium}.
+    
+    \item \textbf{Blockchain} : \textbf{William}, avec l’aide de \textbf{Jean}, a établi les \textbf{structures fondamentales de la blockchain} : \textbf{transactions}, \textbf{blocs}, \textbf{headers}, autant de \textbf{données} qu’il est crucial de pouvoir stocker et convertir dans différents formats (en \textbf{binaire} pour le stockage sur serveur, et en \textbf{JSON} avec \textbf{sérialisation/désérialisation} pour les échanges réseau).
+    
+    \item \textbf{Serveur} : \textbf{William} a pris en charge la construction du \textbf{serveur HTTP}, la gestion des \textbf{endpoints de l’API}, l’implémentation de la \textbf{blockchain} et l’\textbf{architecture globale du backend}.
+    
+    \item \textbf{Site Web} : \textbf{Antonin} a été responsable de la \textbf{conception} et du \textbf{développement du site web documentaire} de Nexium. \textbf{Astro} et \textbf{Markdown} ont été utilisés pour structurer et générer un \textbf{site statique} hébergé sur \textbf{GitHub Pages}, permettant de documenter et valoriser le projet.
+\end{itemize}
+
+Voici la répartition des tâches finales pour Nexium :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|c|c|c|c|}
+\cline{2-5}
+ & \multicolumn{1}{l|}{\cellcolor[HTML]{EFEFEF}\textit{\textbf{Jean}}} & \multicolumn{1}{l|}{\cellcolor[HTML]{EFEFEF}\textit{\textbf{William}}} & \multicolumn{1}{l|}{\cellcolor[HTML]{EFEFEF}\textit{\textbf{Milo}}} & \multicolumn{1}{l|}{\cellcolor[HTML]{EFEFEF}\textit{\textbf{Antonin}}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{Serveur}} & {\color[HTML]{9A0000} \textbf{}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} & {\color[HTML]{9A0000} \textbf{}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{Blockchain}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} & {\color[HTML]{9A0000} \textbf{}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{API}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{Application}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{Chiffrement}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{}} \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{C0C0C0}\textbf{Site Internet}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} & {\color[HTML]{9A0000} \textbf{X}} \\ \cline{2-5} 
+\end{tabular}
+\end{table}
+
+\newpage
 \section{Conclusion}
 
-Nexium nous permet d'explorer des concepts cryptographiques avancés, tel que la \textbf{blockchain}, l'\textbf{architecture réseau} et le \textbf{développement web}. 
+Ce projet nous a permis d’\textbf{approfondir nos connaissances} tant \textbf{théoriques} que \textbf{pratiques} dans un \textbf{cadre concret et collaboratif}. En confrontant nos idées, en surmontant les \textbf{imprévus techniques} et en affinant progressivement nos \textbf{méthodes de travail}, nous avons acquis une \textbf{meilleure compréhension} du domaine traité ainsi que des \textbf{compétences transversales} précieuses telles que la \textbf{gestion de projet}, la \textbf{communication en équipe} et la \textbf{rigueur dans le développement}.
 
-En appliquant des principes de sécurité éprouvés comme le \textbf{SHA-256} pour le hachage et le chiffrement \textbf{RSA} pour l'authentification, nous avons pu établir les bases d'un système robuste et fiable que nous comptons concrétiser le plus fidèlement dans les prochaines étapes du développement.
+Les \textbf{objectifs fixés} au départ ont été, dans l’ensemble, \textbf{atteints}. Les \textbf{résultats obtenus} témoignent de notre \textbf{investissement} et de notre \textbf{capacité à mener à bien un projet de bout en bout}, depuis la phase d’\textbf{analyse} jusqu’à la \textbf{mise en œuvre} et la \textbf{validation finale}.
 
-Nous avons mis en place au fil de cette première étape du projet les fondations essentielles de la \textbf{structure théorique} et de la \textbf{cryptographie}, en s'inspirant du Bitcoin et en l'adaptant aux besoins spécifiques dans notre cas d'usage. 
+Ce travail ouvre également la voie à de nombreuses \textbf{perspectives d’amélioration et de prolongement}. Il pourrait notamment être enrichi par l’\textbf{intégration de fonctionnalités supplémentaires}, une \textbf{optimisation des performances}, ou encore une \textbf{évaluation plus poussée} dans un \textbf{contexte réel}.
 
-Le \textbf{site web} et la \textbf{documentation} permettront une transparence et une accessibilité accrues pour nos travaux.
-
-Nexium, au-delà d'être un exercice technique, est une expérimentation réelle des enjeux modernes liés à la \textbf{décentralisation} et à la \textbf{souveraineté numérique}, autant de thématiques qui nous paraissent importantes et que nous approfondissons en nous questionnant sur l’impact des cryptomonnaies dans notre société.
-
-Les prochaines étapes du projet seront tout aussi importantes : \textbf{optimisation des performances}, \textbf{sécurisation structurelle du réseau} et \textbf{interface utilisateur intuitive} sont dans notre ligne de mire.
+Nous tirons de cette expérience un \textbf{bilan très positif}, à la fois sur le plan \textbf{technique} et \textbf{humain}.
 
 
 \newpage
 
-% use \nocite{*} to include all entries in the bibliography
 \nocite{*}
-  \renewcommand*{\bibfont}{\normalfont\footnotesize}
-  \printbibliography[title={Bibliographie}]
 
+
+\renewcommand*{\bibfont}{\small}
+\printbibliography[
+  title={Bibliographie}
+]
 
 
 \end{document}
