@@ -82,12 +82,6 @@
 		const interval = setInterval(balanceUpdate, 5000);
 		return () => clearInterval(interval);
 	});
-
-	afterUpdate(() => {
-		if (!get(showSendModal)) {
-			balanceUpdate();
-		}
-	});
 </script>
 
 <div class="flex flex-col justify-center gap-14">
