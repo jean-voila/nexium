@@ -36,11 +36,6 @@
 		checkTransaction();
 	}
 
-	function handleDescriptionChange() {
-		description = description;
-		checkTransaction();
-	}
-
 	function handleReceiverChange() {
 		receiver = receiver.trim();
 		checkTransaction();
@@ -173,7 +168,6 @@
 				<textarea
 					id="description"
 					bind:value={description}
-					oninput={handleDescriptionChange}
 					class="input-field w-full resize-none"
 					placeholder="Description (facultative)"
 					maxlength="256"

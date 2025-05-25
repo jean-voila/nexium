@@ -73,6 +73,10 @@ impl Block {
         let merkle_root = Block::merkle_root(&transactions);
         let mut b;
         let mut nonce = 0;
+        let mut target = String::new();
+        for _ in 0..DIFFICULTY_TARGET {
+            target.push('0');
+        }
 
         loop {
             b = Self {
@@ -87,14 +91,26 @@ impl Block {
                 transactions: transactions.clone(),
             };
 
-            let hash = sha256(&b.to_buffer());
-            if hash[0..DIFFICULTY_TARGET as usize].iter().all(|&a| a == 0) {
+            let hash = b.double_hash();
+            // if hash[0..DIFFICULTY_TARGET as usize].iter().all(|&a| a == 0) {
+            //     break;
+            // }
+            let h = hex::encode(&hash);
+            if h.starts_with(&target) {
                 break;
             }
             nonce += 1;
         }
 
         return b;
+    }
+
+    pub fn double_hash(&self) -> HeaderPreviousBlockHash {
+        Block::double_hash_(&self.to_buffer())
+    }
+
+    pub fn double_hash_(hash: &Vec<u8>) -> HeaderPreviousBlockHash {
+        sha256(&sha256(&hash).to_vec())
     }
 
     pub fn size(&self) -> u32 {

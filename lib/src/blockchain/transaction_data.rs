@@ -151,6 +151,7 @@ impl core::fmt::Debug for TransactionData {
                         f,
                         "description: {},\n",
                         String::from_utf8_lossy(description)
+                            .trim_end_matches('\0')
                     )?;
                 }
             }

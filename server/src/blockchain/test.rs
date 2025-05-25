@@ -1,3 +1,7 @@
+use std::path::Path;
+
+use crate::config::Config;
+
 use super::{
     blockchain::Blockchain,
     mempool::Mempool,
@@ -11,16 +15,48 @@ use nexium::{
         consts::SIGNATURE_SIZE, data_type::DataType, transaction::Transaction,
     },
     defaults::KEYPAIR_BIT_SIZE,
+    gitlab::{GitlabClient, TokenType},
     rsa::KeyPair,
 };
 
 const KEY_FILE: &str = ".nexiumlocal/private-key.pem";
+const CONFIG_PATH: &str = ".nexiumlocal/config.json";
 
 pub fn main() {
-    let key = KeyPair::priv_from_file(KEY_FILE, "william.valenduc", "")
-        .expect("Failed to load private key from file");
+    let p = Path::new(CONFIG_PATH);
+    let config = Config::from_file(p);
 
-    let mut bc = Blockchain::init().expect("Failed to initialize blockchain");
+    let gitlab =
+        GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
+
+    gitlab.check_token().expect("Failed to check Gitlab token");
+
+    let key = KeyPair::priv_from_file(
+        KEY_FILE,
+        "william.valenduc",
+        "jitKuq-syzhut-7jexcu",
+    )
+    .expect("Failed to load private key from file");
+
+    let mut bc =
+        Blockchain::init(&gitlab).expect("Failed to initialize blockchain");
+    println!("blockchain size: {}", bc.size);
+
+    if bc.size == 0 {
+        println!("Blockchain is empty, creating genesis block...");
+        let t = Transaction::new(
+            "GENESIS".as_bytes().to_vec(),
+            0,
+            "",
+            DataType::Unknown,
+            &key,
+        )
+        .expect("Failed to create transaction");
+        // dbg!(&t);
+        bc.add_transaction(t);
+        return;
+    }
+
     // let b1 = match bc.read_block(0) {
     //     Ok(b) => b,
     //     Err(e) => {
@@ -30,7 +66,7 @@ pub fn main() {
     // };
     // dbg!(&b1);
     dbg!(hex::encode(&bc.last_hash));
-    // return;
+    return;
 
     // let b2 = match bc.get_block(&bc.last_hash.clone()) {
     //     Ok(b) => b,
@@ -54,28 +90,13 @@ pub fn main() {
         .get_user_balance(login2)
         .expect("Failed to get user balance");
     println!("Balance: {} {}", login2, balance);
-    return;
-
-    //////////////////
-
-    // let t = Transaction::new(
-    //     "GENESIS".as_bytes().to_vec(),
-    //     0,
-    //     "william.valenduc",
-    //     DataType::Unknown,
-    //     &key,
-    // )
-    // .expect("Failed to create transaction");
-    // dbg!(&t);
-
-    // bc.add_transaction(t);
     // return;
 
     ///////////////
 
     let tr = Transaction::new_classic(
         "jean.herail",
-        100.65489 as f32,
+        -100.65489 as f32,
         "",
         0,
         "william.valenduc",

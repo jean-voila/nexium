@@ -13,7 +13,6 @@ use nexium::{
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     gitlab::GitlabClient,
-    sha256::sha256,
 };
 use std::{
     collections::HashMap,
@@ -86,8 +85,6 @@ impl<'a> Blockchain<'a> {
             };
 
             match block.header.previous_block_hash {
-                // x if x == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE]
-                //     && b.last_hash == [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] => {}
                 x if x == b.last_hash => {}
                 _ => {
                     return Err("Invalid previous block hash".to_string());
@@ -95,7 +92,7 @@ impl<'a> Blockchain<'a> {
             }
 
             // dbg!(&block);
-            b.last_hash = sha256(&block.to_buffer());
+            b.last_hash = block.double_hash();
             // dbg!(b.last_hash);
             b.cache.insert(b.last_hash, b.size);
             b.size += BLOCK_HEADER_SIZE as u64
@@ -112,7 +109,7 @@ impl<'a> Blockchain<'a> {
         let buff = block.to_buffer();
         match self.file.write_all(&buff) {
             Ok(_) => {
-                self.last_hash = sha256(&buff);
+                self.last_hash = Block::double_hash_(&buff);
                 self.cache.insert(self.last_hash, self.size);
                 self.size += buff.len() as u64;
             }
@@ -154,11 +151,11 @@ impl<'a> Blockchain<'a> {
                         match self.gitlab.check_user_existence(&r) {
                             Ok(exists) => {
                                 if !exists {
-                                    return false;
+                                    return false; // Receiver does not exist
                                 }
                             }
                             Err(_) => {
-                                return false;
+                                return false; // Error checking user existence
                             }
                         }
 
@@ -167,7 +164,7 @@ impl<'a> Blockchain<'a> {
                             None => match self.get_user_balance(&em) {
                                 Ok(b) => b,
                                 Err(_) => {
-                                    return false;
+                                    return false; // Error getting emitter balance
                                 }
                             },
                         };
@@ -177,24 +174,24 @@ impl<'a> Blockchain<'a> {
                             None => match self.get_user_balance(&r) {
                                 Ok(b) => b,
                                 Err(_) => {
-                                    return false;
+                                    return false; // Error getting receiver balance
                                 }
                             },
                         };
 
                         if (be as i64 - amount as i64) < 0 {
-                            false
+                            false // Insufficient balance
                         } else {
                             be -= amount;
                             br += amount;
                             balances.insert(em, be);
                             balances.insert(r.to_string(), br);
-                            true
+                            true // Valid transaction
                         }
                     }
-                    _ => true,
+                    _ => true, // Other transaction types are considered valid
                 },
-                Err(_) => false,
+                Err(_) => false, // Error getting transaction data
             })
             .collect();
 
@@ -210,7 +207,7 @@ impl<'a> Blockchain<'a> {
 
     pub fn add_transaction(&mut self, transaction: Transaction) {
         self.mempool.add(transaction);
-        // dbg!(self.mempool.is_full());
+
         if self.mempool.is_full() {
             println!("Mempool is full, creating a new block");
             self.create_new_block();

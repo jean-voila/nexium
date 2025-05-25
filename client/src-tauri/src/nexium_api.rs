@@ -518,10 +518,14 @@ pub fn get_transactions(
                     .trim_end_matches('\0')
                     .to_string();
 
-                let emitter =
-                    String::from_utf8_lossy(&tr.header.emitter).to_string();
+                let emitter = String::from_utf8_lossy(&tr.header.emitter)
+                    .trim_end_matches('\0')
+                    .to_string();
+
                 let description = if has_description {
-                    String::from_utf8_lossy(&description).to_string()
+                    String::from_utf8_lossy(&description)
+                        .trim_end_matches('\0')
+                        .to_string()
                 } else {
                     "".to_string()
                 };
@@ -541,8 +545,8 @@ pub fn get_transactions(
                 };
 
                 let transaction = ClassicTransactionReceived {
-                    receiver: receiver.clone(),
-                    emitter: emitter.clone(),
+                    receiver,
+                    emitter,
                     description,
                     amount: amount.to_string(),
                     date: formatted_date,
