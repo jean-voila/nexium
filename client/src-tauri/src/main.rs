@@ -7,6 +7,7 @@ mod nexium_api;
 use config::Config;
 use config::ConfigError;
 use invoice::*;
+
 use nexium_api::*;
 
 use nexium::{defaults::*, gitlab::*, login::*, rsa::*};
@@ -430,6 +431,27 @@ async fn read_key_from_file(path: String) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn search_first_users(
+    config: Config,
+    search: String,
+) -> Result<Vec<String>, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let gitlab_client =
+            GitlabClient::new(config.gitlab_token, config.gitlab_token_type);
+        match gitlab_client.search_users(&search) {
+            Ok(users) => Ok(users),
+            Err(e) => Err(e.to_string()),
+        }
+    })
+    .await;
+
+    match result {
+        Ok(r) => r,
+        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -454,7 +476,8 @@ fn main() {
             get_server_infos,
             write_key_to_file,
             read_key_from_file,
-            check_send_transaction
+            check_send_transaction,
+            search_first_users,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

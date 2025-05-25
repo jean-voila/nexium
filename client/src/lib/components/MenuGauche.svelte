@@ -3,6 +3,7 @@
 	import { SendHorizontal } from 'lucide-svelte';
 	import { HandCoins } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import { afterUpdate } from 'svelte';
 
 	import { History } from 'lucide-svelte';
 
@@ -80,6 +81,12 @@
 	onMount(() => {
 		const interval = setInterval(balanceUpdate, 10000);
 		return () => clearInterval(interval);
+	});
+
+	afterUpdate(() => {
+		if (!get(showSendModal)) {
+			balanceUpdate();
+		}
 	});
 </script>
 

@@ -9,6 +9,13 @@
 	let { oncancel } = $props();
 
 	let receiver = $state('');
+
+	/**
+	 * @type {string[]}
+	 */
+	let searchResults = $state([]);
+
+	let showSuggestions = $state(false);
 	let amount = $state('');
 	let description = $state('');
 	let fees = $state('0');
@@ -36,9 +43,26 @@
 		checkTransaction();
 	}
 
-	function handleReceiverChange() {
+	async function handleReceiverChange() {
 		receiver = receiver.trim();
 		checkTransaction();
+
+		if (receiver.length > 0) {
+			try {
+				const results = await invoke('search_first_users', {
+					config: $globalConfig,
+					search: receiver
+				});
+				searchResults = results;
+				showSuggestions = results.length > 0;
+			} catch (e) {
+				searchResults = [];
+				showSuggestions = false;
+			}
+		} else {
+			searchResults = [];
+			showSuggestions = false;
+		}
 	}
 
 	async function handleLoadFile() {
@@ -113,7 +137,7 @@
 
 		<div class="settings-item">
 			<div class="flex flex-col gap-4">
-				<div class="w-full">
+				<div class="w-full" style="position:relative;">
 					<label for="destinataire" class="nom-parametre block">Destinataire</label>
 					<input
 						id="destinataire"
@@ -123,6 +147,23 @@
 						oninput={handleReceiverChange}
 						placeholder="Login du destinataire"
 					/>
+					{#if showSuggestions}
+						<ul class="suggestions-list">
+							{#each searchResults as user}
+								<button
+									type="button"
+									class="suggestion-item"
+									onclick={() => {
+										receiver = user;
+										showSuggestions = false;
+										checkTransaction();
+									}}
+								>
+									{user}
+								</button>
+							{/each}
+						</ul>
+					{/if}
 				</div>
 				<div class="flex flex-col gap-4 md:flex-row">
 					<div class="w-full md:w-1/2">

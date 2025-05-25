@@ -324,6 +324,44 @@ impl GitlabClient {
         }
     }
 
+    pub fn search_users(
+        &self,
+        search: &str,
+    ) -> Result<Vec<String>, GitlabError> {
+        let url = format!("{}/users", self.api_url);
+        let client = reqwest::blocking::Client::new();
+        let request = client.get(&url).query(&[("search", search)]);
+
+        let request = self.build_headers(request);
+
+        let response = request.send();
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let users: Vec<serde_json::Value> =
+                        resp.json().unwrap_or(Vec::new());
+                    let mut usernames: Vec<String> = Vec::new();
+                    for user in users {
+                        if let Some(username) = user.get("username") {
+                            if let Some(username) = username.as_str() {
+                                usernames.push(username.to_string());
+                            }
+                        }
+                    }
+
+                    // Garder seulement les quatre premiers utilisateurs
+                    if usernames.len() > 4 {
+                        usernames.truncate(3);
+                    }
+                    return Ok(usernames);
+                }
+                Err(GitlabError::InvalidToken)
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
     fn build_headers(
         &self,
         request: reqwest::blocking::RequestBuilder,
