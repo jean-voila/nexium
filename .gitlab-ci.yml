@@ -79,7 +79,32 @@ release:
   script:
     - echo "Creating release $CI_COMMIT_TAG"
 
+publish:
+  stage: release
+  image: curlimages/curl:latest
+  needs:
+    - job: build-tauri-linux
+      artifacts: true
+    - job: build-tauri-windows
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - |
+      PACKAGE_NAME="nexium"
+      PACKAGE_VERSION="$CI_COMMIT_TAG"
+      PROJECT_ID="$CI_PROJECT_ID"
+      API_URL="$CI_API_V4_URL/projects/$PROJECT_ID/packages/generic/$PACKAGE_NAME/$PACKAGE_VERSION"
 
+      # Téléverser les fichiers Linux
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "target/release/bundle/deb/${DEB_FILE}" "$API_URL/${DEB_FILE}"
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "target/release/bundle/rpm/${RPM_FILE}" "$API_URL/${RPM_FILE}"
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "target/release/bundle/appimage/${APPIMAGE_FILE}" "$API_URL/${APPIMAGE_FILE}"
+
+      # Téléverser le fichier Windows
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "target/x86_64-pc-windows-msvc/release/bundle/nsis/${EXE_FILE}" "$API_URL/${EXE_FILE}"
+
+  
   release:
     tag_name: '$CI_COMMIT_TAG'
     name: 'Release $CI_COMMIT_TAG'
