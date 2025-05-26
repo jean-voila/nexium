@@ -28,7 +28,7 @@ build-tauri-windows:
   image: ivangabriele/tauri:debian-bookworm-20
   stage: build
   before_script:
-    - apt-get update && apt-get install -y curl wget file build-essential zip nsis lld llvm
+    - apt-get update && apt-get install -y curl wget file build-essential zip nsis lld llvm clang
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y nodejs
     - rustup default stable
