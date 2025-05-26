@@ -21,3 +21,24 @@ build-tauri-linux:
       - /builds/jean.herail/nexium/target/release/bundle/rpm/Nexium-0.1.0-1.x86_64.rpm
       - /builds/jean.herail/nexium/target/release/bundle/appimage/Nexium_0.1.0_amd64.AppImage
     expire_in: 1 week
+
+
+
+build-tauri-windows:
+  image: ivangabriele/tauri:debian-bookworm-20
+  stage: build
+  before_script:
+    - apt-get update && apt-get install -y curl wget file build-essential zip mingw-w64
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - rustup default stable
+    - rustup target add x86_64-pc-windows-gnu
+    - cd client
+    - npm install
+  script:
+    - npm run tauri build -- --target x86_64-pc-windows-gnu
+  artifacts:
+    paths:
+      - /builds/jean.herail/nexium/target/x86_64-pc-windows-gnu/release/bundle/msi/
+      - /builds/jean.herail/nexium/target/x86_64-pc-windows-gnu/release/bundle/nsis/
+    expire_in: 1 week
