@@ -37,7 +37,7 @@ build-tauri-windows:
     - cd client
     - npm install
   script:
-    - cargo tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
+    - npm run tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
   artifacts:
     paths:
       - /builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/
