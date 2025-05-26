@@ -33,6 +33,11 @@ build-tauri-linux:
       - "/builds/jean.herail/nexium/target/release/bundle/rpm/${RPM_FILE}"
       - "/builds/jean.herail/nexium/target/release/bundle/appimage/${APPIMAGE_FILE}"
     expire_in: 1 week
+  after_script:
+    - echo "CI_JOB_ID_LINUX=$CI_JOB_ID" > job_info_linux.env 
+  artifacts:
+    reports:
+      dotenv: job_info_linux.env
 
 
 
@@ -56,6 +61,11 @@ build-tauri-windows:
     paths:
       - "/builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/${EXE_FILE}"
     expire_in: 1 week
+  after_script:
+    - echo "CI_JOB_ID_WINDOWS=$CI_JOB_ID" > job_info_windows.env 
+  artifacts:
+    reports:
+      dotenv: job_info_windows.env
 
 
 release:
@@ -70,6 +80,9 @@ release:
     - if: $CI_COMMIT_TAG
   script:
     - echo "Creating release $CI_COMMIT_TAG"
+    - source job_info_linux.env
+    - source job_info_windows.env
+
   release:
     tag_name: '$CI_COMMIT_TAG'
     name: 'Release $CI_COMMIT_TAG'
@@ -77,10 +90,10 @@ release:
     assets:
       links:
         - name: "Nexium Linux (.deb)"
-          url: "/builds/jean.herail/nexium/target/release/bundle/deb/${DEB_FILE}"
+          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/deb/${DEB_FILE}"
         - name: "Nexium Linux (.rpm)"
-          url: "/builds/jean.herail/nexium/target/release/bundle/rpm/${RPM_FILE}"
+          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/rpm/${RPM_FILE}"
         - name: "Nexium Linux (.AppImage)"
-          url: "/builds/jean.herail/nexium/target/release/bundle/appimage/${APPIMAGE_FILE}"
+          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/appimage/${APPIMAGE_FILE}"
         - name: "Nexium Windows Installer (.exe)"
-          url: "/builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/${EXE_FILE}"
+          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_WINDOWS}/artifacts/file/target/x86_64-pc-windows-msvc/release/bundle/nsis/${EXE_FILE}"
