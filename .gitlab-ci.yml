@@ -1,7 +1,7 @@
 stages:
   - build
 
-build-tauri-deb:
+build-tauri-linux:
   image: ivangabriele/tauri:debian-bookworm-20
   stage: build
   before_script:
@@ -17,5 +17,7 @@ build-tauri-deb:
     - npm run tauri build
   artifacts:
     paths:
-      - client/src-tauri/target/release/bundle/deb/*.deb
+      - /builds/jean.herail/nexium/target/release/bundle/deb/Nexium_0.1.0_amd64.deb
+      - /builds/jean.herail/nexium/target/release/bundle/rpm/Nexium-0.1.0-1.x86_64.rpm
+      - /builds/jean.herail/nexium/target/release/bundle/appimage/Nexium_0.1.0_amd64.AppImage
     expire_in: 1 week
