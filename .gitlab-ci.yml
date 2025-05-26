@@ -1,7 +1,10 @@
 stages:
   - build
+  - release
 
 build-tauri-linux:
+  rules:
+    - if: $CI_COMMIT_TAG
   image: ivangabriele/tauri:debian-bookworm-20
   stage: build
   before_script:
@@ -25,6 +28,8 @@ build-tauri-linux:
 
 
 build-tauri-windows:
+  rules:
+    - if: $CI_COMMIT_TAG
   image: ivangabriele/tauri:debian-bookworm-20
   stage: build
   before_script:
@@ -42,3 +47,31 @@ build-tauri-windows:
     paths:
       - /builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/
     expire_in: 1 week
+
+
+release:
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  stage: release
+  needs:
+    - job: build-tauri-linux
+      artifacts: true
+    - job: build-tauri-windows
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "Creating release $CI_COMMIT_TAG"
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Release générée automatiquement pour $CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'Nexium Linux (.deb)'
+          url: '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/builds/jean.herail/nexium/target/release/bundle/deb/Nexium_0.1.0_amd64.deb'
+        - name: 'Nexium Linux (.rpm)'
+          url: '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/builds/jean.herail/nexium/target/release/bundle/rpm/Nexium-0.1.0-1.x86_64.rpm'
+        - name: 'Nexium Linux (.AppImage)'
+          url: '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/builds/jean.herail/nexium/target/release/bundle/appimage/Nexium_0.1.0_amd64.AppImage'
+        - name: 'Nexium Windows Installer (.exe)'
+          url: '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/Nexium_0.1.0_x64-setup.exe'
