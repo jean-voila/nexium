@@ -28,17 +28,17 @@ build-tauri-windows:
   image: ivangabriele/tauri:debian-bookworm-20
   stage: build
   before_script:
-    - apt-get update && apt-get install -y curl wget file build-essential zip mingw-w64
+    - apt-get update && apt-get install -y curl wget file build-essential zip nsis lld llvm
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y nodejs
     - rustup default stable
-    - rustup target add x86_64-pc-windows-gnu
+    - rustup target add x86_64-pc-windows-msvc
+    - cargo install --locked cargo-xwin
     - cd client
     - npm install
   script:
-    - npm run tauri build -- --target x86_64-pc-windows-gnu
+    - cargo tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
   artifacts:
     paths:
-      - /builds/jean.herail/nexium/target/x86_64-pc-windows-gnu/release/bundle/msi/
-      - /builds/jean.herail/nexium/target/x86_64-pc-windows-gnu/release/bundle/nsis/
+      - /builds/jean.herail/nexium/target/x86_64-pc-windows-msvc/release/bundle/nsis/
     expire_in: 1 week
