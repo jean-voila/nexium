@@ -94,16 +94,11 @@ release:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   stage: release
   needs:
-    - job: build-tauri-linux
-      artifacts: true
-    - job: build-tauri-windows
-      artifacts: true
+    - job: publish
   rules:
     - if: $CI_COMMIT_TAG
   script:
     - echo "Creating release $CI_COMMIT_TAG"
-
-
   release:
     tag_name: '$CI_COMMIT_TAG'
     name: 'Release $CI_COMMIT_TAG'
@@ -111,10 +106,10 @@ release:
     assets:
       links:
         - name: "Nexium Linux (.deb)"
-          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/deb/${DEB_FILE}"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/nexium/$CI_COMMIT_TAG/${DEB_FILE}"
         - name: "Nexium Linux (.rpm)"
-          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/rpm/${RPM_FILE}"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/nexium/$CI_COMMIT_TAG/${RPM_FILE}"
         - name: "Nexium Linux (.AppImage)"
-          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_LINUX}/artifacts/file/target/release/bundle/appimage/${APPIMAGE_FILE}"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/nexium/$CI_COMMIT_TAG/${APPIMAGE_FILE}"
         - name: "Nexium Windows Installer (.exe)"
-          url: "$CI_PROJECT_URL/-/jobs/${CI_JOB_ID_WINDOWS}/artifacts/file/target/x86_64-pc-windows-msvc/release/bundle/nsis/${EXE_FILE}"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/nexium/$CI_COMMIT_TAG/${EXE_FILE}"
