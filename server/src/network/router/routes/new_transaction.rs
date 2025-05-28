@@ -1,16 +1,26 @@
-use nexium::blockchain::transaction::Transaction;
+use std::sync::Arc;
 
-use crate::network::{
-    router::http::{request::Request, response::Response, status::Status},
-    server::Server,
+use nexium::{blockchain::transaction::Transaction, rsa::KeyPair};
+use tokio::sync::Mutex;
+
+use crate::{
+    blockchain::{blockchain::Blockchain, cache::cache::Cache},
+    network::router::http::{
+        request::Request, response::Response, status::Status,
+    },
 };
 
-pub fn handler(req: &mut Request, server: &mut Server) {
-    let data = match server.key.decrypt_split(&req.body) {
+pub async fn handler(
+    req: Request,
+    cache: Arc<Mutex<Cache>>,
+    blockchain: Arc<Mutex<Blockchain>>,
+    key: KeyPair,
+) {
+    let data = match key.decrypt_split(&req.body) {
         Ok(res) => res,
         Err(_) => {
             let res = Response::new(Status::BadRequest, "Invalid data");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
@@ -19,7 +29,7 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         Ok(obj) => obj,
         Err(e) => {
             let res = Response::new(Status::BadRequest, e.to_string());
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
@@ -28,15 +38,20 @@ pub fn handler(req: &mut Request, server: &mut Server) {
     let mut message = tr.header.to_buffer().to_vec();
     message.extend(&tr.data);
 
-    let key = match server.cache.get_key(
-        &tr.header.get_login(),
-        &tr.signature.to_string(),
-        Some(&message),
-    ) {
+    let key = match cache
+        .lock()
+        .await
+        .get_key(
+            &tr.header.get_login(),
+            &tr.signature.to_string(),
+            Some(&message),
+        )
+        .await
+    {
         Some(k) => k,
         None => {
             let res = Response::new(Status::BadRequest, "Invalid key");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
@@ -46,20 +61,20 @@ pub fn handler(req: &mut Request, server: &mut Server) {
             if !res {
                 let res =
                     Response::new(Status::BadRequest, "Invalid signature");
-                let _ = req.send(&res);
+                let _ = req.send(&res).await;
                 return;
             }
         }
         Err(_) => {
             let res =
                 Response::new(Status::BadRequest, "Failed to check signature");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     }
 
-    server.cache.blockchain.add_transaction(tr);
-
     let res = Response::new(Status::Ok, "");
-    let _ = req.send(&res);
+    let _ = req.send(&res).await;
+
+    blockchain.lock().await.add_transaction(tr).await;
 }

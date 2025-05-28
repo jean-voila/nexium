@@ -20,17 +20,27 @@ use std::{
     io::{Read, Seek, SeekFrom, Write},
 };
 
-pub struct Blockchain<'a> {
+pub struct Blockchain {
     pub cache: HashMap<HeaderPreviousBlockHash, u64>,
     file: File,
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,
     pub size: u64,
-    gitlab: &'a GitlabClient,
+    gitlab: GitlabClient,
 }
 
-impl<'a> Blockchain<'a> {
-    pub fn init(gitlab: &'a GitlabClient) -> Result<Self, String> {
+impl Blockchain {
+    // fn create_genesis() -> Block {
+    //     let t = Transaction::new(
+    //         "GENESIS".as_bytes().to_vec(),
+    //         0,
+    //         "",
+    //         DataType::Unknown,
+    //         &key,
+    //     );
+    // }
+
+    pub fn init(gitlab: GitlabClient) -> Result<Self, String> {
         let r = OpenOptions::new()
             .read(true)
             .write(true)
@@ -68,6 +78,10 @@ impl<'a> Blockchain<'a> {
                 ));
             }
         };
+
+        if blockchain_size == 0 {
+            println!("Blockchain is empty, creating genesis block...");
+        }
 
         loop {
             if b.size >= blockchain_size {
@@ -119,16 +133,16 @@ impl<'a> Blockchain<'a> {
         }
     }
 
-    fn create_new_block(&mut self) {
+    async fn create_new_block(&mut self) {
         let mut transactions = self.mempool.dump();
         transactions
             .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
 
         let mut balances: HashMap<String, f32> = HashMap::new();
+        let mut valid_trs: Vec<Transaction> = vec![];
 
-        let valid_trs: Vec<Transaction> = transactions
-            .into_iter()
-            .filter(|tr| match tr.get_data() {
+        for tr in transactions.iter() {
+            match tr.get_data() {
                 Ok(data) => match data {
                     TransactionData::ClassicTransaction {
                         receiver,
@@ -136,7 +150,7 @@ impl<'a> Blockchain<'a> {
                         ..
                     } => {
                         if amount <= 0 as f32 {
-                            return false; // Invalid transaction amount
+                            continue; // Invalid transaction amount
                         }
 
                         let em = tr.header.get_login();
@@ -145,17 +159,17 @@ impl<'a> Blockchain<'a> {
                             .to_string();
 
                         if em == r {
-                            return false; // Cannot send money to yourself
+                            continue; // Cannot send money to yourself
                         }
 
-                        match self.gitlab.check_user_existence(&r) {
+                        match self.gitlab.check_user_existence_async(&r).await {
                             Ok(exists) => {
                                 if !exists {
-                                    return false; // Receiver does not exist
+                                    continue; // Receiver does not exist
                                 }
                             }
                             Err(_) => {
-                                return false; // Error checking user existence
+                                continue; // Error checking user existence
                             }
                         }
 
@@ -164,7 +178,7 @@ impl<'a> Blockchain<'a> {
                             None => match self.get_user_balance(&em) {
                                 Ok(b) => b,
                                 Err(_) => {
-                                    return false; // Error getting emitter balance
+                                    continue; // Error getting emitter balance
                                 }
                             },
                         };
@@ -174,26 +188,26 @@ impl<'a> Blockchain<'a> {
                             None => match self.get_user_balance(&r) {
                                 Ok(b) => b,
                                 Err(_) => {
-                                    return false; // Error getting receiver balance
+                                    continue; // Error getting receiver balance
                                 }
                             },
                         };
 
                         if (be as i64 - amount as i64) < 0 {
-                            false // Insufficient balance
+                            continue; // Insufficient balance
                         } else {
                             be -= amount;
                             br += amount;
                             balances.insert(em, be);
                             balances.insert(r.to_string(), br);
-                            true // Valid transaction
+                            valid_trs.push(tr.clone()); // Valid transaction
                         }
                     }
-                    _ => true, // Other transaction types are considered valid
+                    _ => valid_trs.push(tr.clone()), // Other transaction types are considered valid
                 },
-                Err(_) => false, // Error getting transaction data
-            })
-            .collect();
+                Err(_) => continue, // Error getting transaction data
+            }
+        }
 
         if valid_trs.is_empty() {
             println!("No valid transactions found: aborting block");
@@ -205,12 +219,13 @@ impl<'a> Blockchain<'a> {
         self.append(&block);
     }
 
-    pub fn add_transaction(&mut self, transaction: Transaction) {
+    pub async fn add_transaction(&mut self, transaction: Transaction) {
         self.mempool.add(transaction);
 
         if self.mempool.is_full() {
             println!("Mempool is full, creating a new block");
-            self.create_new_block();
+            self.create_new_block().await;
+            println!("New block created and appended to the blockchain");
         }
     }
 

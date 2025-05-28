@@ -3,25 +3,25 @@ use nexium::rsa::KeyPair;
 use crate::blockchain::cache::cache::Cache;
 
 use super::response::Response;
-use std::{
-    collections::HashMap,
-    io::{Read, Write},
+use std::collections::HashMap;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
 const READ_SIZE: usize = 32768;
 
-pub struct Request<'a> {
+pub struct Request {
     pub method: String,
     pub path_query: String,
     pub path: String,
     pub query: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub body: String,
-    stream: &'a mut TcpStream,
+    stream: TcpStream,
 }
 
-impl<'a> Request<'a> {
+impl Request {
     fn parse_path_query(map: &mut HashMap<String, String>, query: &String) {
         for param in query.split("&") {
             let p: Vec<_> = param.split("=").collect();
@@ -47,23 +47,16 @@ impl<'a> Request<'a> {
         (v[0].to_string(), v[1].to_string())
     }
 
-    fn read_req(stream: &mut TcpStream) -> Result<String, String> {
+    async fn read_req(stream: &mut TcpStream) -> Result<String, String> {
         let mut buff = [0; READ_SIZE];
-        let mut res = String::new();
 
-        // read until end of stream
-        // loop {
-        //     let r = stream.read(&mut buff).unwrap();
-        //     let s = String::from_utf8(buff.to_vec()).expect("convertion failed");
-        //     res.push_str(s.as_str());
+        let r = match stream.read(&mut buff).await {
+            Ok(r) => r,
+            Err(e) => {
+                return Err(format!("Failed to read request: {}", e));
+            }
+        };
 
-        //     if r < READ_SIZE {
-        //         break;
-        //     }
-        // }
-        ///////////////////////////
-
-        let r = stream.read(&mut buff).unwrap();
         if r == READ_SIZE {
             return Err(String::from("Request too long"));
         }
@@ -75,14 +68,15 @@ impl<'a> Request<'a> {
             }
         };
 
-        res.push_str(s.as_str());
-        return Ok(res);
+        return Ok(s);
     }
 
-    pub fn from_stream(stream: &'a mut TcpStream) -> Result<Self, String> {
-        let raw = match Request::read_req(stream) {
+    pub async fn from_stream(
+        mut stream: TcpStream,
+    ) -> Result<Self, (String, TcpStream)> {
+        let raw = match Request::read_req(&mut stream).await {
             Ok(r) => r,
-            Err(e) => return Err(e),
+            Err(e) => return Err((e, stream)),
         };
 
         let mut lines: Vec<_> = raw.lines().map(|l| l.to_string()).collect();
@@ -124,7 +118,7 @@ impl<'a> Request<'a> {
         return Ok(req);
     }
 
-    pub fn check(&mut self, cache: &mut Cache) -> Result<KeyPair, String> {
+    pub async fn check(&self, cache: &mut Cache) -> Result<KeyPair, String> {
         let login = match self.headers.get("login") {
             Some(l) => l,
             None => return Err(String::from("Missing Login header")),
@@ -135,7 +129,7 @@ impl<'a> Request<'a> {
             None => return Err(String::from("Missing Sig-Sample header")),
         };
 
-        match cache.get_key(login, sig, None) {
+        match cache.get_key(login, sig, None).await {
             Some(k) => Ok(k),
             None => {
                 return Err(String::from("Invalid signature"));
@@ -143,10 +137,13 @@ impl<'a> Request<'a> {
         }
     }
 
-    pub fn _send(stream: &mut TcpStream, res: &Response) -> Result<(), String> {
+    pub async fn _send(
+        mut stream: TcpStream,
+        res: &Response,
+    ) -> Result<(), String> {
         let buf = res.to_string();
-        match stream.write_all(buf.as_bytes()) {
-            Ok(()) => match stream.flush() {
+        match stream.write_all(buf.as_bytes()).await {
+            Ok(()) => match stream.flush().await {
                 Ok(()) => Ok(()),
                 Err(e) => Err(e.to_string()),
             },
@@ -154,7 +151,7 @@ impl<'a> Request<'a> {
         }
     }
 
-    pub fn send(&mut self, res: &Response) -> Result<(), String> {
-        Request::_send(self.stream, res)
+    pub async fn send(self, res: &Response) -> Result<(), String> {
+        Request::_send(self.stream, res).await
     }
 }

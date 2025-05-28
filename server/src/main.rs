@@ -12,29 +12,29 @@ use nexium::{
     rsa::KeyPair,
 };
 use std::{env, fs, path::Path};
+use tokio;
 
 const HELP_ARG: &str = "--help";
 const GEN_CONFIG_ARG: &str = "--generate-config";
 const GEN_KEY_ARG: &str = "--generate-key";
 const DEFAULT_CONFIG_NAME: &str = "config.json";
 
-fn main() {
-    // Getting the arguments
+#[tokio::main]
+async fn main() {
     let args = env::args().collect::<Vec<String>>();
 
-    let local_path = Path::new(&NEXIUM_HOME);
+    let local_path_str = NEXIUM_HOME;
+    let local_path = Path::new(&local_path_str);
     let config_path = local_path.join(DEFAULT_CONFIG_NAME);
+    let config_path_str = config_path.to_string_lossy();
 
     if !local_path.exists() {
-        print!(
-            "Creating the {} directory...",
-            local_path.to_str().unwrap().cyan().bold()
-        );
+        print!("Creating the {} directory...", local_path_str.cyan().bold());
 
         match fs::create_dir_all(&local_path) {
             Ok(_) => println!(
                 "\rCreating the {} directory: {}",
-                local_path.to_str().unwrap().cyan().bold(),
+                local_path_str.cyan().bold(),
                 "OK".green()
             ),
             Err(e) => {
@@ -47,10 +47,7 @@ fn main() {
             }
         }
     } else {
-        println!(
-            "Using the {} directory",
-            local_path.to_str().unwrap().cyan().bold()
-        );
+        println!("Using the {} directory", local_path_str.cyan().bold());
     }
 
     if args.len() > 1 {
@@ -78,13 +75,13 @@ fn main() {
                 // Generate the config file
                 println!(
                     "Generating the config file at {}...\n",
-                    config_path.to_str().unwrap().cyan().bold()
+                    config_path_str.cyan().bold()
                 );
 
                 Config::generate(&config_path);
                 println!(
                     "\nConfig file generated at {}",
-                    config_path.to_str().unwrap().cyan().bold()
+                    config_path_str.cyan().bold()
                 );
                 return;
             }
@@ -93,18 +90,17 @@ fn main() {
                 if !config_path.exists() {
                     eprintln!(
                         "Config file not found at {}. Please generate it with {}",
-                        config_path.to_str().unwrap().cyan(),
+                        config_path_str.cyan(),
                         GEN_CONFIG_ARG.yellow().bold()
                     );
                     return;
                 }
 
                 let config = Config::from_file(&config_path);
-                let key_path = Path::new(&config.key_filepath);
-                let gitlab = GitlabClient::new(
-                    config.gitlab_token.clone(),
-                    TokenType::Classic,
-                );
+                let key_path_str = &config.key_filepath;
+                let key_path = Path::new(&key_path_str);
+                let gitlab =
+                    GitlabClient::new(config.gitlab_token, TokenType::Classic);
 
                 match gitlab.check_token() {
                     Ok(_) => {}
@@ -128,7 +124,7 @@ fn main() {
 
                 println!(
                     "Generating new key at {}...",
-                    key_path.to_str().unwrap().cyan().bold()
+                    key_path_str.cyan().bold()
                 );
 
                 let key =
@@ -139,7 +135,7 @@ fn main() {
                     Ok(_) => {
                         println!(
                             "Private key saved to {}",
-                            key_path.to_str().unwrap().cyan().bold()
+                            key_path_str.cyan().bold()
                         );
                     }
                     Err(e) => {
@@ -185,16 +181,13 @@ fn main() {
     if !config_path.exists() {
         eprintln!(
             "Config file not found at {}. Please generate it with {}",
-            config_path.to_str().unwrap().cyan(),
+            config_path_str.cyan(),
             GEN_CONFIG_ARG.yellow().bold()
         );
         return;
     }
 
-    println!(
-        "Using the config file at {}",
-        local_path.to_str().unwrap().cyan().bold()
-    );
+    println!("Using the config file at {}", local_path_str.cyan().bold());
 
     let config = Config::from_file(&config_path);
 
@@ -202,7 +195,7 @@ fn main() {
         GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
     print!("Checking Gitlab token...");
-    match gitlab.check_token() {
+    match gitlab.check_token_async().await {
         Ok(_) => {
             println!("\rChecking Gitlab token: {}", "OK".green());
         }
@@ -231,7 +224,7 @@ fn main() {
     };
 
     print!("Reading blockchain...");
-    let mut blockchain = match Blockchain::init(&gitlab) {
+    let blockchain = match Blockchain::init(gitlab.clone()) {
         Ok(b) => {
             println!("\rReading blockchain: {: >5}", "OK".green());
             b
@@ -243,13 +236,13 @@ fn main() {
         }
     };
 
-    let mut server = match Server::new(&config, &gitlab, &key, &mut blockchain)
-    {
+    let server = match Server::new(&config, gitlab, key, blockchain) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to create server: {}", e);
             return;
         }
     };
-    server.listen();
+
+    server.listen().await;
 }

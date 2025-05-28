@@ -1,31 +1,20 @@
-use crate::blockchain::blockchain::Blockchain;
-
 use super::user::User;
 use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
 use num_bigint::BigUint;
 use std::{collections::HashMap, str::FromStr};
 
-pub struct Cache<'a> {
+pub struct Cache {
     pub data: HashMap<String, User>,
-    pub gitlab: &'a GitlabClient,
-    pub blockchain: &'a mut Blockchain<'a>,
+    pub gitlab: GitlabClient,
 }
 
-impl<'a> Cache<'a> {
-    pub fn new(
-        gitlab: &'a GitlabClient,
-        blockchain: &'a mut Blockchain<'a>,
-    ) -> Self {
+impl Cache {
+    pub fn new(gitlab: GitlabClient) -> Self {
         Self {
             data: HashMap::new(),
             gitlab,
-            blockchain,
         }
     }
-
-    // pub fn get(&self, login: &String) -> Option<User> {
-    //     self.data.get(login).cloned()
-    // }
 
     fn get_user(&self, login: &String) -> User {
         match self.data.get(login) {
@@ -34,17 +23,19 @@ impl<'a> Cache<'a> {
         }
     }
 
-    pub fn update_keys(
+    pub async fn update_keys(
         &mut self,
         login: &String,
     ) -> Result<Vec<KeyPair>, String> {
-        let keys = match self.gitlab.get_gpg_keys(login.as_str()) {
+        let keys = match self.gitlab.get_gpg_keys_async(login.as_str()).await {
             Ok(keys) => keys,
             Err(e) => {
                 return Err(format!("Failed to get GPG keys: {}", e));
             }
         };
+
         let mut user = self.get_user(login);
+        dbg!(&user.keys.len());
         let keys: Vec<KeyPair> = keys
             .iter()
             .filter_map(|k| match KeyPair::pub_from_pem(k, &login) {
@@ -56,6 +47,7 @@ impl<'a> Cache<'a> {
             })
             .collect();
         user.keys = keys.clone();
+        dbg!(&user.keys.len());
         self.data.insert(login.clone(), user);
         Ok(keys)
     }
@@ -138,7 +130,7 @@ impl<'a> Cache<'a> {
         None
     }
 
-    pub fn get_key(
+    pub async fn get_key(
         &mut self,
         login: &String,
         sig: &String,
@@ -159,11 +151,9 @@ impl<'a> Cache<'a> {
             _ => (),
         };
 
-        match self.update_keys(&login) {
-            Ok(keys) => {
-                return self.check_keys(&keys, sig, msg);
-            }
-            Err(_) => return None,
+        match self.update_keys(&login).await {
+            Ok(keys) => self.check_keys(&keys, sig, msg),
+            Err(_) => None,
         }
     }
 }

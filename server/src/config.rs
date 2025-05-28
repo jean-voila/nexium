@@ -105,7 +105,7 @@ impl Config {
             user_login,
             gitlab_token,
         };
-        
+
         res.to_file(path);
         return res;
     }

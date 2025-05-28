@@ -1,32 +1,41 @@
-use nexium::defaults::SIG_SAMPLE;
+use nexium::{defaults::SIG_SAMPLE, rsa::KeyPair};
+use std::{ops::DerefMut, sync::Arc};
+use tokio::sync::Mutex;
 
-use crate::network::{
-    router::http::{request::Request, response::Response, status::Status},
-    server::Server,
+use crate::{
+    blockchain::cache::cache::Cache,
+    network::router::http::{
+        request::Request, response::Response, status::Status,
+    },
 };
 
-pub fn handler(req: &mut Request, server: &mut Server) {
-    let sig = match server.key.sign(SIG_SAMPLE) {
+pub async fn handler(
+    req: Request,
+    cache: Arc<Mutex<Cache>>,
+    login: String,
+    key: KeyPair,
+) {
+    let sig = match key.sign(SIG_SAMPLE) {
         Ok(s) => s,
         Err(e) => {
             dbg!(e);
             let res = Response::new(Status::InternalError, "");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
 
     let json = json::object! {
-        login: server.login.clone(),
+        login: login,
         sigSample: sig.to_string(),
         // version: 0,
     };
 
-    let key = match req.check(&mut server.cache) {
+    let key = match req.check(cache.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
             let res = Response::new(Status::BadRequest, e);
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
@@ -37,12 +46,12 @@ pub fn handler(req: &mut Request, server: &mut Server) {
         Err(e) => {
             dbg!(e);
             let res = Response::new(Status::InternalError, "");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
             return;
         }
     };
 
     let mut res = Response::new(Status::Ok, crypted);
     res.set_header("content-type", "text/plain");
-    let _ = req.send(&res);
+    let _ = req.send(&res).await;
 }

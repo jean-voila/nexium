@@ -1,20 +1,17 @@
+use super::defaults::*;
+use core::fmt;
 use oauth2::{
     basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret,
     CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
-use reqwest::blocking::Client;
+use reqwest::blocking::{Client, RequestBuilder};
+use reqwest::{Client as ClientAsync, RequestBuilder as RequestBuilderAsync};
 use serde::{Deserialize, Serialize};
 use serde_json;
-
-use super::defaults::*;
-
-use core::fmt;
 use std::io::{BufRead, Write};
 use std::net::TcpListener;
 use url::Url;
 use webbrowser;
-
-/// Default path to the Gitlab API URL
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "PascalCase")]
@@ -66,12 +63,13 @@ impl fmt::Display for GitlabError {
 
 impl GitlabClient {
     pub fn new(token: String, token_type: TokenType) -> Self {
-        GitlabClient {
+        Self {
             api_url: format!("{}{}", GITLAB_URL, GITLAB_API_ENDPOINT),
             token,
             token_type,
         }
     }
+
     pub fn check_token(&self) -> Result<bool, GitlabError> {
         let url = format!("{}/user", self.api_url);
         let client = Client::new();
@@ -94,6 +92,28 @@ impl GitlabClient {
         }
     }
 
+    pub async fn check_token_async(&self) -> Result<bool, GitlabError> {
+        let url = format!("{}/user", self.api_url);
+        let client = ClientAsync::new();
+        let request = client.get(&url);
+
+        // Use build_headers to set the token
+        let request = self.build_headers_async(request);
+
+        let response = request.send().await;
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    Ok(true)
+                } else {
+                    Err(GitlabError::InvalidToken)
+                }
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
     pub fn get_gpg_keys(
         &self,
         login: &str,
@@ -102,6 +122,25 @@ impl GitlabClient {
         match user_id {
             Ok(id) => {
                 let gpg_keys = self.get_user_gpg_keys_by_id(id);
+                match gpg_keys {
+                    Ok(keys) => {
+                        return Ok(keys);
+                    }
+                    Err(e) => Err(e),
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn get_gpg_keys_async(
+        &self,
+        login: &str,
+    ) -> Result<Vec<String>, GitlabError> {
+        let user_id = self.get_user_id_async(login).await;
+        match user_id {
+            Ok(id) => {
+                let gpg_keys = self.get_user_gpg_keys_by_id_async(id).await;
                 match gpg_keys {
                     Ok(keys) => {
                         return Ok(keys);
@@ -144,6 +183,37 @@ impl GitlabClient {
         }
     }
 
+    async fn get_user_id_async(&self, login: &str) -> Result<u64, GitlabError> {
+        let url = format!("{}/users", self.api_url);
+        let client = ClientAsync::new();
+        let request = client.get(&url).query(&[("username", login)]);
+
+        let request = self.build_headers_async(request);
+
+        let response = request.send().await;
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let users: Vec<serde_json::Value> =
+                        resp.json().await.unwrap_or(Vec::new());
+                    if users.is_empty() {
+                        return Err(GitlabError::UserNotFound);
+                    }
+                    if let Some(user) = users.get(0) {
+                        if let Some(id) = user.get("id") {
+                            if let Some(id) = id.as_u64() {
+                                return Ok(id);
+                            }
+                        }
+                    }
+                }
+                Err(GitlabError::InvalidToken)
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
     fn get_user_gpg_keys_by_id(
         &self,
         user_id: u64,
@@ -161,6 +231,40 @@ impl GitlabClient {
                 if resp.status().is_success() {
                     let keys: Vec<serde_json::Value> =
                         resp.json().unwrap_or(Vec::new());
+                    let mut gpg_keys: Vec<String> = Vec::new();
+                    for key in keys {
+                        if let Some(key) = key.get("key") {
+                            if let Some(key) = key.as_str() {
+                                gpg_keys.push(key.to_string());
+                            }
+                        }
+                    }
+                    Ok(gpg_keys)
+                } else {
+                    Err(GitlabError::InvalidToken)
+                }
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
+    async fn get_user_gpg_keys_by_id_async(
+        &self,
+        user_id: u64,
+    ) -> Result<Vec<String>, GitlabError> {
+        let url = format!("{}/users/{}/gpg_keys", self.api_url, user_id);
+        let client = ClientAsync::new();
+        let request = client.get(&url);
+
+        let request = self.build_headers_async(request);
+
+        let response = request.send().await;
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let keys: Vec<serde_json::Value> =
+                        resp.json().await.unwrap_or(Vec::new());
                     let mut gpg_keys: Vec<String> = Vec::new();
                     for key in keys {
                         if let Some(key) = key.get("key") {
@@ -324,6 +428,31 @@ impl GitlabClient {
         }
     }
 
+    pub async fn check_user_existence_async(
+        &self,
+        login: &str,
+    ) -> Result<bool, GitlabError> {
+        let url = format!("{}/users", self.api_url);
+        let client = ClientAsync::new();
+        let request = client.get(&url).query(&[("username", login)]);
+
+        let request = self.build_headers_async(request);
+
+        let response = request.send().await;
+
+        match response {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let users: Vec<serde_json::Value> =
+                        resp.json().await.unwrap_or(Vec::new());
+                    return Ok(!users.is_empty());
+                }
+                Err(GitlabError::InvalidToken)
+            }
+            Err(_) => Err(GitlabError::NetworkError),
+        }
+    }
+
     pub fn search_users(
         &self,
         search: &str,
@@ -362,10 +491,19 @@ impl GitlabClient {
         }
     }
 
-    fn build_headers(
+    fn build_headers(&self, request: RequestBuilder) -> RequestBuilder {
+        let request = match self.token_type {
+            TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
+            TokenType::OAuth => request
+                .header("Authorization", format!("Bearer {}", &self.token)),
+        };
+        return request;
+    }
+
+    fn build_headers_async(
         &self,
-        request: reqwest::blocking::RequestBuilder,
-    ) -> reqwest::blocking::RequestBuilder {
+        request: RequestBuilderAsync,
+    ) -> RequestBuilderAsync {
         let request = match self.token_type {
             TokenType::Classic => request.header("PRIVATE-TOKEN", &self.token),
             TokenType::OAuth => request

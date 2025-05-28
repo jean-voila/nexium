@@ -1,16 +1,26 @@
+use crate::blockchain::{blockchain::Blockchain, cache::cache::Cache};
+
 use super::{
-    super::server::Server,
     http::{request::Request, response::Response, status::Status},
     routes::{check_nexium, get_balance, get_transactions, new_transaction},
 };
-use std::net::TcpStream;
+use nexium::rsa::KeyPair;
+use std::sync::Arc;
+use tokio::net::TcpStream;
+use tokio::sync::Mutex;
 
-pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
+pub async fn handler(
+    stream: TcpStream,
+    cache: Arc<Mutex<Cache>>,
+    blockchain: Arc<Mutex<Blockchain>>,
+    login: String,
+    key: KeyPair,
+) {
     println!("New connection: {}", stream.peer_addr().unwrap());
 
-    let mut req = match Request::from_stream(stream) {
+    let req = match Request::from_stream(stream).await {
         Ok(r) => r,
-        Err(e) => {
+        Err((e, stream)) => {
             let res = Response::new(Status::BadRequest, e);
             let _ = Request::_send(stream, &res);
             return;
@@ -36,22 +46,22 @@ pub fn handler(mut server: &mut Server, stream: &mut TcpStream) {
 
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/nexium") => {
-            check_nexium::handler(&mut req, &mut server);
+            check_nexium::handler(req, cache, login, key).await;
         }
         (method, path) if method == "GET" && path.starts_with("/balance/") => {
-            get_balance::handler(&mut req, &mut server);
+            get_balance::handler(req, cache, blockchain).await;
         }
         (method, path)
             if method == "GET" && path.starts_with("/transactions/") =>
         {
-            get_transactions::handler(&mut req, &mut server);
+            get_transactions::handler(req, cache, blockchain).await;
         }
         ("POST", "/new_transaction") => {
-            new_transaction::handler(&mut req, &mut server);
+            new_transaction::handler(req, cache, blockchain, key).await;
         }
         _ => {
             let res = Response::new(Status::NotFound, "");
-            let _ = req.send(&res);
+            let _ = req.send(&res).await;
         }
     };
 }
