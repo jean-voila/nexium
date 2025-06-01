@@ -1,11 +1,12 @@
-use core::fmt;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter, Result};
 
+// #[allow(dead_code)]
 pub enum Status {
     Ok,
     BadRequest,
+    Unauthorized,
     NotFound,
-    InternalError,
+    InternalServerError,
 }
 
 impl Status {
@@ -13,8 +14,9 @@ impl Status {
         match self {
             Self::Ok => 200,
             Self::BadRequest => 400,
+            Self::Unauthorized => 401,
             Self::NotFound => 404,
-            Self::InternalError => 500,
+            Self::InternalServerError => 500,
         }
     }
 
@@ -22,14 +24,15 @@ impl Status {
         match self {
             Self::Ok => "OK",
             Self::BadRequest => "Bad Request",
+            Self::Unauthorized => "Unauthorized",
             Self::NotFound => "Not Found",
-            Self::InternalError => "Internal Server Error",
+            Self::InternalServerError => "Internal Server Error",
         }
     }
 }
 
 impl Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{} {}", self.code(), self.text())
     }
 }

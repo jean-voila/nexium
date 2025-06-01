@@ -10,7 +10,7 @@ use tokio::{net::TcpListener, sync::Mutex};
 
 pub struct Server {
     pub cache: Cache,
-    // gitlab: GitlabClient,
+    gitlab: GitlabClient,
     blockchain: Blockchain,
     pub login: String,
     address: String,
@@ -27,7 +27,7 @@ impl Server {
     ) -> Result<Self, String> {
         Ok(Self {
             cache: Cache::new(gitlab.clone()),
-            // gitlab: gitlab,
+            gitlab: gitlab,
             blockchain: blockchain,
             login: config.user_login.clone(),
             address: config.listen.clone(),
@@ -69,10 +69,12 @@ impl Server {
                         let cache_arc_clone = cache_arc.clone();
                         let l = self.login.clone();
                         let k = self.key.clone();
+                        let gitlab = self.gitlab.clone();
 
                         tokio::spawn(async move {
                             handler(
                                 stream,
+                                gitlab,
                                 cache_arc_clone,
                                 blockchain_arc_clone,
                                 l,

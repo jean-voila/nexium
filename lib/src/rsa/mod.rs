@@ -180,33 +180,62 @@ impl KeyPair {
         Ok(decrypted_signature == m)
     }
 
-    pub fn crypt(&self, message: &str) -> Result<String, RSAError> {
-        if message.is_empty() {
+    pub fn crypt<T>(&self, message: T) -> Result<String, RSAError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let msg = message.as_ref();
+        if msg.is_empty() {
             return Err(RSAError::EmptyMessage);
         }
 
-        let parsed_msg: Vec<u8> = message.as_bytes().to_vec();
-        let m = BigUint::from_bytes_be(parsed_msg.as_slice());
-
+        let m = BigUint::from_bytes_be(msg);
         if &m >= &self.n {
             return Err(RSAError::MessageTooBig);
         }
+
         let res = m.modpow(&self.e, &self.n);
         Ok(format!("{:0617}", res))
     }
 
-    pub fn crypt_split(&self, message: &String) -> Result<String, RSAError> {
+    pub fn crypt_binary<T>(&self, message: T) -> Result<[u8; 256], RSAError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let msg = message.as_ref();
+        if msg.is_empty() {
+            return Err(RSAError::EmptyMessage);
+        }
+
+        let m = BigUint::from_bytes_be(msg);
+        if &m >= &self.n {
+            return Err(RSAError::MessageTooBig);
+        }
+
+        let res = m.modpow(&self.e, &self.n);
+        Ok(res.to_bytes_be().try_into().unwrap())
+    }
+
+    pub fn crypt_split<T>(&self, message: T) -> Result<String, RSAError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let msg = message.as_ref();
         let mut i = 0;
         let mut j = 0;
         let mut res = String::new();
 
-        while i < message.len() {
+        // for win in msg.windows(250) {
+
+        // }
+
+        while i < msg.len() {
             j += 250;
-            if j > message.len() {
-                j = message.len();
+            if j > msg.len() {
+                j = msg.len();
             }
 
-            let r = match self.crypt(&message[i..j]) {
+            let r = match self.crypt(&msg[i..j]) {
                 Ok(r) => r,
                 Err(e) => {
                     return Err(e);
@@ -218,8 +247,38 @@ impl KeyPair {
         return Ok(res);
     }
 
-    pub fn decrypt(&self, message: &str) -> Result<String, RSAError> {
-        let parsed_msg = BigUint::parse_bytes(message.as_bytes(), 10)
+    // pub fn crypt_split_binary<T>(&self, message: T) -> Result<String, RSAError>
+    // where
+    //     T: AsRef<[u8]>,
+    // {
+    //     let msg = message.as_ref();
+    //     let mut i = 0;
+    //     let mut j = 0;
+    //     let mut res = String::new();
+
+    //     while i < msg.len() {
+    //         j += 250;
+    //         if j > msg.len() {
+    //             j = msg.len();
+    //         }
+
+    //         let r = match self.crypt_binary(&msg[i..j]) {
+    //             Ok(r) => r,
+    //             Err(e) => {
+    //                 return Err(e);
+    //             }
+    //         };
+    //         res.push_str(r.as_str());
+    //         i += 250;
+    //     }
+    //     return Ok(res);
+    // }
+
+    pub fn decrypt<T>(&self, message: T) -> Result<String, RSAError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let parsed_msg = BigUint::parse_bytes(message.as_ref(), 10)
             .ok_or(RSAError::BadSignatureFormat)?;
 
         let m = BigUint::from_bytes_be(parsed_msg.to_bytes_be().as_slice());
@@ -235,17 +294,21 @@ impl KeyPair {
         }
     }
 
-    pub fn decrypt_split(&self, message: &String) -> Result<String, RSAError> {
+    pub fn decrypt_split<T>(&self, message: T) -> Result<String, RSAError>
+    where
+        T: AsRef<[u8]>,
+    {
+        let msg = message.as_ref();
         let mut i = 0;
         let mut j = 0;
         let mut res = String::new();
 
-        while i < message.len() {
+        while i < msg.len() {
             j += 617;
-            if j > message.len() {
-                j = message.len();
+            if j > msg.len() {
+                j = msg.len();
             }
-            let r = match self.decrypt(&message[i..j]) {
+            let r = match self.decrypt(&msg[i..j]) {
                 Ok(r) => r,
                 Err(e) => {
                     return Err(e);

@@ -4,23 +4,21 @@ use tokio::sync::Mutex;
 
 use crate::{
     blockchain::cache::cache::Cache,
-    network::router::http::{
-        request::Request, response::Response, status::Status,
-    },
+    network::http::{request::Request, response::Response, status::Status},
 };
 
 pub async fn handler(
     req: Request,
+    mut res: Response,
     cache: Arc<Mutex<Cache>>,
     login: String,
-    key: KeyPair,
+    server_key: KeyPair,
 ) {
-    let sig = match key.sign(SIG_SAMPLE) {
+    let sig = match server_key.sign(SIG_SAMPLE) {
         Ok(s) => s,
         Err(e) => {
-            dbg!(e);
-            let res = Response::new(Status::InternalError, "");
-            let _ = req.send(&res).await;
+            res.status = Status::InternalServerError;
+            res.send(b"Failed to sign sample").await;
             return;
         }
     };
@@ -34,8 +32,9 @@ pub async fn handler(
     let key = match req.check(cache.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
-            let res = Response::new(Status::BadRequest, e);
-            let _ = req.send(&res).await;
+            // let res = Response::new(, e);
+            res.status = Status::BadRequest;
+            res.send(b"Invalid request").await;
             return;
         }
     };
@@ -44,14 +43,14 @@ pub async fn handler(
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
         Err(e) => {
-            dbg!(e);
-            let res = Response::new(Status::InternalError, "");
-            let _ = req.send(&res).await;
+            res.status = Status::InternalServerError;
+            res.send(b"Failed to encrypt response").await;
             return;
         }
     };
 
-    let mut res = Response::new(Status::Ok, crypted);
+    // let mut res = Response::new(, crypted);
+    res.status = Status::Ok;
     res.set_header("content-type", "text/plain");
-    let _ = req.send(&res).await;
+    res.send(crypted).await;
 }

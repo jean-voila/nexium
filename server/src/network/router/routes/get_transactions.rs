@@ -10,13 +10,12 @@ use crate::{
         blockchain::Blockchain, cache::cache::Cache,
         structure::consts::HEADER_PREVIOUS_BLOCK_HASH_SIZE,
     },
-    network::router::http::{
-        request::Request, response::Response, status::Status,
-    },
+    network::http::{request::Request, response::Response, status::Status},
 };
 
 pub async fn handler(
     req: Request,
+    mut res: Response,
     cache: Arc<Mutex<Cache>>,
     blockchain: Arc<Mutex<Blockchain>>,
 ) {
@@ -24,8 +23,9 @@ pub async fn handler(
     let login = &sp[2];
 
     if login.is_empty() {
-        let res = Response::new(Status::BadRequest, "");
-        let _ = req.send(&res).await;
+        // let res = Response::new(Status::BadRequest, "");
+        res.status = Status::BadRequest;
+        res.send(b"Missing user login").await;
         return;
     }
     println!("login: {login}");
@@ -43,8 +43,9 @@ pub async fn handler(
     let key = match req.check(cache.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
-            let res = Response::new(Status::BadRequest, e);
-            let _ = req.send(&res).await;
+            // let res = Response::new(Status::BadRequest, e);
+            res.status = Status::BadRequest;
+            res.send(b"Invalid request").await;
             return;
         }
     };
@@ -56,8 +57,8 @@ pub async fn handler(
         let b = match blockchain.lock().await.get_block(&hash) {
             Ok(b) => b,
             Err(_) => {
-                let res = Response::new(Status::BadRequest, "Invalid block");
-                let _ = req.send(&res).await;
+                res.status = Status::BadRequest;
+                res.send(b"Invalid block").await;
                 return;
             }
         };
@@ -90,11 +91,9 @@ pub async fn handler(
             let obj = match serde_json::to_string(&tr) {
                 Ok(obj) => obj,
                 Err(_) => {
-                    let res = Response::new(
-                        Status::BadRequest,
-                        "Failed to parse transaction",
-                    );
-                    let _ = req.send(&res).await;
+                    res.status = Status::BadRequest;
+
+                    res.send(b"Failed to parse transaction").await;
                     return;
                 }
             };
@@ -102,11 +101,8 @@ pub async fn handler(
             match arr.push(obj) {
                 Ok(_) => {}
                 Err(_) => {
-                    let res = Response::new(
-                        Status::BadRequest,
-                        "Failed to add transaction object",
-                    );
-                    let _ = req.send(&res).await;
+                    res.status = Status::BadRequest;
+                    res.send(b"Failed to add transaction object").await;
                     return;
                 }
             }
@@ -130,8 +126,8 @@ pub async fn handler(
             Some(_) => {} // continue
             None => {
                 // block not found in cache
-                let res = Response::new(Status::BadRequest, "Invalid block");
-                let _ = req.send(&res).await;
+                res.status = Status::BadRequest;
+                res.send(b"Invalid block").await;
                 return;
             }
         }
@@ -141,16 +137,13 @@ pub async fn handler(
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
         Err(_) => {
-            let res = Response::new(Status::InternalError, "");
-            let _ = req.send(&res).await;
+            res.status = Status::InternalServerError;
+            res.send(b"Failed to encrypt response").await;
             return;
         }
     };
-    // dbg!(&crypted);
 
-    let mut res = Response::new(Status::Ok, crypted);
+    res.status = Status::Ok;
     res.set_header("content-type", "text/plain");
-    // let mut res = Response::new(Status::Ok, json.dump());
-    // res.set_header("content-type", "text/json");
-    let _ = req.send(&res).await;
+    res.send(crypted).await;
 }

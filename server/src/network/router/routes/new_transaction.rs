@@ -5,13 +5,12 @@ use tokio::sync::Mutex;
 
 use crate::{
     blockchain::{blockchain::Blockchain, cache::cache::Cache},
-    network::router::http::{
-        request::Request, response::Response, status::Status,
-    },
+    network::http::{request::Request, response::Response, status::Status},
 };
 
 pub async fn handler(
     req: Request,
+    mut res: Response,
     cache: Arc<Mutex<Cache>>,
     blockchain: Arc<Mutex<Blockchain>>,
     key: KeyPair,
@@ -19,8 +18,8 @@ pub async fn handler(
     let data = match key.decrypt_split(&req.body) {
         Ok(res) => res,
         Err(_) => {
-            let res = Response::new(Status::BadRequest, "Invalid data");
-            let _ = req.send(&res).await;
+            res.status = Status::BadRequest;
+            res.send(b"Failed to decrypt request body").await;
             return;
         }
     };
@@ -28,8 +27,9 @@ pub async fn handler(
     let tr: Transaction = match serde_json::from_str(&data) {
         Ok(obj) => obj,
         Err(e) => {
-            let res = Response::new(Status::BadRequest, e.to_string());
-            let _ = req.send(&res).await;
+            res.status = Status::BadRequest;
+            let msg = format!("Failed to parse transaction: {}", e.to_string());
+            res.send(msg.as_bytes()).await;
             return;
         }
     };
@@ -50,31 +50,29 @@ pub async fn handler(
     {
         Some(k) => k,
         None => {
-            let res = Response::new(Status::BadRequest, "Invalid key");
-            let _ = req.send(&res).await;
+            res.status = Status::BadRequest;
+            res.send(b"Invalid key").await;
             return;
         }
     };
 
     match key.check_signature(&message, &tr.signature) {
-        Ok(res) => {
-            if !res {
-                let res =
-                    Response::new(Status::BadRequest, "Invalid signature");
-                let _ = req.send(&res).await;
+        Ok(check) => {
+            if !check {
+                res.status = Status::BadRequest;
+                res.send(b"Invalid signature").await;
                 return;
             }
         }
         Err(_) => {
-            let res =
-                Response::new(Status::BadRequest, "Failed to check signature");
-            let _ = req.send(&res).await;
+            res.status = Status::BadRequest;
+            res.send(b"Failed to check signature").await;
             return;
         }
     }
 
-    let res = Response::new(Status::Ok, "");
-    let _ = req.send(&res).await;
+    res.status = Status::Ok;
+    res.send(b"").await;
 
     blockchain.lock().await.add_transaction(tr).await;
 }
