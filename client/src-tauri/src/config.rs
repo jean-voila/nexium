@@ -1,5 +1,4 @@
-use nexium::gitlab;
-use nexium::gitlab::*;
+use nexium::gitlab::{error::GitlabError, GitlabClient, TokenType};
 
 use nexium::login::*;
 use serde::{Deserialize, Serialize};
@@ -16,7 +15,7 @@ pub struct Config {
     pub pub_key: String,
     pub priv_key: String,
     pub gitlab_token: String,
-    pub gitlab_token_type: gitlab::TokenType,
+    pub gitlab_token_type: TokenType,
     pub is_testnet: bool,
     pub password: String,
     pub server_login: String,

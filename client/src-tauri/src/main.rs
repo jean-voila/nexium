@@ -10,7 +10,12 @@ use invoice::*;
 
 use nexium_api::*;
 
-use nexium::{defaults::*, gitlab::*, login::*, rsa::*};
+use nexium::{
+    defaults::*,
+    gitlab::{error::GitlabError, GitlabClient, TokenType},
+    login::*,
+    rsa::*,
+};
 // use sleep
 use std::path::Path;
 

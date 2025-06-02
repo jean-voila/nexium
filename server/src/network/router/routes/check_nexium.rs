@@ -1,25 +1,24 @@
-use nexium::{defaults::SIG_SAMPLE, rsa::KeyPair};
+use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
 use std::{ops::DerefMut, sync::Arc};
 use tokio::sync::Mutex;
 
-use crate::{
-    blockchain::cache::cache::Cache,
-    network::http::{request::Request, response::Response, status::Status},
+use crate::network::http::{
+    request::Request, response::Response, status::Status,
 };
 
 pub async fn handler(
     req: Request,
     mut res: Response,
-    cache: Arc<Mutex<Cache>>,
+    gitlab: Arc<Mutex<GitlabClient>>,
     login: String,
     server_key: KeyPair,
-) {
+) -> Result<(), std::io::Error> {
     let sig = match server_key.sign(SIG_SAMPLE) {
         Ok(s) => s,
         Err(e) => {
+            eprintln!("Failed to sign sample: {}", e);
             res.status = Status::InternalServerError;
-            res.send(b"Failed to sign sample").await;
-            return;
+            return res.send(b"Failed to sign sample").await;
         }
     };
 
@@ -29,13 +28,11 @@ pub async fn handler(
         // version: 0,
     };
 
-    let key = match req.check(cache.lock().await.deref_mut()).await {
+    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
-            // let res = Response::new(, e);
-            res.status = Status::BadRequest;
-            res.send(b"Invalid request").await;
-            return;
+            res.status = Status::Unauthorized;
+            return res.send(e.as_bytes()).await;
         }
     };
 
@@ -43,14 +40,13 @@ pub async fn handler(
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
         Err(e) => {
+            eprintln!("Failed to encrypt response: {}", e);
             res.status = Status::InternalServerError;
-            res.send(b"Failed to encrypt response").await;
-            return;
+            return res.send(b"Failed to encrypt response").await;
         }
     };
 
-    // let mut res = Response::new(, crypted);
     res.status = Status::Ok;
     res.set_header("content-type", "text/plain");
-    res.send(crypted).await;
+    res.send(crypted.as_bytes()).await
 }

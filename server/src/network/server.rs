@@ -1,15 +1,11 @@
 use super::router::handler::handler;
-use crate::{
-    blockchain::{blockchain::Blockchain, cache::cache::Cache},
-    config::Config,
-};
+use crate::{blockchain::blockchain::Blockchain, config::Config};
 use colored::Colorize;
 use nexium::{gitlab::GitlabClient, rsa::KeyPair};
 use std::{process, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 
 pub struct Server {
-    pub cache: Cache,
     gitlab: GitlabClient,
     blockchain: Blockchain,
     pub login: String,
@@ -26,7 +22,6 @@ impl Server {
         blockchain: Blockchain,
     ) -> Result<Self, String> {
         Ok(Self {
-            cache: Cache::new(gitlab.clone()),
             gitlab: gitlab,
             blockchain: blockchain,
             login: config.user_login.clone(),
@@ -55,7 +50,7 @@ impl Server {
 
         {
             let blockchain_arc = Arc::new(Mutex::new(self.blockchain));
-            let cache_arc = Arc::new(Mutex::new(self.cache));
+            let gitlab_arc = Arc::new(Mutex::new(self.gitlab));
 
             loop {
                 match listener.accept().await {
@@ -65,22 +60,17 @@ impl Server {
                             stream.peer_addr().unwrap()
                         );
 
-                        let blockchain_arc_clone = blockchain_arc.clone();
-                        let cache_arc_clone = cache_arc.clone();
+                        let blockchain = blockchain_arc.clone();
+                        let gitlab = gitlab_arc.clone();
                         let l = self.login.clone();
                         let k = self.key.clone();
-                        let gitlab = self.gitlab.clone();
 
                         tokio::spawn(async move {
-                            handler(
-                                stream,
-                                gitlab,
-                                cache_arc_clone,
-                                blockchain_arc_clone,
-                                l,
-                                k,
-                            )
-                            .await;
+                            handler(stream, gitlab, blockchain, l, k)
+                                .await
+                                .unwrap_or_else(|e| {
+                                    eprintln!("Error handling request: {}", e);
+                                });
                         });
                     }
                     Err(e) => {

@@ -27,7 +27,7 @@ impl Cache {
         &mut self,
         login: &String,
     ) -> Result<Vec<KeyPair>, String> {
-        let keys = match self.gitlab.get_gpg_keys_async(login.as_str()).await {
+        let keys = match self.gitlab.fetch_user_keys_async(login.as_str()).await {
             Ok(keys) => keys,
             Err(e) => {
                 return Err(format!("Failed to get GPG keys: {}", e));

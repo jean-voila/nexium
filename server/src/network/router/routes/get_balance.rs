@@ -1,44 +1,54 @@
 use std::{ops::DerefMut, sync::Arc};
 
 use crate::{
-    blockchain::{blockchain::Blockchain, cache::cache::Cache},
+    blockchain::blockchain::Blockchain,
     network::http::{request::Request, response::Response, status::Status},
 };
-use nexium::utils::rand::create_noise;
+use nexium::{gitlab::GitlabClient, utils::rand::create_noise};
 use tokio::sync::Mutex;
 
 pub async fn handler(
     req: Request,
     mut res: Response,
-    cache: Arc<Mutex<Cache>>,
+    gitlab: Arc<Mutex<GitlabClient>>,
     blockchain: Arc<Mutex<Blockchain>>,
-) {
+) -> Result<(), std::io::Error> {
     let sp: Vec<String> = req.path.split("/").map(|e| e.to_string()).collect();
-    let user_login = &sp[2];
+    let login = &sp[2];
 
-    if user_login.is_empty() {
+    if login.is_empty() {
         res.status = Status::BadRequest;
-        res.send(b"Missing user login").await;
-        return;
+        return res.send(b"Missing user login").await;
     }
-    // println!("login: {login}");
+    println!("login: {}", login);
 
-    let key = match req.check(cache.lock().await.deref_mut()).await {
+    match gitlab.lock().await.check_user_existence_async(login).await {
+        Ok(true) => {}
+        Ok(false) => {
+            res.status = Status::NotFound;
+            return res.send(b"User not found").await;
+        }
+        Err(e) => {
+            eprintln!("Failed to check user existence: {}", e);
+            res.status = Status::InternalServerError;
+            return res.send(b"Failed to check user existence").await;
+        }
+    }
+
+    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
-            // let res = Response::new(Status::BadRequest, e);
-            res.status = Status::BadRequest;
-            res.send(b"Invalid request").await;
-            return;
+            res.status = Status::Unauthorized;
+            return res.send(e.as_bytes()).await;
         }
     };
 
-    let balance = match blockchain.lock().await.get_user_balance(user_login) {
+    let balance = match blockchain.lock().await.get_user_balance(login) {
         Ok(b) => b,
         Err(e) => {
+            eprintln!("Failed to get user balance: {}", e);
             res.status = Status::BadRequest;
-            res.send(b"Failed to get user balance").await;
-            return;
+            return res.send(b"Failed to get user balance").await;
         }
     };
 
@@ -50,14 +60,14 @@ pub async fn handler(
     let data = json.dump();
     let crypted = match key.crypt(&data) {
         Ok(res) => res,
-        Err(_) => {
+        Err(e) => {
+            eprintln!("Failed to encrypt response: {}", e);
             res.status = Status::InternalServerError;
-            res.send(b"Failed to encrypt response").await;
-            return;
+            return res.send(b"Failed to encrypt response").await;
         }
     };
 
     res.status = Status::Ok;
     res.set_header("content-type", "text/plain");
-    res.send(crypted).await;
+    res.send(crypted.as_bytes()).await
 }

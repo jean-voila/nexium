@@ -1,36 +1,37 @@
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
-use nexium::{blockchain::transaction::Transaction, rsa::KeyPair};
+use nexium::{
+    blockchain::transaction::Transaction, gitlab::GitlabClient, rsa::KeyPair,
+};
 use tokio::sync::Mutex;
 
 use crate::{
-    blockchain::{blockchain::Blockchain, cache::cache::Cache},
+    blockchain::blockchain::Blockchain,
     network::http::{request::Request, response::Response, status::Status},
 };
 
 pub async fn handler(
     req: Request,
     mut res: Response,
-    cache: Arc<Mutex<Cache>>,
+    gitlab: Arc<Mutex<GitlabClient>>,
     blockchain: Arc<Mutex<Blockchain>>,
     key: KeyPair,
-) {
+) -> Result<(), std::io::Error> {
     let data = match key.decrypt_split(&req.body) {
         Ok(res) => res,
-        Err(_) => {
+        Err(e) => {
+            eprintln!("Failed to decrypt request body: {}", e);
             res.status = Status::BadRequest;
-            res.send(b"Failed to decrypt request body").await;
-            return;
+            return res.send(b"Failed to decrypt request body").await;
         }
     };
 
     let tr: Transaction = match serde_json::from_str(&data) {
         Ok(obj) => obj,
         Err(e) => {
+            eprintln!("Failed to parse transaction: {}", e);
             res.status = Status::BadRequest;
-            let msg = format!("Failed to parse transaction: {}", e.to_string());
-            res.send(msg.as_bytes()).await;
-            return;
+            return res.send(b"Failed to parse transaction").await;
         }
     };
 
@@ -38,41 +39,36 @@ pub async fn handler(
     let mut message = tr.header.to_buffer().to_vec();
     message.extend(&tr.data);
 
-    let key = match cache
-        .lock()
-        .await
-        .get_key(
-            &tr.header.get_login(),
-            &tr.signature.to_string(),
-            Some(&message),
-        )
-        .await
-    {
-        Some(k) => k,
-        None => {
-            res.status = Status::BadRequest;
-            res.send(b"Invalid key").await;
-            return;
+    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
+        Ok(data) => data,
+        Err(e) => {
+            res.status = Status::Unauthorized;
+            return res.send(e.as_bytes()).await;
         }
     };
 
     match key.check_signature(&message, &tr.signature) {
         Ok(check) => {
             if !check {
+                eprintln!("Invalid signature for transaction");
                 res.status = Status::BadRequest;
-                res.send(b"Invalid signature").await;
-                return;
+                return res.send(b"Invalid signature").await;
             }
         }
-        Err(_) => {
+        Err(e) => {
+            eprintln!("Failed to check signature: {}", e);
             res.status = Status::BadRequest;
-            res.send(b"Failed to check signature").await;
-            return;
+            return res.send(b"Failed to check signature").await;
         }
     }
 
     res.status = Status::Ok;
-    res.send(b"").await;
+    res.send(b"").await?;
 
-    blockchain.lock().await.add_transaction(tr).await;
+    blockchain
+        .lock()
+        .await
+        .add_transaction(gitlab.lock().await.deref_mut(), tr)
+        .await;
+    Ok(())
 }

@@ -1,6 +1,10 @@
 // transforms a string into a binary vector
-fn preprocessing(input: &Vec<u8>) -> Vec<u8> {
-    let mut data = input.clone();
+fn preprocessing<T>(input: T) -> Vec<u8>
+where
+    T: AsRef<[u8]>,
+{
+    let input = input.as_ref();
+    let mut data = input.to_vec();
     let bit_len = (data.len() * 8) as u64;
     data.push(0x80);
     while (data.len() * 8) % 512 != 448 {
@@ -96,7 +100,11 @@ fn processing(data: &Vec<u8>) -> [u32; 8] {
     return hash_val;
 }
 
-pub fn sha256(s: &Vec<u8>) -> [u8; 32] {
+pub fn sha256<T>(s: T) -> [u8; 32]
+where
+    T: AsRef<[u8]>,
+{
+    let s = s.as_ref();
     let preprocessed_data = preprocessing(s);
     let hash = processing(&preprocessed_data);
 

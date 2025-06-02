@@ -224,7 +224,7 @@ async fn main() {
     };
 
     print!("Reading blockchain...");
-    let blockchain = match Blockchain::init(gitlab.clone()) {
+    let blockchain = match Blockchain::init(&key).await {
         Ok(b) => {
             println!("\rReading blockchain: {: >5}", "OK".green());
             b

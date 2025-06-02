@@ -13,6 +13,7 @@ use nexium::{
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     gitlab::GitlabClient,
+    rsa::KeyPair,
 };
 use std::{
     collections::HashMap,
@@ -26,21 +27,26 @@ pub struct Blockchain {
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,
     pub size: u64,
-    gitlab: GitlabClient,
 }
 
 impl Blockchain {
-    // fn create_genesis() -> Block {
-    //     let t = Transaction::new(
-    //         "GENESIS".as_bytes().to_vec(),
-    //         0,
-    //         "",
-    //         DataType::Unknown,
-    //         &key,
-    //     );
-    // }
+    async fn create_genesis(&mut self, key: &KeyPair) -> Result<(), String> {
+        let t = Transaction::new(
+            "GENESIS".as_bytes().to_vec(),
+            0,
+            "",
+            DataType::Unknown,
+            &key,
+        )?;
 
-    pub fn init(gitlab: GitlabClient) -> Result<Self, String> {
+        let transactions = vec![t];
+        let block =
+            Block::new(HeaderPreviousBlockHash::default(), &transactions);
+        self.append(&block);
+        Ok(())
+    }
+
+    pub async fn init(key: &KeyPair) -> Result<Self, String> {
         let r = OpenOptions::new()
             .read(true)
             .write(true)
@@ -66,7 +72,6 @@ impl Blockchain {
             last_hash: HeaderPreviousBlockHash::default(),
             mempool: Mempool::new(),
             size: 0,
-            gitlab,
         };
 
         let blockchain_size = match b.file.metadata() {
@@ -80,7 +85,9 @@ impl Blockchain {
         };
 
         if blockchain_size == 0 {
-            println!("Blockchain is empty, creating genesis block...");
+            print!("Blockchain is empty, creating genesis block...");
+            b.create_genesis(key).await?;
+            print!("\r{:>26}(created genesis block){:>18}", " ", " ");
         }
 
         loop {
@@ -133,7 +140,7 @@ impl Blockchain {
         }
     }
 
-    async fn create_new_block(&mut self) {
+    async fn create_new_block(&mut self, gitlab: &mut GitlabClient) {
         let mut transactions = self.mempool.dump();
         transactions
             .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
@@ -162,7 +169,7 @@ impl Blockchain {
                             continue; // Cannot send money to yourself
                         }
 
-                        match self.gitlab.check_user_existence_async(&r).await {
+                        match gitlab.check_user_existence_async(&r).await {
                             Ok(exists) => {
                                 if !exists {
                                     continue; // Receiver does not exist
@@ -219,12 +226,16 @@ impl Blockchain {
         self.append(&block);
     }
 
-    pub async fn add_transaction(&mut self, transaction: Transaction) {
+    pub async fn add_transaction(
+        &mut self,
+        mut gitlab: &mut GitlabClient,
+        transaction: Transaction,
+    ) {
         self.mempool.add(transaction);
 
         if self.mempool.is_full() {
             println!("Mempool is full, creating a new block");
-            self.create_new_block().await;
+            self.create_new_block(&mut gitlab).await;
             println!("New block created and appended to the blockchain");
         }
     }

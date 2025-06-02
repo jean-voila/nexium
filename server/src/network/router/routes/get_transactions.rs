@@ -1,13 +1,16 @@
 use std::{ops::DerefMut, sync::Arc};
 
-use nexium::blockchain::{
-    consts::TRANSACTION_RECEIVER, transaction_data::TransactionData,
+use nexium::{
+    blockchain::{
+        consts::TRANSACTION_RECEIVER, transaction_data::TransactionData,
+    },
+    gitlab::GitlabClient,
 };
 use tokio::sync::Mutex;
 
 use crate::{
     blockchain::{
-        blockchain::Blockchain, cache::cache::Cache,
+        blockchain::Blockchain,
         structure::consts::HEADER_PREVIOUS_BLOCK_HASH_SIZE,
     },
     network::http::{request::Request, response::Response, status::Status},
@@ -16,19 +19,17 @@ use crate::{
 pub async fn handler(
     req: Request,
     mut res: Response,
-    cache: Arc<Mutex<Cache>>,
+    gitlab: Arc<Mutex<GitlabClient>>,
     blockchain: Arc<Mutex<Blockchain>>,
-) {
+) -> Result<(), std::io::Error> {
     let sp: Vec<String> = req.path.split("/").map(|e| e.to_string()).collect();
     let login = &sp[2];
 
     if login.is_empty() {
-        // let res = Response::new(Status::BadRequest, "");
         res.status = Status::BadRequest;
-        res.send(b"Missing user login").await;
-        return;
+        return res.send(b"Missing user login").await;
     }
-    println!("login: {login}");
+    println!("login: {}", login);
 
     let n = match req.query.get("n") {
         Some(n) => match n.parse::<usize>() {
@@ -40,13 +41,24 @@ pub async fn handler(
     };
     println!("n: {n}");
 
-    let key = match req.check(cache.lock().await.deref_mut()).await {
+    match gitlab.lock().await.check_user_existence_async(login).await {
+        Ok(true) => {}
+        Ok(false) => {
+            res.status = Status::NotFound;
+            return res.send(b"User not found").await;
+        }
+        Err(e) => {
+            eprintln!("Failed to check user existence: {}", e);
+            res.status = Status::InternalServerError;
+            return res.send(b"Failed to check user existence").await;
+        }
+    }
+
+    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
         Ok(data) => data,
         Err(e) => {
-            // let res = Response::new(Status::BadRequest, e);
-            res.status = Status::BadRequest;
-            res.send(b"Invalid request").await;
-            return;
+            res.status = Status::Unauthorized;
+            return res.send(e.as_bytes()).await;
         }
     };
 
@@ -56,10 +68,10 @@ pub async fn handler(
     while hash != [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] {
         let b = match blockchain.lock().await.get_block(&hash) {
             Ok(b) => b,
-            Err(_) => {
+            Err(e) => {
+                eprintln!("Failed to get block: {}", e);
                 res.status = Status::BadRequest;
-                res.send(b"Invalid block").await;
-                return;
+                return res.send(b"Invalid block").await;
             }
         };
 
@@ -90,20 +102,19 @@ pub async fn handler(
 
             let obj = match serde_json::to_string(&tr) {
                 Ok(obj) => obj,
-                Err(_) => {
+                Err(e) => {
+                    eprintln!("Failed to serialize transaction: {}", e);
                     res.status = Status::BadRequest;
-
-                    res.send(b"Failed to parse transaction").await;
-                    return;
+                    return res.send(b"Failed to parse transaction").await;
                 }
             };
 
             match arr.push(obj) {
                 Ok(_) => {}
-                Err(_) => {
+                Err(e) => {
+                    eprintln!("Failed to add transaction object: {}", e);
                     res.status = Status::BadRequest;
-                    res.send(b"Failed to add transaction object").await;
-                    return;
+                    return res.send(b"Failed to add transaction object").await;
                 }
             }
 
@@ -119,16 +130,13 @@ pub async fn handler(
         hash = b.header.previous_block_hash;
 
         match blockchain.lock().await.cache.get(&hash) {
-            Some(0) => {
-                // end of blockchain
-                break;
-            }
-            Some(_) => {} // continue
+            Some(0) => break, // end of blockchain
+            Some(_) => {}     // continue
             None => {
                 // block not found in cache
+                eprintln!("Block not found in cache: {}", hex::encode(hash));
                 res.status = Status::BadRequest;
-                res.send(b"Invalid block").await;
-                return;
+                return res.send(b"Invalid block").await;
             }
         }
     }
@@ -136,14 +144,14 @@ pub async fn handler(
     let data = arr.dump();
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
-        Err(_) => {
+        Err(e) => {
+            eprintln!("Failed to encrypt response: {}", e);
             res.status = Status::InternalServerError;
-            res.send(b"Failed to encrypt response").await;
-            return;
+            return res.send(b"Failed to encrypt response").await;
         }
     };
 
     res.status = Status::Ok;
     res.set_header("content-type", "text/plain");
-    res.send(crypted).await;
+    res.send(crypted.as_bytes()).await
 }
