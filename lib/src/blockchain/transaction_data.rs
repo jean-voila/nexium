@@ -1,9 +1,10 @@
 use super::{
-    consts::{DESCRIPTION_SIZE, TRANSACTION_RECEIVER},
+    consts::{
+        CLASSIC_TRANSACTION_MAX_SIZE, CLASSIC_TRANSACTION_MIN_SIZE,
+        DESCRIPTION_SIZE, TRANSACTION_RECEIVER,
+    },
     data_type::DataType,
-};
-use crate::blockchain::consts::{
-    CLASSIC_TRANSACTION_MAX_SIZE, CLASSIC_TRANSACTION_MIN_SIZE,
+    transaction_error::TransactionDataError,
 };
 
 pub type DESCRIPTION = [u8; DESCRIPTION_SIZE];
@@ -19,11 +20,6 @@ pub enum TransactionData {
     Unknown {
         data: Vec<u8>,
     },
-}
-
-#[derive(Debug)]
-pub enum TransactionDataError {
-    InvalidData,
 }
 
 impl TransactionData {

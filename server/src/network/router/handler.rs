@@ -15,8 +15,8 @@ pub async fn handler(
     mut stream: TcpStream,
     gitlab: Arc<Mutex<GitlabClient>>,
     blockchain: Arc<Mutex<Blockchain>>,
-    login: String,
-    key: KeyPair,
+    login: Arc<String>,
+    key: Arc<KeyPair>,
 ) -> Result<(), String> {
     println!("New connection: {}", stream.peer_addr().unwrap());
 

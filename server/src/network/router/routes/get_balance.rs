@@ -43,7 +43,7 @@ pub async fn handler(
         }
     };
 
-    let balance = match blockchain.lock().await.get_user_balance(login) {
+    let balance = match blockchain.lock().await.calc_user_balance(login) {
         Ok(b) => b,
         Err(e) => {
             eprintln!("Failed to get user balance: {}", e);

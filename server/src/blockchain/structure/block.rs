@@ -8,7 +8,7 @@ use nexium::{
     sha256::sha256,
 };
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
     // pub transactions: [Transaction; TRANSACTION_COUNT],
@@ -109,8 +109,11 @@ impl Block {
         Block::double_hash_(&self.to_buffer())
     }
 
-    pub fn double_hash_(hash: &Vec<u8>) -> HeaderPreviousBlockHash {
-        sha256(&sha256(&hash).to_vec())
+    pub fn double_hash_<T>(hash: T) -> HeaderPreviousBlockHash
+    where
+        T: AsRef<[u8]>,
+    {
+        sha256(&sha256(&hash))
     }
 
     pub fn size(&self) -> u32 {
@@ -160,7 +163,7 @@ impl Block {
 
     pub fn to_buffer(&self) -> Vec<u8> {
         let mut res = vec![];
-        res.extend_from_slice(&self.header.to_buffer());
+        res.extend_from_slice(&self.header.clone().to_buffer());
         for t in &self.transactions {
             res.extend_from_slice(&t.to_buffer());
         }

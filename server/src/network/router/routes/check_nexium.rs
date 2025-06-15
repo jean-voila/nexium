@@ -10,8 +10,8 @@ pub async fn handler(
     req: Request,
     mut res: Response,
     gitlab: Arc<Mutex<GitlabClient>>,
-    login: String,
-    server_key: KeyPair,
+    login: Arc<String>,
+    server_key: Arc<KeyPair>,
 ) -> Result<(), std::io::Error> {
     let sig = match server_key.sign(SIG_SAMPLE) {
         Ok(s) => s,
@@ -23,7 +23,7 @@ pub async fn handler(
     };
 
     let json = json::object! {
-        login: login,
+        login: login.to_string(),
         sigSample: sig.to_string(),
         // version: 0,
     };

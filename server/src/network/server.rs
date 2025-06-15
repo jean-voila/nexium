@@ -51,6 +51,8 @@ impl Server {
         {
             let blockchain_arc = Arc::new(Mutex::new(self.blockchain));
             let gitlab_arc = Arc::new(Mutex::new(self.gitlab));
+            let login_arc = Arc::new(self.login);
+            let key_arc = Arc::new(self.key);
 
             loop {
                 match listener.accept().await {
@@ -62,11 +64,11 @@ impl Server {
 
                         let blockchain = blockchain_arc.clone();
                         let gitlab = gitlab_arc.clone();
-                        let l = self.login.clone();
-                        let k = self.key.clone();
+                        let login = login_arc.clone();
+                        let key = key_arc.clone();
 
                         tokio::spawn(async move {
-                            handler(stream, gitlab, blockchain, l, k)
+                            handler(stream, gitlab, blockchain, login, key)
                                 .await
                                 .unwrap_or_else(|e| {
                                     eprintln!("Error handling request: {}", e);

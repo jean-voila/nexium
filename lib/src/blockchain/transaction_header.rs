@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 pub type EMITTER = [u8; TRANSACTION_EMITTER];
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionHeader {
     pub transaction_size: u16,
     pub timestamp: u32,

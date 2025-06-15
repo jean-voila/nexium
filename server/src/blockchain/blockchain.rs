@@ -1,4 +1,7 @@
 use super::{
+    errors::{BlockchainError, BlockchainFileError},
+    iterator::BlockchainIterator,
+    iterator_rev::BlockchainIteratorReverse,
     mempool::Mempool,
     structure::{
         block::Block,
@@ -8,8 +11,7 @@ use super::{
 };
 use nexium::{
     blockchain::{
-        consts::TRANSACTION_RECEIVER, data_type::DataType,
-        transaction::Transaction, transaction_data::TransactionData,
+        consts::TRANSACTION_RECEIVER, data_type::DataType, transaction::Transaction, transaction_data::TransactionData
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     gitlab::GitlabClient,
@@ -22,7 +24,8 @@ use std::{
 };
 
 pub struct Blockchain {
-    pub cache: HashMap<HeaderPreviousBlockHash, u64>,
+    pub balance_cache: HashMap<String, f32>,
+    pub hash_cache: HashMap<HeaderPreviousBlockHash, u64>,
     file: File,
     pub last_hash: HeaderPreviousBlockHash,
     mempool: Mempool,
@@ -42,32 +45,33 @@ impl Blockchain {
         let transactions = vec![t];
         let block =
             Block::new(HeaderPreviousBlockHash::default(), &transactions);
-        self.append(&block);
-        Ok(())
+        self.append(&block)
+    }
+
+    fn open_file(rd: bool, wr: bool, cr: bool) -> Result<File, String> {
+        let r = OpenOptions::new()
+            .read(rd)
+            .write(wr)
+            .append(wr)
+            .create(cr)
+            .open(BLOCKCHAIN_FILE);
+
+        let file = r.map_err(|e| {
+            format!(
+                "Failed to open blockchain file: {}: {}",
+                BLOCKCHAIN_FILE, e
+            )
+        })?;
+
+        Ok(file)
     }
 
     pub async fn init(key: &KeyPair) -> Result<Self, String> {
-        let r = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .append(true)
-            .create(true)
-            .open(BLOCKCHAIN_FILE);
-
-        let file = match r {
-            Ok(f) => f,
-            Err(_) => {
-                return Err(format!(
-                    "Failed to open blockchain file: {}",
-                    BLOCKCHAIN_FILE
-                ));
-            }
-        };
-
-        // read the file and load the blocks into the cache
+        let file = Self::open_file(true, true, true)?;
 
         let mut b = Self {
-            cache: HashMap::new(),
+            balance_cache: HashMap::new(),
+            hash_cache: HashMap::new(),
             file,
             last_hash: HeaderPreviousBlockHash::default(),
             mempool: Mempool::new(),
@@ -84,6 +88,8 @@ impl Blockchain {
             }
         };
 
+        // read the file and hash the blocks to setup the hash_cache
+
         if blockchain_size == 0 {
             print!("Blockchain is empty, creating genesis block...");
             b.create_genesis(key).await?;
@@ -95,52 +101,42 @@ impl Blockchain {
                 break;
             }
 
-            let block = match b.read_block(b.size) {
-                Ok(b) => b,
-                Err(e) => {
-                    return Err(format!(
-                        "Failed to read blockchain file: {}",
-                        e
-                    ));
-                }
-            };
+            let (buffer, hash) = b.read_block_buffer_at(b.size)?;
 
-            match block.header.previous_block_hash {
-                x if x == b.last_hash => {}
-                _ => {
-                    return Err("Invalid previous block hash".to_string());
-                }
+            if hash != b.last_hash {
+                return Err(BlockchainError::InvalidPreviousHash
+                    .as_str()
+                    .to_string());
             }
 
-            // dbg!(&block);
-            b.last_hash = block.double_hash();
-            // dbg!(b.last_hash);
-            b.cache.insert(b.last_hash, b.size);
-            b.size += BLOCK_HEADER_SIZE as u64
-                + block.header.transactions_size as u64;
-            // dbg!(b.size, blockchain_size, block.size());
+            b.last_hash = Block::double_hash_(&buffer);
+            b.hash_cache.insert(b.last_hash, b.size);
+            b.size += buffer.len() as u64;
         }
 
-        // dbg!(&b.cache);
-        // dbg!(&b.cache.len());
+        // dbg!(&b.hash_cache);
+        // dbg!(&b.hash_cache.len());
         Ok(b)
     }
 
-    pub fn append(&mut self, block: &Block) {
+    pub fn append(&mut self, block: &Block) -> Result<(), String> {
+        let mut file = Self::open_file(false, true, false)?;
         let buff = block.to_buffer();
-        match self.file.write_all(&buff) {
-            Ok(_) => {
-                self.last_hash = Block::double_hash_(&buff);
-                self.cache.insert(self.last_hash, self.size);
-                self.size += buff.len() as u64;
-            }
-            Err(e) => {
-                println!("Error writing to file: {}", e);
-            }
-        }
+
+        file.write_all(&buff)
+            .map_err(|e| format!("Error writing to file: {}", e))?;
+
+        self.last_hash = Block::double_hash_(&buff);
+        self.hash_cache.insert(self.last_hash, self.size);
+        self.size += buff.len() as u64;
+
+        Ok(())
     }
 
-    async fn create_new_block(&mut self, gitlab: &mut GitlabClient) {
+    async fn create_new_block(
+        &mut self,
+        gitlab: &mut GitlabClient,
+    ) -> Result<(), String> {
         let mut transactions = self.mempool.dump();
         transactions
             .sort_by(|a, b| a.header.timestamp.cmp(&b.header.timestamp));
@@ -182,7 +178,7 @@ impl Blockchain {
 
                         let mut be = match balances.get(&em) {
                             Some(b) => *b,
-                            None => match self.get_user_balance(&em) {
+                            None => match self.calc_user_balance(&em) {
                                 Ok(b) => b,
                                 Err(_) => {
                                     continue; // Error getting emitter balance
@@ -192,7 +188,7 @@ impl Blockchain {
 
                         let mut br = match balances.get(&r) {
                             Some(b) => *b,
-                            None => match self.get_user_balance(&r) {
+                            None => match self.calc_user_balance(&r) {
                                 Ok(b) => b,
                                 Err(_) => {
                                     continue; // Error getting receiver balance
@@ -218,98 +214,109 @@ impl Blockchain {
 
         if valid_trs.is_empty() {
             println!("No valid transactions found: aborting block");
-            return;
+            return Err("No valid transactions found".to_string());
         }
 
         let block = Block::new(self.last_hash, &valid_trs);
         // dbg!(&block);
-        self.append(&block);
+        self.append(&block)
     }
 
     pub async fn add_transaction(
         &mut self,
         mut gitlab: &mut GitlabClient,
         transaction: Transaction,
-    ) {
+    ) -> Result<(), String> {
         self.mempool.add(transaction);
 
         if self.mempool.is_full() {
             println!("Mempool is full, creating a new block");
-            self.create_new_block(&mut gitlab).await;
+            self.create_new_block(&mut gitlab).await?;
             println!("New block created and appended to the blockchain");
         }
+        Ok(())
     }
 
-    pub fn read_block(&mut self, offset: u64) -> Result<Block, String> {
+    pub fn read_block_buffer(
+        &self,
+        file: &mut File,
+    ) -> Result<(Vec<u8>, HeaderPreviousBlockHash), String> {
         let mut header_buff = [0_u8; BLOCK_HEADER_SIZE];
+        file.read_exact(&mut header_buff)
+            .map_err(|e| BlockchainFileError::FailedToRead(e).to_string())?;
 
-        match self.file.seek(SeekFrom::Start(offset)) {
-            Ok(_) => (),
-            Err(e) => {
-                return Err(format!(
-                    "Failed to seek in blockchain file: {}",
-                    e
-                ));
-            }
-        };
-
-        let header = match self.file.read_exact(&mut header_buff) {
-            Ok(_) => BlockHeader::from_buff(&header_buff),
-            Err(e) => {
-                return Err(format!("Error reading blockchain file: {}", e));
-            }
-        };
-
-        let mut block_buff = vec![0_u8; header.transactions_size as usize];
-
-        match self
-            .file
-            .seek(SeekFrom::Start(offset + BLOCK_HEADER_SIZE as u64))
-        {
-            Ok(_) => (),
-            Err(e) => {
-                return Err(format!(
-                    "Failed to seek in blockchain file: {}",
-                    e
-                ));
-            }
-        };
-
-        match self.file.read_exact(&mut block_buff) {
-            Ok(_) => (),
-            Err(e) => {
-                return Err(format!("Failed to read blockchain file: {}", e));
-            }
-        };
-
+        let header = BlockHeader::from_buff(&header_buff);
         let mut buff =
             vec![0_u8; BLOCK_HEADER_SIZE + header.transactions_size as usize];
         buff[0..BLOCK_HEADER_SIZE].copy_from_slice(&header_buff);
-        buff[BLOCK_HEADER_SIZE..].copy_from_slice(&block_buff);
 
+        file.read_exact(&mut buff[BLOCK_HEADER_SIZE..])
+            .map_err(|e| BlockchainFileError::FailedToRead(e).to_string())?;
+        Ok((buff, header.previous_block_hash))
+    }
+
+    pub fn read_block_buffer_at(
+        &self,
+        offset: u64,
+    ) -> Result<(Vec<u8>, HeaderPreviousBlockHash), String> {
+        let mut file = Self::open_file(true, false, false)?;
+        self.read_block_buffer_file_at(&mut file, offset)
+    }
+
+    pub fn read_block_buffer_file_at(
+        &self,
+        file: &mut File,
+        offset: u64,
+    ) -> Result<(Vec<u8>, HeaderPreviousBlockHash), String> {
+        file.seek(SeekFrom::Start(offset))
+            .map_err(|e| BlockchainFileError::FailedToSeek(e).to_string())?;
+
+        self.read_block_buffer(file)
+    }
+
+    pub fn read_block_at(&mut self, offset: u64) -> Result<Block, String> {
+        let (buff, _) = self.read_block_buffer_at(offset)?;
         Block::from_buffer(&buff)
     }
 
-    pub fn get_block(
+    pub fn read_block_file_at(
+        &self,
+        file: &mut File,
+        offset: u64,
+    ) -> Result<Block, String> {
+        let (buff, _) = self.read_block_buffer_file_at(file, offset)?;
+        Block::from_buffer(&buff)
+    }
+
+    pub fn get_block_from_hash(
         &mut self,
         hash: &HeaderPreviousBlockHash,
     ) -> Result<Block, String> {
-        let offset = match self.cache.get(hash) {
-            Some(o) => *o,
-            None => {
-                return Err("Block not found in cache".to_string());
-            }
-        };
-        self.read_block(offset)
+        match self.hash_cache.get(hash) {
+            Some(offset) => self.read_block_at(*offset),
+            None => Err(BlockchainError::HashNotFound.as_str().to_string()),
+        }
     }
 
+    pub fn get_block_file_from_hash(
+        &self,
+        file: &mut File,
+        hash: &HeaderPreviousBlockHash,
+    ) -> Result<Block, String> {
+        match self.hash_cache.get(hash) {
+            Some(offset) => self.read_block_file_at(file, *offset),
+            None => Err(BlockchainError::HashNotFound.as_str().to_string()),
+        }
+    }
+
+    #[deprecated]
     pub fn block_foreach(
         &mut self,
         mut f: impl FnMut(&Block) -> Result<(), String>,
     ) -> Result<(), String> {
         let mut offset = 0;
         while offset < self.size {
-            let block = match self.read_block(offset) {
+            let block = match self.read_block_at(offset) {
                 Ok(b) => b,
                 Err(e) => {
                     return Err(format!(
@@ -324,12 +331,41 @@ impl Blockchain {
         Ok(())
     }
 
-    pub fn get_user_balance<T>(&mut self, login: T) -> Result<f32, String>
+    pub fn get_balance<T>(&self, login: T) -> f32
+    where
+        T: AsRef<str>,
+    {
+        let login = login.as_ref();
+        match self.balance_cache.get(login) {
+            Some(balance) => *balance,
+            None => INITIAL_BALANCE as f32, // Default balance if not cached
+        }
+    }
+
+    pub fn calc_user_balance<T>(&mut self, login: T) -> Result<f32, String>
     where
         T: AsRef<str>,
     {
         let login = login.as_ref();
         let mut balance = INITIAL_BALANCE as f32;
+
+        // for block in self.iter()? {
+        //     for tr in block?.transactions {
+        //         if tr.header.data_type != DataType::ClassicTransaction {
+        //             continue; // Skip non-classic transactions
+        //         }
+
+        //         let data = tr.get_data().map_err(|e| e.as_str().to_string())?;
+        //         match data {
+        //             TransactionData::ClassicTransaction {
+        //                 receiver,
+        //                 amount,
+        //                 ..
+        //             } => {}
+        //             _ => continue, // Skip non-classic transaction data
+        //         }
+        //     }
+        // }
 
         let res = self.block_foreach(|b| {
             for tr in &b.transactions {
@@ -369,5 +405,21 @@ impl Blockchain {
             Ok(_) => Ok(balance),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn iter(&self) -> Result<BlockchainIterator, String> {
+        Ok(BlockchainIterator {
+            blockchain: &self,
+            file: Self::open_file(true, false, false)?,
+            offset: 0,
+        })
+    }
+
+    pub fn iter_rev(&self) -> Result<BlockchainIteratorReverse, String> {
+        Ok(BlockchainIteratorReverse {
+            blockchain: &self,
+            file: Self::open_file(true, false, false)?,
+            hash: self.last_hash,
+        })
     }
 }

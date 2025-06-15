@@ -66,7 +66,7 @@ pub async fn handler(
     let mut hash = blockchain.lock().await.last_hash;
 
     while hash != [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] {
-        let b = match blockchain.lock().await.get_block(&hash) {
+        let b = match blockchain.lock().await.get_block_from_hash(&hash) {
             Ok(b) => b,
             Err(e) => {
                 eprintln!("Failed to get block: {}", e);
@@ -129,7 +129,7 @@ pub async fn handler(
 
         hash = b.header.previous_block_hash;
 
-        match blockchain.lock().await.cache.get(&hash) {
+        match blockchain.lock().await.hash_cache.get(&hash) {
             Some(0) => break, // end of blockchain
             Some(_) => {}     // continue
             None => {

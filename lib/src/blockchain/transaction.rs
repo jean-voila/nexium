@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use super::{
     consts::{SIGNATURE_SIZE, TRANSACTION_HEADER_SIZE},
     data_type::DataType,
-    transaction_data::{TransactionData, TransactionDataError},
+    transaction_data::TransactionData,
+    transaction_error::TransactionDataError,
     transaction_header::TransactionHeader,
 };
 use crate::{
@@ -117,7 +118,8 @@ impl Transaction {
             TransactionHeader::new(data.len() as u16, fees, emitter, data_type);
 
         let mut buff = vec![0; TRANSACTION_HEADER_SIZE + data.len()];
-        buff[0..TRANSACTION_HEADER_SIZE].copy_from_slice(&header.to_buffer());
+        buff[0..TRANSACTION_HEADER_SIZE]
+            .copy_from_slice(&header.clone().to_buffer());
         buff[TRANSACTION_HEADER_SIZE..].copy_from_slice(&data);
         // dbg!(&buff.len());
 
@@ -174,7 +176,7 @@ impl Transaction {
         ];
 
         res[0..TRANSACTION_HEADER_SIZE]
-            .copy_from_slice(&self.header.to_buffer());
+            .copy_from_slice(&self.header.clone().to_buffer());
 
         res[TRANSACTION_HEADER_SIZE..signature_start]
             .copy_from_slice(&self.data);

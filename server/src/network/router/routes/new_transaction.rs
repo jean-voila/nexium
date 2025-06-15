@@ -15,7 +15,7 @@ pub async fn handler(
     mut res: Response,
     gitlab: Arc<Mutex<GitlabClient>>,
     blockchain: Arc<Mutex<Blockchain>>,
-    key: KeyPair,
+    key: Arc<KeyPair>,
 ) -> Result<(), std::io::Error> {
     let data = match key.decrypt_split(&req.body) {
         Ok(res) => res,
@@ -36,7 +36,7 @@ pub async fn handler(
     };
 
     // dbg!(&tr);
-    let mut message = tr.header.to_buffer().to_vec();
+    let mut message = tr.header.clone().to_buffer().to_vec();
     message.extend(&tr.data);
 
     let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
@@ -65,7 +65,7 @@ pub async fn handler(
     res.status = Status::Ok;
     res.send(b"").await?;
 
-    blockchain
+    let res = blockchain
         .lock()
         .await
         .add_transaction(gitlab.lock().await.deref_mut(), tr)

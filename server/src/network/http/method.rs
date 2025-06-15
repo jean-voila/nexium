@@ -48,7 +48,7 @@ impl Display for Method {
 }
 
 mod tests {
-    #![allow(unused_imports)]
+    #[allow(unused_imports)]
     use super::Method;
 
     #[test]

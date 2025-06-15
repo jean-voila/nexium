@@ -1,15 +1,14 @@
-use nexium::utils::time::current_time;
-
 use super::consts::{
     BLOCK_HEADER_SIZE, HEADER_MERKLE_ROOT_SIZE,
     HEADER_PREVIOUS_BLOCK_HASH_SIZE, HEADER_VERSION,
 };
+use nexium::utils::time::current_time;
 
+pub type HeaderBuffer = [u8; BLOCK_HEADER_SIZE];
 pub type HeaderMerkleRoot = [u8; HEADER_MERKLE_ROOT_SIZE];
 pub type HeaderPreviousBlockHash = [u8; HEADER_PREVIOUS_BLOCK_HASH_SIZE];
 
-// #[derive(Debug, Default, Clone, Copy)]
-#[derive(Default, Clone, Copy, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct BlockHeader {
     pub version: u16,
     pub previous_block_hash: HeaderPreviousBlockHash,
@@ -40,7 +39,7 @@ impl BlockHeader {
         }
     }
 
-    pub fn from_buff(buff: &[u8; BLOCK_HEADER_SIZE]) -> Self {
+    pub fn from_buff(buff: &HeaderBuffer) -> Self {
         let pbh_start = HEADER_VERSION;
         let mr_start = pbh_start + HEADER_PREVIOUS_BLOCK_HASH_SIZE;
         let tt_start = mr_start + HEADER_MERKLE_ROOT_SIZE;
@@ -68,7 +67,7 @@ impl BlockHeader {
         }
     }
 
-    pub fn to_buffer(self) -> [u8; BLOCK_HEADER_SIZE] {
+    pub fn to_buffer(self) -> HeaderBuffer {
         let mut res = [0; BLOCK_HEADER_SIZE];
         res[0..2].copy_from_slice(&self.version.to_be_bytes());
         res[2..34].copy_from_slice(&self.previous_block_hash);

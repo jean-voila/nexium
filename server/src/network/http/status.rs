@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
 
-// #[allow(dead_code)]
 pub enum Status {
     Ok,
     BadRequest,
