@@ -9,10 +9,7 @@ use nexium::{
 use tokio::sync::Mutex;
 
 use crate::{
-    blockchain::{
-        blockchain::Blockchain,
-        structure::consts::HEADER_PREVIOUS_BLOCK_HASH_SIZE,
-    },
+    blockchain::blockchain::Blockchain,
     network::http::{request::Request, response::Response, status::Status},
 };
 
@@ -62,11 +59,22 @@ pub async fn handler(
         }
     };
 
-    let mut arr = json::array![];
-    let mut hash = blockchain.lock().await.last_hash;
+    let blockchain_lock = blockchain.lock().await;
+    let iter = match blockchain_lock.iter_rev() {
+        Ok(iter) => iter,
+        Err(e) => {
+            eprintln!("Failed to get blockchain iterator: {}", e);
+            res.status = Status::InternalServerError;
+            return res.send(b"Failed to get blockchain iterator").await;
+        }
+    };
 
-    while hash != [0; HEADER_PREVIOUS_BLOCK_HASH_SIZE] {
-        let b = match blockchain.lock().await.get_block_from_hash(&hash) {
+    let mut arr = json::array![];
+    let mut log_bytes = [0; TRANSACTION_RECEIVER];
+    log_bytes[..login.len()].copy_from_slice(login.as_bytes());
+
+    for block in iter {
+        let b = match block {
             Ok(b) => b,
             Err(e) => {
                 eprintln!("Failed to get block: {}", e);
@@ -80,24 +88,18 @@ pub async fn handler(
                 // take the transaction
             } else {
                 match tr.get_data() {
-                    Ok(tr_data) => match tr_data {
-                        TransactionData::ClassicTransaction {
-                            receiver,
-                            ..
-                        } => {
-                            let mut l = [0; TRANSACTION_RECEIVER];
-                            l[..login.len()].copy_from_slice(login.as_bytes());
-
-                            if receiver != l {
-                                continue; // skip this transaction
-                            }
-
-                            // take the transaction
+                    Ok(TransactionData::ClassicTransaction {
+                        receiver,
+                        ..
+                    }) => {
+                        if receiver != log_bytes {
+                            continue; // skip this transaction
                         }
-                        _ => continue, // skip this transaction
-                    },
+
+                        // take the transaction
+                    }
                     _ => continue, // skip this transaction
-                };
+                }
             }
 
             let obj = match serde_json::to_string(&tr) {
@@ -125,19 +127,6 @@ pub async fn handler(
 
         if arr.len() >= n {
             break;
-        }
-
-        hash = b.header.previous_block_hash;
-
-        match blockchain.lock().await.hash_cache.get(&hash) {
-            Some(0) => break, // end of blockchain
-            Some(_) => {}     // continue
-            None => {
-                // block not found in cache
-                eprintln!("Block not found in cache: {}", hex::encode(hash));
-                res.status = Status::BadRequest;
-                return res.send(b"Invalid block").await;
-            }
         }
     }
 

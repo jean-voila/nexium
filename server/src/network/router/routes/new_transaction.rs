@@ -65,10 +65,14 @@ pub async fn handler(
     res.status = Status::Ok;
     res.send(b"").await?;
 
-    let res = blockchain
+    let _ = blockchain
         .lock()
         .await
         .add_transaction(gitlab.lock().await.deref_mut(), tr)
-        .await;
+        .await
+        .inspect_err(|e| {
+            eprintln!("Failed to add transaction: {}", e);
+        });
+
     Ok(())
 }

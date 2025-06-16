@@ -11,7 +11,8 @@ use super::{
 };
 use nexium::{
     blockchain::{
-        consts::TRANSACTION_RECEIVER, data_type::DataType, transaction::Transaction, transaction_data::TransactionData
+        consts::TRANSACTION_RECEIVER, data_type::DataType,
+        transaction::Transaction, transaction_data::TransactionData,
     },
     defaults::{BLOCKCHAIN_FILE, INITIAL_BALANCE},
     gitlab::GitlabClient,
@@ -331,80 +332,74 @@ impl Blockchain {
         Ok(())
     }
 
-    pub fn get_balance<T>(&self, login: T) -> f32
+    fn calc_user_balance<T>(&self, login: T) -> Result<f32, String>
     where
         T: AsRef<str>,
     {
-        let login = login.as_ref();
-        match self.balance_cache.get(login) {
-            Some(balance) => *balance,
-            None => INITIAL_BALANCE as f32, // Default balance if not cached
-        }
-    }
-
-    pub fn calc_user_balance<T>(&mut self, login: T) -> Result<f32, String>
-    where
-        T: AsRef<str>,
-    {
-        let login = login.as_ref();
+        let log = login.as_ref();
+        let mut log_bytes = [0; TRANSACTION_RECEIVER];
+        log_bytes[..log.len()].copy_from_slice(log.as_bytes());
         let mut balance = INITIAL_BALANCE as f32;
 
-        // for block in self.iter()? {
-        //     for tr in block?.transactions {
-        //         if tr.header.data_type != DataType::ClassicTransaction {
-        //             continue; // Skip non-classic transactions
-        //         }
+        for block in self.iter()? {
+            for tr in block?.transactions {
+                if tr.header.data_type != DataType::ClassicTransaction {
+                    continue; // Skip non-classic transactions
+                }
 
-        //         let data = tr.get_data().map_err(|e| e.as_str().to_string())?;
-        //         match data {
-        //             TransactionData::ClassicTransaction {
-        //                 receiver,
-        //                 amount,
-        //                 ..
-        //             } => {}
-        //             _ => continue, // Skip non-classic transaction data
-        //         }
-        //     }
-        // }
-
-        let res = self.block_foreach(|b| {
-            for tr in &b.transactions {
-                if tr.header.data_type == DataType::ClassicTransaction {
-                    match tr.get_data() {
-                        Ok(data) => {
-                            match data {
-                                TransactionData::ClassicTransaction {
-                                    receiver,
-                                    amount,
-                                    ..
-                                } => {
-                                    let mut l = [0; TRANSACTION_RECEIVER];
-                                    l[..login.len()]
-                                        .copy_from_slice(login.as_bytes());
-                                    if l == receiver {
-                                        balance += amount;
-                                    } else if l == tr.header.emitter {
-                                        balance -= amount;
-                                    };
-                                }
-                                _ => (),
-                            };
-                        }
-                        Err(_) => {
-                            return Err(
-                                "Failed to get transaction data".to_string()
-                            );
-                        }
-                    };
-                };
+                let data = tr.get_data();
+                match data {
+                    Ok(TransactionData::ClassicTransaction {
+                        receiver,
+                        amount,
+                        ..
+                    }) => {
+                        if log_bytes == receiver {
+                            balance += amount;
+                        } else if log_bytes == tr.header.emitter {
+                            balance -= amount;
+                        };
+                    }
+                    Ok(_) => continue, // skip other transaction types
+                    Err(e) => {
+                        return Err(format!(
+                            "Failed to get transaction data: {}",
+                            e
+                        ));
+                    }
+                }
             }
-            Ok(())
-        });
-
-        match res {
-            Ok(_) => Ok(balance),
-            Err(e) => Err(e),
         }
+
+        Ok(balance)
+    }
+
+    pub fn update_balance_cache<T>(&mut self, login: T) -> Result<f32, String>
+    where
+        T: AsRef<str>,
+    {
+        let log = login.as_ref();
+        let balance = self.calc_user_balance(log)?;
+        self.balance_cache.insert(log.to_string(), balance);
+        Ok(balance)
+    }
+
+    pub fn get_balance_cache<T>(&mut self, login: T) -> Option<f32>
+    where
+        T: AsRef<str>,
+    {
+        let login = login.as_ref();
+        self.balance_cache.get(login).cloned()
+    }
+
+    pub fn get_balance<T>(&mut self, login: T) -> Result<f32, String>
+    where
+        T: AsRef<str>,
+    {
+        if let Some(balance) = self.get_balance_cache(&login) {
+            return Ok(balance);
+        }
+        self.update_balance_cache(&login)
     }
 
     pub fn iter(&self) -> Result<BlockchainIterator, String> {
