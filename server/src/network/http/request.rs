@@ -1,4 +1,5 @@
 use super::method::Method;
+use memchr::{memchr, memmem};
 use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
 use std::collections::HashMap;
 use tokio::{io::AsyncReadExt, net::TcpStream};
@@ -31,12 +32,11 @@ impl Request {
         Ok(res)
     }
 
-    fn find_first_occ(buf: &[u8], needle: &[u8]) -> Result<usize, String> {
-        let i = buf
-            .windows(needle.len())
-            .position(|win| win == needle)
+    fn find_first_occ(buff: &[u8], needle: &[u8]) -> Result<usize, String> {
+        let pos = memchr(b'\r', &buff).ok_or("Needle not found in buffer")?;
+        let end = memmem::find(&buff[pos..], needle)
             .ok_or("Needle not found in buffer")?;
-        Ok(i)
+        Ok(pos + end)
     }
 
     fn parse_info(info_line: &[u8]) -> Result<(Method, &str), String> {
