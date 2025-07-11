@@ -1,5 +1,5 @@
 use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
-use std::{ops::DerefMut, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::network::http::{
@@ -28,7 +28,7 @@ pub async fn handler(
         // version: 0,
     };
 
-    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
+    let key = match req.get_key(&gitlab).await {
         Ok(data) => data,
         Err(e) => {
             res.status = Status::Unauthorized;

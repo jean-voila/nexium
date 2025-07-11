@@ -1,8 +1,8 @@
 use super::method::Method;
 use memchr::{memchr, memmem};
 use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
-use std::collections::HashMap;
-use tokio::{io::AsyncReadExt, net::TcpStream};
+use std::{collections::HashMap, sync::Arc};
+use tokio::{io::AsyncReadExt, net::TcpStream, sync::Mutex};
 
 const READ_SIZE: usize = 32768;
 
@@ -112,26 +112,26 @@ impl Request {
         let header_end = Self::find_first_occ(&buf, b"\r\n\r\n")?;
         let req_head = &buf[..header_end + 4];
 
-        println!("Request Head: {:?}", String::from_utf8_lossy(req_head));
-        println!(
-            "Request Body: {:?}",
-            String::from_utf8_lossy(&buf[header_end + 4..])
-        );
+        // println!("Request Head: {:?}", String::from_utf8_lossy(req_head));
+        // println!(
+        //     "Request Body: {:?}",
+        //     String::from_utf8_lossy(&buf[header_end + 4..])
+        // );
 
         let info_end = Self::find_first_occ(req_head, b"\r\n")?;
         let req_info_line = &req_head[..info_end];
         let req_headers = &req_head[info_end + 2..];
 
         let (method, full_path) = Self::parse_info(req_info_line)?;
-        println!("Method: {}", method);
-        println!("Full Path: {}", full_path);
+        // println!("Method: {}", method);
+        // println!("Full Path: {}", full_path);
 
         let (path, query_params) = Self::parse_path_query(full_path);
-        println!("Path: {}", path);
-        println!("Query Params: {:?}", query_params);
+        // println!("Path: {}", path);
+        // println!("Query Params: {:?}", query_params);
 
         let headers = Self::parse_headers(req_headers)?;
-        println!("Headers: {:?}", headers);
+        // println!("Headers: {:?}", headers);
 
         Ok(Self {
             method,
@@ -144,7 +144,7 @@ impl Request {
 
     pub async fn get_key(
         &self,
-        gitlab: &mut GitlabClient,
+        gitlab: &Arc<Mutex<GitlabClient>>,
     ) -> Result<KeyPair, String> {
         let login = match self.headers.get("login") {
             Some(l) => l,
@@ -156,7 +156,12 @@ impl Request {
             None => return Err(String::from("Missing Sig-Sample header")),
         };
 
-        match gitlab.find_user_key(login, sig, SIG_SAMPLE).await {
+        match gitlab
+            .lock()
+            .await
+            .find_user_key(login, sig, SIG_SAMPLE)
+            .await
+        {
             Some(key) => Ok(key),
             None => Err("Key not found".to_string()),
         }

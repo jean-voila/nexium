@@ -1,4 +1,4 @@
-use std::{ops::DerefMut, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     blockchain::blockchain::Blockchain,
@@ -20,9 +20,12 @@ pub async fn handler(
         res.status = Status::BadRequest;
         return res.send(b"Missing user login").await;
     }
-    println!("login: {}", login);
+    // println!("login: {}", login);
 
-    match gitlab.lock().await.check_user_existence_async(login).await {
+    let user_exists =
+        gitlab.lock().await.check_user_existence_async(login).await;
+
+    match user_exists {
         Ok(true) => {}
         Ok(false) => {
             res.status = Status::NotFound;
@@ -35,7 +38,7 @@ pub async fn handler(
         }
     }
 
-    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
+    let key = match req.get_key(&gitlab).await {
         Ok(data) => data,
         Err(e) => {
             res.status = Status::Unauthorized;
@@ -43,7 +46,9 @@ pub async fn handler(
         }
     };
 
-    let balance = match blockchain.lock().await.get_balance(login) {
+    let balance_res = blockchain.lock().await.get_balance(login);
+
+    let balance = match balance_res {
         Ok(b) => b,
         Err(e) => {
             eprintln!("Failed to get user balance: {}", e);

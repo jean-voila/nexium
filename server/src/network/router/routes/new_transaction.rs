@@ -1,14 +1,12 @@
-use std::{ops::DerefMut, sync::Arc};
-
+use crate::{
+    blockchain::{blockchain::Blockchain, structure::block::Block},
+    network::http::{request::Request, response::Response, status::Status},
+};
 use nexium::{
     blockchain::transaction::Transaction, gitlab::GitlabClient, rsa::KeyPair,
 };
+use std::{ops::Deref, sync::Arc};
 use tokio::sync::Mutex;
-
-use crate::{
-    blockchain::blockchain::Blockchain,
-    network::http::{request::Request, response::Response, status::Status},
-};
 
 pub async fn handler(
     req: Request,
@@ -17,7 +15,7 @@ pub async fn handler(
     blockchain: Arc<Mutex<Blockchain>>,
     key: Arc<KeyPair>,
 ) -> Result<(), std::io::Error> {
-    let data = match key.decrypt_split(&req.body) {
+    let json = match key.decrypt_split(&req.body) {
         Ok(res) => res,
         Err(e) => {
             eprintln!("Failed to decrypt request body: {}", e);
@@ -26,7 +24,7 @@ pub async fn handler(
         }
     };
 
-    let tr: Transaction = match serde_json::from_str(&data) {
+    let tr: Transaction = match serde_json::from_str(&json) {
         Ok(obj) => obj,
         Err(e) => {
             eprintln!("Failed to parse transaction: {}", e);
@@ -36,10 +34,8 @@ pub async fn handler(
     };
 
     // dbg!(&tr);
-    let mut message = tr.header.clone().to_buffer().to_vec();
-    message.extend(&tr.data);
 
-    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
+    let key = match req.get_key(&gitlab).await {
         Ok(data) => data,
         Err(e) => {
             res.status = Status::Unauthorized;
@@ -47,7 +43,7 @@ pub async fn handler(
         }
     };
 
-    match key.check_signature(&message, &tr.signature) {
+    match tr.check_sign(&key) {
         Ok(check) => {
             if !check {
                 eprintln!("Invalid signature for transaction");
@@ -64,15 +60,43 @@ pub async fn handler(
 
     res.status = Status::Ok;
     res.send(b"").await?;
+    // println!("Transaction received: {:?}", tr);
 
-    let _ = blockchain
-        .lock()
-        .await
-        .add_transaction(gitlab.lock().await.deref_mut(), tr)
-        .await
-        .inspect_err(|e| {
-            eprintln!("Failed to add transaction: {}", e);
+    let mempool_full = blockchain.lock().await.add_transaction(tr);
+
+    if mempool_full {
+        // run an other task to avoid blocking the current one
+        let git: GitlabClient = gitlab.lock().await.deref().clone();
+
+        tokio::spawn(async move {
+            let mut b = blockchain.lock().await;
+            println!("Mempool is full, creating a new block");
+
+            let (trs, balances) = b.get_verified_transactions(git).await;
+
+            if trs.is_empty() {
+                println!("No valid transactions found: aborting block");
+                return;
+            }
+
+            let h = b.last_hash;
+            drop(b); // Drop to avoid deadlock when creating a new block
+
+            let (block_buff, hash) = Block::create(h, trs);
+            println!("Block created with hash: {}", hex::encode(&hash));
+
+            let mut b = blockchain.lock().await;
+            match b.write_block(&block_buff, hash) {
+                Ok(_) => {
+                    // println!("Block written successfully");
+                    b.update_balances(balances);
+                }
+                Err(e) => {
+                    eprintln!("Failed to write block: {}", e)
+                }
+            }
         });
+    }
 
     Ok(())
 }

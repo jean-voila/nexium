@@ -87,17 +87,17 @@ impl Server {
                     // println!("Generated connection ID: {}", id);
 
                     let handle = tokio::spawn(async move {
-                        println!("Handling connection ID: {}", id);
+                        // println!("Handling connection ID: {}", id);
                         handler(stream, gitlab, blockchain, login, key)
                             .await
                             .unwrap_or_else(|e| {
                                 eprintln!("Error handling request: {}", e);
                             });
-                        println!("Connection ID {} finished", id);
+                        // println!("Connection ID {} finished", id);
 
                         if !stopped_arc.load(Ordering::Relaxed) {
                             cache.lock().await.remove_conn(id);
-                            println!("Connection ID {} removed from cache", id);
+                            // println!("Connection ID {} removed from cache", id);
                         }
                     });
 

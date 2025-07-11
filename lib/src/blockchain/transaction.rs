@@ -12,7 +12,7 @@ use crate::{
     blockchain::consts::{
         DESCRIPTION_SIZE, TRANSACTION_EMITTER, TRANSACTION_RECEIVER,
     },
-    rsa::KeyPair,
+    rsa::{KeyPair, RSAError},
 };
 use hex;
 
@@ -163,30 +163,33 @@ impl Transaction {
         })
     }
 
-    pub fn to_buffer(&self) -> Vec<u8> {
-        let data_start = TRANSACTION_HEADER_SIZE;
-        let signature_start =
-            data_start + self.header.transaction_size as usize;
-
-        let mut res = vec![
-            0;
+    pub fn to_buffer(self) -> Vec<u8> {
+        let mut res = Vec::with_capacity(
             TRANSACTION_HEADER_SIZE
                 + self.header.transaction_size as usize
-                + SIGNATURE_SIZE
-        ];
+                + SIGNATURE_SIZE,
+        );
 
-        res[0..TRANSACTION_HEADER_SIZE]
-            .copy_from_slice(&self.header.clone().to_buffer());
+        res.extend_from_slice(&self.header.to_buffer());
 
-        res[TRANSACTION_HEADER_SIZE..signature_start]
-            .copy_from_slice(&self.data);
+        res.extend_from_slice(&self.data);
 
         let mut sig = self.signature.to_bytes_le();
         if sig.len() < SIGNATURE_SIZE {
             sig.resize(SIGNATURE_SIZE, 0);
         };
-        res[signature_start..].copy_from_slice(&sig);
+
+        res.extend_from_slice(&sig);
         return res;
+    }
+
+    pub fn check_sign(&self, key: &KeyPair) -> Result<bool, RSAError> {
+        let mut data =
+            Vec::with_capacity(TRANSACTION_HEADER_SIZE + self.data.len());
+        data.extend_from_slice(&self.header.clone().to_buffer());
+        data.extend_from_slice(&self.data);
+
+        key.check_signature(&data, &self.signature)
     }
 
     pub fn get_data(&self) -> Result<TransactionData, TransactionDataError> {
@@ -215,8 +218,12 @@ impl core::fmt::Debug for Transaction {
     }
 }
 
-pub fn transaction_vec_size(transactions: &Vec<Transaction>) -> u32 {
+pub fn transactions_vec_size(transactions: &Vec<Transaction>) -> u32 {
     transactions.iter().fold(0, |acc, t| acc + t.size())
+}
+
+pub fn transactions_vec_buff(trs: Vec<Transaction>) -> Vec<Vec<u8>> {
+    trs.into_iter().map(|tr| tr.to_buffer()).collect()
 }
 
 mod serde_signature {

@@ -1,3 +1,5 @@
+use crate::types::{Hash, HASH_SIZE};
+
 // transforms a string into a binary vector
 fn preprocessing<T>(input: T) -> Vec<u8>
 where
@@ -100,7 +102,7 @@ fn processing(data: &Vec<u8>) -> [u32; 8] {
     return hash_val;
 }
 
-pub fn sha256<T>(s: T) -> [u8; 32]
+pub fn sha256<T>(s: T) -> Hash
 where
     T: AsRef<[u8]>,
 {
@@ -108,7 +110,7 @@ where
     let preprocessed_data = preprocessing(s);
     let hash = processing(&preprocessed_data);
 
-    let mut result = [0u8; 32];
+    let mut result = [0_u8; HASH_SIZE];
     for i in 0..8 {
         result[i * 4] = (hash[i] >> 24) as u8;
         result[i * 4 + 1] = (hash[i] >> 16) as u8;

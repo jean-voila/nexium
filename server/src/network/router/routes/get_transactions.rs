@@ -1,4 +1,4 @@
-use std::{ops::DerefMut, sync::Arc};
+use std::sync::Arc;
 
 use nexium::{
     blockchain::{
@@ -26,7 +26,7 @@ pub async fn handler(
         res.status = Status::BadRequest;
         return res.send(b"Missing user login").await;
     }
-    println!("login: {}", login);
+    // println!("login: {}", login);
 
     let n = match req.query.get("n") {
         Some(n) => match n.parse::<usize>() {
@@ -36,9 +36,12 @@ pub async fn handler(
         },
         None => 3,
     };
-    println!("n: {n}");
+    // println!("n: {n}");
 
-    match gitlab.lock().await.check_user_existence_async(login).await {
+    let user_exists =
+        gitlab.lock().await.check_user_existence_async(login).await;
+
+    match user_exists {
         Ok(true) => {}
         Ok(false) => {
             res.status = Status::NotFound;
@@ -51,7 +54,7 @@ pub async fn handler(
         }
     }
 
-    let key = match req.get_key(gitlab.lock().await.deref_mut()).await {
+    let key = match req.get_key(&gitlab).await {
         Ok(data) => data,
         Err(e) => {
             res.status = Status::Unauthorized;
@@ -59,6 +62,7 @@ pub async fn handler(
         }
     };
 
+    // if lock is slowing down the server, consider using a read lock or cloning the blockchain struct
     let blockchain_lock = blockchain.lock().await;
     let iter = match blockchain_lock.iter_rev() {
         Ok(iter) => iter,
@@ -84,9 +88,10 @@ pub async fn handler(
         };
 
         for tr in b.transactions.iter().rev() {
-            if tr.header.get_login() == *login {
-                // take the transaction
-            } else {
+            // if header login is the same as the requested login -> take the transaction
+
+            // if the login is not the same as the transaction login, check if the transaction receiver is the same as the requested login
+            if tr.header.get_login() != *login {
                 match tr.get_data() {
                     Ok(TransactionData::ClassicTransaction {
                         receiver,
@@ -129,6 +134,7 @@ pub async fn handler(
             break;
         }
     }
+    drop(blockchain_lock); // Explicitly drop the lock to avoid deadlock
 
     let data = arr.dump();
     let crypted = match key.crypt_split(&data) {
