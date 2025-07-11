@@ -51,7 +51,7 @@ impl Blockchain {
         // self.append(&block)
     }
 
-    fn open_file(rd: bool, wr: bool, cr: bool) -> Result<File, String> {
+    pub fn open_file(rd: bool, wr: bool, cr: bool) -> Result<File, String> {
         let r = OpenOptions::new()
             .read(rd)
             .write(wr)

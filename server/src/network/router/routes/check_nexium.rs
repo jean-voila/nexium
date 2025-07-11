@@ -1,10 +1,9 @@
-use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
 use crate::network::http::{
     request::Request, response::Response, status::Status,
 };
+use nexium::{defaults::SIG_SAMPLE, gitlab::GitlabClient, rsa::KeyPair};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub async fn handler(
     req: Request,

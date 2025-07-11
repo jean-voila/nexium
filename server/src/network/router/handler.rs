@@ -68,6 +68,22 @@ pub async fn handler(
             new_transaction::handler(req, res, gitlab, blockchain, key).await
         }
 
+        (Method::Get, "/nodes") => {
+            crate::network::router::routes::get_nodes::handler(req, res).await
+        }
+
+        (Method::Post, "/new_node") => {
+            crate::network::router::routes::new_node::handler(req, res).await
+        }
+
+        (Method::Post, "/block") => {
+            crate::network::router::routes::post_block::handler(req, res).await
+        }
+
+        (Method::Get, "/blockchain") => {
+            crate::network::router::routes::blockchain::handler(req, res).await
+        }
+
         _ => {
             res.status = Status::NotFound;
             res.send_empty().await

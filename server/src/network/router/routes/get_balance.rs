@@ -1,10 +1,9 @@
-use std::sync::Arc;
-
 use crate::{
     blockchain::blockchain::Blockchain,
     network::http::{request::Request, response::Response, status::Status},
 };
 use nexium::{gitlab::GitlabClient, utils::rand::create_noise};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub async fn handler(

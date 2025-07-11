@@ -50,7 +50,7 @@ impl Response {
         Ok(())
     }
 
-    pub async fn send(mut self, body: &[u8]) -> Result<(), std::io::Error> {
+    pub async fn send(&mut self, body: &[u8]) -> Result<(), std::io::Error> {
         if !self.headers_sent {
             self.send_headers().await?;
         }

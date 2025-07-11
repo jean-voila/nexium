@@ -1,17 +1,15 @@
-use std::sync::Arc;
-
+use crate::{
+    blockchain::blockchain::Blockchain,
+    network::http::{request::Request, response::Response, status::Status},
+};
 use nexium::{
     blockchain::{
         consts::TRANSACTION_RECEIVER, transaction_data::TransactionData,
     },
     gitlab::GitlabClient,
 };
+use std::sync::Arc;
 use tokio::sync::Mutex;
-
-use crate::{
-    blockchain::blockchain::Blockchain,
-    network::http::{request::Request, response::Response, status::Status},
-};
 
 pub async fn handler(
     req: Request,
