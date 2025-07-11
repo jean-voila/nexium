@@ -11,7 +11,7 @@ use nexium::{
     gitlab::{GitlabClient, TokenType},
     rsa::KeyPair,
 };
-use std::{env, fs, path::Path};
+use std::{env, fs, path::Path, process, sync::Arc};
 use tokio;
 
 const HELP_ARG: &str = "--help";
@@ -225,6 +225,7 @@ async fn main() {
 
     print!("Reading blockchain...");
     let blockchain = match Blockchain::init(&key).await {
+        // let blockchain = match Blockchain::init().await {
         Ok(b) => {
             println!("\rReading blockchain: {: >5}", "OK".green());
             b
@@ -244,5 +245,16 @@ async fn main() {
         }
     };
 
-    server.listen().await;
+    let server_arc = Arc::new(server);
+    let s = server_arc.clone();
+    let h = server_arc.listen();
+
+    ctrlc_async::set_async_handler(async move {
+        println!("\nStopping server...");
+        s.stop().await;
+        process::exit(0);
+    })
+    .expect("Failed to set ctrlc handler");
+
+    h.await;
 }
