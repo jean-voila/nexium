@@ -1,11 +1,13 @@
 mod blockchain;
 mod config;
 mod network;
+mod peers;
 
 use blockchain::blockchain::Blockchain;
 use colored::Colorize;
 use config::Config;
 use network::server::Server;
+use peers::PeerList;
 use nexium::{
     defaults::*,
     gitlab::{GitlabClient, TokenType},
@@ -29,25 +31,13 @@ async fn main() {
     let config_path_str = config_path.to_string_lossy();
 
     if !local_path.exists() {
-        print!("Creating the {} directory...", local_path_str.cyan().bold());
-
         match fs::create_dir_all(&local_path) {
-            Ok(_) => println!(
-                "\rCreating the {} directory: {}",
-                local_path_str.cyan().bold(),
-                "OK".green()
-            ),
+            Ok(_) => {},
             Err(e) => {
-                println!();
-                eprintln!(
-                    "Failed to create directory: {}",
-                    e.to_string().red()
-                );
+                eprintln!("Failed to create directory: {}", e);
                 return;
             }
         }
-    } else {
-        println!("Using the {} directory", local_path_str.cyan().bold());
     }
 
     if args.len() > 1 {
@@ -83,6 +73,24 @@ async fn main() {
                     "\nConfig file generated at {}",
                     config_path_str.cyan().bold()
                 );
+
+                // Generate the peers file
+                let peers_path = PeerList::get_peers_file_path();
+                if !PeerList::file_exists() {
+                    print!("Generating peers file at {}... ", peers_path.cyan().bold());
+                    match PeerList::generate() {
+                        Ok(_) => println!("{}", "OK".green()),
+                        Err(e) => println!("{}: {}", "FAILED".red(), e),
+                    }
+                    println!(
+                        "{}  Edit {} to add known peers and bootstrap the network.",
+                        "Note: ".yellow().bold(),
+                        peers_path.cyan()
+                    );
+                } else {
+                    println!("Peers file already exists at {}", peers_path.cyan().bold());
+                }
+
                 return;
             }
             GEN_KEY_ARG => {
@@ -100,9 +108,14 @@ async fn main() {
                 let key_path_str = &config.key_filepath;
                 let key_path = Path::new(&key_path_str);
                 let gitlab =
-                    GitlabClient::new(config.gitlab_token, TokenType::Classic);
+                    GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
-                match gitlab.check_token() {
+                // Use block_in_place to allow blocking operations in async context
+                let token_check = tokio::task::block_in_place(|| {
+                    gitlab.check_token()
+                });
+                
+                match token_check {
                     Ok(_) => {}
                     Err(e) => {
                         eprintln!(
@@ -148,7 +161,10 @@ async fn main() {
                 }
 
                 let pub_pem = key.pub_to_pem();
-                match gitlab.add_gpg_key(&pub_pem) {
+                let add_key_result = tokio::task::block_in_place(|| {
+                    gitlab.add_gpg_key(&pub_pem)
+                });
+                match add_key_result {
                     Ok(_) => {
                         println!(
                             "Public key added to Gitlab for user {}",
@@ -179,64 +195,109 @@ async fn main() {
     }
 
     if !config_path.exists() {
-        eprintln!(
-            "Config file not found at {}. Please generate it with {}",
-            config_path_str.cyan(),
-            GEN_CONFIG_ARG.yellow().bold()
-        );
+        eprintln!("Config file not found. Please generate it with {}", GEN_CONFIG_ARG);
         return;
     }
-
-    println!("Using the config file at {}", local_path_str.cyan().bold());
 
     let config = Config::from_file(&config_path);
 
     let gitlab =
         GitlabClient::new(config.gitlab_token.clone(), TokenType::Classic);
 
-    print!("Checking Gitlab token...");
     match gitlab.check_token_async().await {
-        Ok(_) => {
-            println!("\rChecking Gitlab token: {}", "OK".green());
-        }
+        Ok(_) => {},
         Err(e) => {
-            println!();
-            eprintln!("Failed to check Gitlab token: {}", e.to_string().red());
+            eprintln!("Failed to check Gitlab token: {}", e);
             return;
         }
     }
 
-    print!("Loading private key...");
     let key = match KeyPair::priv_from_file(
         &config.key_filepath,
         &config.user_login,
         &config.key_password,
     ) {
-        Ok(k) => {
-            println!("\rLoading private key: {: >4}", "OK".green());
-            k
-        }
+        Ok(k) => k,
         Err(e) => {
-            println!();
-            eprintln!("Failed to load private key: {}", e.to_string().red());
+            eprintln!("Failed to load private key: {}", e);
             return;
         }
     };
 
-    print!("Reading blockchain...");
-    let blockchain = match Blockchain::init(gitlab.clone()) {
-        Ok(b) => {
-            println!("\rReading blockchain: {: >5}", "OK".green());
-            b
-        }
+    let mut blockchain = match Blockchain::init(gitlab.clone()) {
+        Ok(b) => b,
         Err(e) => {
-            println!();
             eprintln!("Failed to create blockchain: {}", e);
             return;
         }
     };
 
-    let server = match Server::new(&config, gitlab, key, blockchain) {
+    // Load and discover peers
+    let mut peer_list = PeerList::load();
+    let our_block_count = blockchain.cache.len() as u64;
+
+    if !peer_list.peers.is_empty() {
+        let (discovered, best_peer) = peer_list
+            .discover(&config.listen, config.port)
+            .await;
+        
+        if discovered > 0 {
+            println!("Discovered {} new peer(s)", discovered);
+        }
+
+        // Sync blockchain if needed
+        if let Some((peer, peer_info)) = best_peer {
+            if our_block_count == 0 && peer_info.block_count > 0 {
+                // We have no blockchain, download from peer
+                println!(
+                    "Downloading blockchain from {} ({} blocks)...",
+                    peer.url().cyan(),
+                    peer_info.block_count
+                );
+                match peer.download_blockchain().await {
+                    Ok(data) => {
+                        match blockchain.replace_from_data(&data) {
+                            Ok(_) => println!(
+                                "{} Blockchain synchronized ({} blocks)",
+                                "OK".green(),
+                                blockchain.cache.len()
+                            ),
+                            Err(e) => eprintln!("{} Failed to load blockchain: {}", "ERROR".red(), e),
+                        }
+                    }
+                    Err(e) => eprintln!("{} Failed to download blockchain: {}", "ERROR".red(), e),
+                }
+            } else if peer_info.block_count > our_block_count {
+                // Peer has longer chain, adopt it
+                println!(
+                    "Peer {} has longer chain ({} vs {}), syncing...",
+                    peer.url().cyan(),
+                    peer_info.block_count,
+                    our_block_count
+                );
+                match peer.download_blockchain().await {
+                    Ok(data) => {
+                        match blockchain.replace_from_data(&data) {
+                            Ok(_) => println!(
+                                "{} Blockchain synchronized ({} blocks)",
+                                "OK".green(),
+                                blockchain.cache.len()
+                            ),
+                            Err(e) => eprintln!("{} Failed to load blockchain: {}", "ERROR".red(), e),
+                        }
+                    }
+                    Err(e) => eprintln!("{} Failed to download blockchain: {}", "ERROR".red(), e),
+                }
+            } else if our_block_count > 0 {
+                println!(
+                    "Local blockchain is up to date ({} blocks)",
+                    our_block_count.to_string().green()
+                );
+            }
+        }
+    }
+
+    let server = match Server::new(&config, gitlab, key, blockchain, peer_list) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to create server: {}", e);

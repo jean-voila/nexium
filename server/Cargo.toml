@@ -8,6 +8,7 @@ name = "nexium-server"
 path = "src/main.rs"
 
 [dependencies]
+base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 colored = "3"
 json = "0.12.4"
@@ -19,5 +20,6 @@ num-bigint = "0.4.6"
 hex = "0.4.3"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.31"
+reqwest = { version = "0.12", features = ["json"] }
 
 nexium = { workspace = true }

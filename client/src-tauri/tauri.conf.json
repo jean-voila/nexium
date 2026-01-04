@@ -11,7 +11,7 @@
 	},
 	"app": {
 		"withGlobalTauri": true,
-		"macOSPrivateApi": false,
+		"macOSPrivateApi": true,
 		"windows": [
 			{
 				"title": "Nexium",
@@ -21,7 +21,7 @@
 				"fullscreen": false,
 				"minWidth": 950,
 				"minHeight": 600,
-				"decorations": true
+				"decorations": false
 			}
 		],
 		"security": {

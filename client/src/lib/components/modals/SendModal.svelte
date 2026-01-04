@@ -2,45 +2,87 @@
 	import { fly, fade } from 'svelte/transition';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
+	import { X, Star, Upload, Send } from 'lucide-svelte';
 	import { globalConfig, serverPublicKey } from '$lib/stores/settings.js';
-	import { writable } from 'svelte/store';
+	import { selectedContact } from '$lib/stores/contacts.js';
+	import { writable, get } from 'svelte/store';
+	import { onMount } from 'svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 
 	let { oncancel } = $props();
 
 	let receiver = $state('');
-
-	/**
-	 * @type {string[]}
-	 */
 	let searchResults = $state([]);
-
+	let favoriteContacts = $state([]);
 	let showSuggestions = $state(false);
 	let amount = $state('');
 	let description = $state('');
 	let fees = $state('0');
-	let copied = false;
+	let estimatedFee = $state('0');
+	let totalCost = $state('0');
 
 	let tooltipX = $state(0);
 	let tooltipY = $state(0);
-	let showMessage = $state('');
+	let showTooltip = $state('');
 
 	let invoice_file_extension = '';
 	invoke('get_invoice_extension').then((ext) => {
 		invoice_file_extension = ext;
 	});
+
 	function handleClose() {
+		selectedContact.set('');
 		oncancel?.();
 	}
 
-	let totalFees = '';
 	let validationError = writable(true);
-
 	let isSending = $state(false);
+
+	async function updateFeeCost() {
+		try {
+			const hasDescription = description.trim().length > 0;
+			const feeResult = await invoke('calculate_transaction_fee', {
+				fees: fees,
+				hasDescription: hasDescription
+			});
+			estimatedFee = feeResult;
+			
+			const amountNum = parseFloat(amount) || 0;
+			const feeNum = parseFloat(feeResult) || 0;
+			totalCost = (amountNum + feeNum).toFixed(6);
+		} catch (e) {
+			estimatedFee = '0';
+			totalCost = amount || '0';
+		}
+	}
 
 	function handleMontantChange() {
 		amount = amount.trim();
 		checkTransaction();
+		updateFeeCost();
+	}
+
+	function handleFeesChange() {
+		updateFeeCost();
+		checkTransaction();
+	}
+
+	function handleDescriptionChange() {
+		updateFeeCost();
+		checkTransaction();
+	}
+
+	async function loadFavoriteContacts() {
+		try {
+			const contacts = await invoke('get_favorite_contacts');
+			favoriteContacts = contacts.map((c) => ({
+				login: c.login,
+				nickname: c.nickname,
+				favorite: c.favorite
+			}));
+		} catch (e) {
+			favoriteContacts = [];
+		}
 	}
 
 	async function handleReceiverChange() {
@@ -53,8 +95,11 @@
 					config: $globalConfig,
 					search: receiver
 				});
-				searchResults = results;
-				showSuggestions = results.length > 0;
+				const contactResults = await invoke('search_contacts', { query: receiver });
+				const contactLogins = contactResults.map((c) => c.login);
+				const allResults = [...new Set([...contactLogins, ...results])];
+				searchResults = allResults;
+				showSuggestions = allResults.length > 0;
 			} catch (e) {
 				searchResults = [];
 				showSuggestions = false;
@@ -73,17 +118,13 @@
 			save: false,
 			filters: [{ name: 'Nexium Invoice', extensions: [invoice_file_extension] }]
 		});
-		if (!path) {
-			return;
-		}
+		if (!path) return;
+		
 		try {
-			console.log('Path:', path);
 			const result = await invoke('load_invoice_from_file', { pathString: path });
-
 			receiver = result.sender_login;
 			amount = result.amount;
 			description = result.description;
-
 			checkTransaction();
 		} catch (e) {}
 	}
@@ -97,7 +138,7 @@
 		};
 
 		try {
-			let result = await invoke('check_send_transaction', {
+			await invoke('check_send_transaction', {
 				config: $globalConfig,
 				transaction: classic_transaction_sent
 			});
@@ -117,7 +158,8 @@
 
 		isSending = true;
 		try {
-			let send_transaction_result = await invoke('send_transaction', {
+			await invoke('mark_contact_used', { login: receiver }).catch(() => {});
+			await invoke('send_transaction', {
 				serverPubkey: $serverPublicKey,
 				config: $globalConfig,
 				transaction: classic_transaction_sent
@@ -129,140 +171,177 @@
 			isSending = false;
 		}
 	}
+
+	onMount(() => {
+		loadFavoriteContacts();
+		const preselected = get(selectedContact);
+		if (preselected) {
+			receiver = preselected;
+			checkTransaction();
+		}
+	});
 </script>
 
-<div class="send-modal" transition:fade={{ duration: 200 }}>
-	<div class="send-modal-content" transition:fly={{ y: 30, duration: 200 }}>
-		<h3 class="transaction-titre">Nouvelle transaction</h3>
+<div class="modal-backdrop" transition:fade={{ duration: 200 }}>
+	<div class="modal-container" transition:fly={{ y: 30, duration: 200 }}>
+		<div class="modal-header">
+			<h3 class="modal-title">Nouvelle transaction</h3>
+			<button class="modal-close" onclick={handleClose}>
+				<X size={18} />
+			</button>
+		</div>
 
-		<div class="settings-item">
-			<div class="flex flex-col gap-4">
-				<div class="w-full" style="position:relative;">
-					<label for="destinataire" class="nom-parametre block">Destinataire</label>
-					<input
-						id="destinataire"
-						type="text"
-						bind:value={receiver}
-						class="input-field w-full"
-						oninput={handleReceiverChange}
-						placeholder="Login du destinataire"
-					/>
-					{#if showSuggestions}
-						<ul class="suggestions-list">
-							{#each searchResults as user}
-								<button
-									type="button"
-									class="suggestion-item"
-									onclick={() => {
-										receiver = user;
-										showSuggestions = false;
-										checkTransaction();
-									}}
-								>
-									{user}
-								</button>
-							{/each}
-						</ul>
-					{/if}
-				</div>
-				<div class="flex flex-col gap-4 md:flex-row">
-					<div class="w-full md:w-1/2">
-						<label for="montant" class="nom-parametre block">Montant</label>
-						<div class="flex items-center gap-2">
-							<input
-								id="montant"
-								type="text"
-								inputmode="decimal"
-								pattern="[0-9]*"
-								bind:value={amount}
-								oninput={handleMontantChange}
-								class="input-field flex-1"
-								placeholder="0.00"
-							/>
-							<span class="text-sm text-gray-500">NXM</span>
-						</div>
+		<div class="modal-body">
+			<!-- Favorite Contacts -->
+			{#if favoriteContacts.length > 0}
+				<div class="chip-section">
+					<div class="chip-section-header">
+						<Star size={14} fill="currentColor" />
+						<span>Contacts favoris</span>
 					</div>
-					<div class="w-full md:w-1/2">
-						<label for="fees" class="nom-parametre block">Frais</label>
-						<div class="flex items-center gap-2">
-							<input
-								id="fees"
-								type="text"
-								bind:value={fees}
-								class="input-field-fees flex-1"
-								placeholder="0.00"
-								disabled={$globalConfig.is_testnet}
-								onmouseenter={() => (showMessage = 'Le serveur est en testnet')}
-								onmouseleave={() => (showMessage = '')}
-								onmousemove={(e) => {
-									tooltipX = e.clientX;
-									tooltipY = e.clientY;
+					<div class="chip-list">
+						{#each favoriteContacts.slice(0, 4) as contact}
+							<button
+								class="chip"
+								class:active={receiver === contact.login}
+								onclick={() => {
+									receiver = contact.login;
+									checkTransaction();
 								}}
-							/>
-							<span class="text-sm text-gray-500">µNXM / o</span>
-						</div>
+							>
+								{contact.nickname || contact.login}
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Receiver Input -->
+			<div class="form-group relative">
+				<label for="destinataire" class="form-label">Destinataire</label>
+				<input
+					id="destinataire"
+					type="text"
+					bind:value={receiver}
+					oninput={handleReceiverChange}
+					class="form-input form-input-mono"
+					placeholder="Login du destinataire"
+				/>
+				{#if showSuggestions}
+					<div class="suggestions-dropdown">
+						{#each searchResults as user}
+							<button
+								type="button"
+								class="suggestion-item"
+								onclick={() => {
+									receiver = user;
+									showSuggestions = false;
+									checkTransaction();
+								}}
+							>
+								{user}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Amount & Fees Row -->
+			<div class="form-row">
+				<div class="form-group">
+					<label for="montant" class="form-label">Montant</label>
+					<div class="input-with-suffix">
+						<input
+							id="montant"
+							type="text"
+							inputmode="decimal"
+							pattern="[0-9]*"
+							bind:value={amount}
+							oninput={handleMontantChange}
+							class="form-input text-right"
+							placeholder="0.00"
+						/>
+						<span class="input-suffix">NXM</span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="fees" class="form-label">Frais</label>
+					<div class="input-with-suffix">
+						<input
+							id="fees"
+							type="text"
+							bind:value={fees}
+							oninput={handleFeesChange}
+							class="form-input text-right"
+							placeholder="0"
+						/>
+						<span class="input-suffix">µNXM/o</span>
 					</div>
 				</div>
 			</div>
-			<div class="mt-4">
-				<label for="description" class="nom-parametre block">Description</label>
+
+			<!-- Description -->
+			<div class="form-group">
+				<label for="description" class="form-label">Description</label>
 				<textarea
 					id="description"
 					bind:value={description}
-					class="input-field w-full resize-none"
+					oninput={handleDescriptionChange}
+					class="form-input form-textarea"
 					placeholder="Description (facultative)"
 					maxlength="256"
 					rows="2"
 				></textarea>
 			</div>
-		</div>
-		<div class="mt-6 flex items-center justify-end">
-			<div class="flex w-full">
-				<div class="flex flex-1 justify-start">
-					<button
-						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-						onclick={handleLoadFile}
-						disabled={isSending}
-					>
-						<span class="texte-bouton-password texte-bouton-password-blanc">Importer</span>
-					</button>
-				</div>
-				<div class="flex justify-end gap-2">
-					{#if isSending}
-						<div class="flex items-center">
-							<Spinner />
+
+			<!-- Total Cost Summary -->
+			{#if parseFloat(amount) > 0 || parseFloat(fees) > 0}
+				<div class="cost-summary">
+					<div class="cost-row">
+						<span class="cost-label">Montant:</span>
+						<span class="cost-value">{amount || '0'} NXM</span>
+					</div>
+					{#if parseFloat(fees) > 0}
+						<div class="cost-row">
+							<span class="cost-label">Frais estimés:</span>
+							<span class="cost-value">{estimatedFee} NXM</span>
 						</div>
 					{/if}
-					<button
-						class="pillule-bouton-password pillule-bouton-password-blanc bouton-noir-settings flex items-center transition"
-						onclick={handleClose}
-						disabled={isSending}
-					>
-						<span class="texte-bouton-password texte-bouton-password-blanc">Annuler</span>
-					</button>
-					<button
-						class="pillule-bouton-password pillule-bouton-password-noir bouton-noir-settings flex items-center transition"
-						onclick={handleSend}
-						disabled={isSending || $validationError}
-					>
-						<span class="texte-bouton-password texte-bouton-password-noir">Envoyer</span>
-					</button>
+					<div class="cost-row cost-total">
+						<span class="cost-label">Coût total:</span>
+						<span class="cost-value">{totalCost} NXM</span>
+					</div>
 				</div>
-			</div>
+			{/if}
+		</div>
+
+		<div class="modal-footer">
+			<button class="btn btn-ghost" onclick={handleLoadFile} disabled={isSending}>
+				<Upload size={16} />
+				Importer
+			</button>
+			<div class="flex-1"></div>
+			<button class="btn btn-ghost" onclick={handleClose} disabled={isSending}>
+				Annuler
+			</button>
+			<button
+				class="btn btn-filled"
+				onclick={handleSend}
+				disabled={isSending || $validationError}
+			>
+				{#if isSending}
+					<Spinner />
+				{:else}
+					<Send size={16} />
+				{/if}
+				Envoyer
+			</button>
 		</div>
 	</div>
 </div>
 
-{#if showMessage}
-	<div class="testnet-tooltip" style="top: {tooltipY}px; left: {tooltipX}px;">
-		<span
-			class="absolute"
-			class:translate-y-0={!copied}
-			class:-translate-y-3={copied}
-			class:opacity-100={!copied}
-			class:opacity-0={copied}
-		>
-			{showMessage}
-		</span>
+{#if showTooltip}
+	<div class="tooltip" style="top: {tooltipY}px; left: {tooltipX}px;">
+		{showTooltip}
 	</div>
 {/if}

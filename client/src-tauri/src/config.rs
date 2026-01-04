@@ -6,7 +6,16 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+fn get_config_path() -> PathBuf {
+    let mut path = dirs::data_local_dir()
+        .unwrap_or_else(|| PathBuf::from("."));
+    path.push("nexium");
+    fs::create_dir_all(&path).ok();
+    path.push("config.json");
+    path
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -170,5 +179,24 @@ impl Config {
         }
 
         return Ok(());
+    }
+
+    pub fn load() -> Option<Self> {
+        let path = get_config_path();
+        if let Ok(content) = fs::read_to_string(&path) {
+            if let Ok(config) = serde_json::from_str(&content) {
+                return Some(config);
+            }
+        }
+        None
+    }
+
+    pub fn save(&self) -> Result<(), ConfigError> {
+        let path = get_config_path();
+        let content = serde_json::to_string_pretty(self)
+            .map_err(|_| ConfigError::FileFormatError)?;
+        fs::write(&path, content)
+            .map_err(|_| ConfigError::FileWriteError)?;
+        Ok(())
     }
 }

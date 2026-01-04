@@ -113,6 +113,17 @@ pub struct ClassicTransactionReceived {
     pub inorout: String,
 }
 
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct UserStats {
+    pub balance: f64,
+    pub sent_count: u64,
+    pub received_count: u64,
+    pub total_sent: f64,
+    pub total_received: f64,
+    pub total_transactions: u64,
+    pub rank: u64,
+}
+
 fn build_headers(
     config: &Config,
 ) -> Result<reqwest::header::HeaderMap, String> {
@@ -585,4 +596,126 @@ pub fn get_transactions(
     }
 
     Ok(transactions)
+}
+
+pub fn get_user_stats(
+    login: String,
+    config: Config,
+) -> Result<UserStats, String> {
+    let headers = match build_headers(&config) {
+        Ok(h) => h,
+        Err(e) => return Err(e),
+    };
+
+    let url = build_url(&config, &format!("/stats/{}", login));
+
+    let client = Client::new();
+    let response = match client.get(&url).headers(headers).send() {
+        Ok(r) => r,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "{}: {}",
+            NexiumAPIError::InvalidResponseFromServer.to_string(),
+            response.status()
+        ));
+    }
+
+    let response_text = match response.text() {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
+    };
+
+    let client_key = match KeyPair::priv_from_pem(
+        &config.priv_key,
+        &config.password,
+        &config.user_login,
+    ) {
+        Ok(key) => key,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let uncrypted_response = match client_key.decrypt_split(&response_text) {
+        Ok(d) => d,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let json = match json::parse(&uncrypted_response) {
+        Ok(j) => j,
+        Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
+    };
+
+    let stats = UserStats {
+        balance: json["balance"].as_f64().unwrap_or(0.0),
+        sent_count: json["sent_count"].as_u64().unwrap_or(0),
+        received_count: json["received_count"].as_u64().unwrap_or(0),
+        total_sent: json["total_sent"].as_f64().unwrap_or(0.0),
+        total_received: json["total_received"].as_f64().unwrap_or(0.0),
+        total_transactions: json["total_transactions"].as_u64().unwrap_or(0),
+        rank: json["rank"].as_u64().unwrap_or(0),
+    };
+
+    Ok(stats)
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct PeerInfo {
+    pub address: String,
+    pub port: u16,
+}
+
+/// Fetch the list of peers from the server
+pub fn get_peers(config: Config) -> Result<Vec<PeerInfo>, String> {
+    let headers = match build_headers(&config) {
+        Ok(h) => h,
+        Err(e) => return Err(e),
+    };
+
+    let url = build_url(&config, "/peers");
+
+    let client = Client::new();
+    let response = match client.get(&url).headers(headers).send() {
+        Ok(r) => r,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "{}: {}",
+            NexiumAPIError::InvalidResponseFromServer.to_string(),
+            response.status()
+        ));
+    }
+
+    let response_text = match response.text() {
+        Ok(t) => t,
+        Err(_) => return Err(NexiumAPIError::NoServerResponse.to_string()),
+    };
+
+    let peers: Vec<PeerInfo> = match serde_json::from_str(&response_text) {
+        Ok(p) => p,
+        Err(_) => return Err(NexiumAPIError::InvalidJsonResponse.to_string()),
+    };
+
+    Ok(peers)
+}
+
+/// Check if a peer is online by sending a request to /peers
+/// We use /peers because it's a simple endpoint that doesn't require authentication
+pub fn check_peer_status(address: String, port: u16) -> bool {
+    let url = format!("http://{}:{}/peers", address, port);
+    
+    let client = match Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+
+    // If we get any response (even an error response), the server is online
+    // Only connection failures mean the server is offline
+    client.get(&url).send().is_ok()
 }

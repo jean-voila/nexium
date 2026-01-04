@@ -1,4 +1,11 @@
+pub mod blockchain_download;
+pub mod blockchain_info;
 pub mod check_nexium;
 pub mod get_balance;
+pub mod get_peers;
 pub mod get_transactions;
+pub mod get_user_stats;
 pub mod new_transaction;
+pub mod register_peer;
+pub mod sync_block;
+pub mod sync_transaction;

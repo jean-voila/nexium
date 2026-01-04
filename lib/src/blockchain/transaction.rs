@@ -137,6 +137,26 @@ impl Transaction {
         (TRANSACTION_HEADER_SIZE + self.data.len() + SIGNATURE_SIZE) as u32
     }
 
+    /// Calculate the total fee cost in NEX
+    /// Fees are defined as µNEX per byte (micro-NEX = 0.000001 NEX)
+    /// Total fee = fees * transaction_size / 1_000_000
+    pub fn fee_cost(&self) -> f32 {
+        let size = self.size() as f32;
+        let fees_per_byte = self.header.fees as f32;
+        (size * fees_per_byte) / 1_000_000.0
+    }
+
+    /// Calculate the total cost of the transaction (amount + fees)
+    /// Returns None if the transaction is not a ClassicTransaction
+    pub fn total_cost(&self) -> Option<f32> {
+        match self.get_data() {
+            Ok(TransactionData::ClassicTransaction { amount, .. }) => {
+                Some(amount + self.fee_cost())
+            }
+            _ => None,
+        }
+    }
+
     pub fn from_buffer(buff: &[u8]) -> Result<Self, String> {
         let data_start = TRANSACTION_HEADER_SIZE;
         let header_buff = match buff[0..data_start].try_into() {

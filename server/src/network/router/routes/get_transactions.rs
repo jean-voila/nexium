@@ -28,7 +28,6 @@ pub async fn handler(
         let _ = req.send(&res).await;
         return;
     }
-    println!("login: {login}");
 
     let n = match req.query.get("n") {
         Some(n) => match n.parse::<usize>() {
@@ -38,7 +37,6 @@ pub async fn handler(
         },
         None => 3,
     };
-    println!("n: {n}");
 
     let key = match req.check(cache.lock().await.deref_mut()).await {
         Ok(data) => data,

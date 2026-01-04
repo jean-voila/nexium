@@ -48,8 +48,6 @@ pub async fn handler(
     };
 
     let data = json.dump();
-    println!("data: {}", data);
-    println!("data len: {}", data.len());
 
     let crypted = match key.crypt(&data) {
         Ok(res) => res,
@@ -59,7 +57,6 @@ pub async fn handler(
             return;
         }
     };
-    println!("crypted: {}", crypted);
 
     let mut res = Response::new(Status::Ok, crypted);
     res.set_header("content-type", "text/plain");

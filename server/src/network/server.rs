@@ -2,8 +2,8 @@ use super::router::handler::handler;
 use crate::{
     blockchain::{blockchain::Blockchain, cache::cache::Cache},
     config::Config,
+    peers::PeerList,
 };
-use colored::Colorize;
 use nexium::{gitlab::GitlabClient, rsa::KeyPair};
 use std::{process, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
@@ -16,6 +16,7 @@ pub struct Server {
     address: String,
     port: u16,
     pub key: KeyPair,
+    pub peer_list: PeerList,
 }
 
 impl Server {
@@ -24,6 +25,7 @@ impl Server {
         gitlab: GitlabClient,
         key: KeyPair,
         blockchain: Blockchain,
+        peer_list: PeerList,
     ) -> Result<Self, String> {
         Ok(Self {
             cache: Cache::new(gitlab.clone()),
@@ -33,6 +35,7 @@ impl Server {
             address: config.listen.clone(),
             port: config.port,
             key,
+            peer_list,
         })
     }
 
@@ -47,43 +50,39 @@ impl Server {
             }
         };
 
-        println!(
-            "Server listening on {}:{}",
-            self.address.green(),
-            self.port.to_string().yellow()
-        );
+        println!("Server started on {}:{}", self.address, self.port);
 
         {
             let blockchain_arc = Arc::new(Mutex::new(self.blockchain));
             let cache_arc = Arc::new(Mutex::new(self.cache));
+            let peer_list_arc = Arc::new(Mutex::new(self.peer_list));
 
             loop {
                 match listener.accept().await {
                     Ok((stream, _)) => {
-                        println!(
-                            "Accepted connection from {}",
-                            stream.peer_addr().unwrap()
-                        );
-
                         let blockchain_arc_clone = blockchain_arc.clone();
                         let cache_arc_clone = cache_arc.clone();
+                        let peer_list_arc_clone = peer_list_arc.clone();
                         let l = self.login.clone();
                         let k = self.key.clone();
+                        let addr = self.address.clone();
+                        let port = self.port;
 
                         tokio::spawn(async move {
                             handler(
                                 stream,
                                 cache_arc_clone,
                                 blockchain_arc_clone,
+                                peer_list_arc_clone,
                                 l,
                                 k,
+                                addr,
+                                port,
                             )
                             .await;
                         });
                     }
-                    Err(e) => {
-                        eprintln!("Failed to accept connection: {}", e);
-                    }
+                    Err(_) => {}
                 }
             }
         }

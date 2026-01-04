@@ -8,13 +8,17 @@ use crate::{
     network::router::http::{
         request::Request, response::Response, status::Status,
     },
+    peers::PeerList,
 };
 
 pub async fn handler(
     req: Request,
     cache: Arc<Mutex<Cache>>,
     blockchain: Arc<Mutex<Blockchain>>,
+    peer_list: Arc<Mutex<PeerList>>,
     key: KeyPair,
+    self_address: String,
+    self_port: u16,
 ) {
     let data = match key.decrypt_split(&req.body) {
         Ok(res) => res,
@@ -76,5 +80,11 @@ pub async fn handler(
     let res = Response::new(Status::Ok, "");
     let _ = req.send(&res).await;
 
-    blockchain.lock().await.add_transaction(tr).await;
+    // Broadcast transaction to all peers
+    let peers = peer_list.lock().await;
+    peers.broadcast_transaction(&tr, &self_address, self_port).await;
+    drop(peers);
+
+    // Add to local blockchain
+    blockchain.lock().await.add_transaction(tr, peer_list.clone(), self_address, self_port).await;
 }

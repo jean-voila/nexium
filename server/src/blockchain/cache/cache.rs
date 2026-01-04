@@ -35,19 +35,14 @@ impl Cache {
         };
 
         let mut user = self.get_user(login);
-        dbg!(&user.keys.len());
         let keys: Vec<KeyPair> = keys
             .iter()
             .filter_map(|k| match KeyPair::pub_from_pem(k, &login) {
                 Ok(key) => Some(key),
-                Err(_) => {
-                    eprintln!("Failed to create key pair");
-                    None
-                }
+                Err(_) => None,
             })
             .collect();
         user.keys = keys.clone();
-        dbg!(&user.keys.len());
         self.data.insert(login.clone(), user);
         Ok(keys)
     }
@@ -110,21 +105,18 @@ impl Cache {
         let s = match BigUint::from_str(sig) {
             Ok(s) => s,
             Err(_) => {
-                eprintln!("Failed to parse signature");
                 return None;
             }
         };
 
-        for key in keys {
+        for key in keys.iter() {
             match key.check_signature(message, &s) {
                 Ok(b) => {
                     if b {
                         return Some(key.clone());
                     }
                 }
-                Err(_) => {
-                    eprintln!("Failed to check signature");
-                }
+                Err(_) => {}
             };
         }
         None

@@ -1,23 +1,9 @@
 <script>
-	import Bouton from '$lib/components/Bouton.svelte';
-	import { SendHorizontal } from 'lucide-svelte';
-	import { HandCoins } from 'lucide-svelte';
+	import { SendHorizontal, HandCoins, History, Copy, Check } from 'lucide-svelte';
 	import { onMount } from 'svelte';
-	import { afterUpdate } from 'svelte';
-
-	import { History } from 'lucide-svelte';
-
-	import { Copy } from 'lucide-svelte';
-	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
-
-	import { Check } from 'lucide-svelte';
-	import { fade } from 'svelte/transition';
-
+	import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 	import { invoke } from '@tauri-apps/api/core';
-
-	let showCopyMessage = '';
-	let tooltipX = 0;
-	let tooltipY = 0;
+	import { get } from 'svelte/store';
 
 	import {
 		globalConfig,
@@ -29,12 +15,9 @@
 		showHistoryModal,
 		globalErrorMessage
 	} from '$lib/stores/settings.js';
-	import { on } from 'svelte/events';
-	import { get } from 'svelte/store';
 
 	let firstName = '';
 	let lastName = '';
-
 	let copied = false;
 
 	async function copyLogin() {
@@ -46,7 +29,7 @@
 		}, 2000);
 	}
 
-	// Réagit aux changements de login utilisateur
+	// React to user login changes
 	$: if ($globalConfig?.user_login) {
 		balanceUpdate();
 		invoke('get_names_from_login', { login: $globalConfig.user_login })
@@ -54,7 +37,7 @@
 				firstName = first;
 				lastName = last;
 			})
-			.catch((err) => {
+			.catch(() => {
 				firstName = '';
 				lastName = '';
 			});
@@ -84,71 +67,56 @@
 	});
 </script>
 
-<div class="flex flex-col justify-center gap-14">
-	<div class="flex flex-col gap-2">
-		<div class="flex flex-col">
-			{#if firstName || lastName}
-				<div class="prenom">{firstName}</div>
-				<div class="nom">{lastName}</div>
-			{:else}
-				<div class="placeholder w-20">
-					<div class="animated-background"></div>
-				</div>
-				<div class="placeholder w-40">
-					<div class="animated-background"></div>
-				</div>
-			{/if}
-		</div>
-		<div class="flex gap-2">
+<div class="user-panel">
+	<!-- User Identity -->
+	<div class="user-identity">
+		{#if firstName || lastName}
+			<div class="user-firstname">{firstName}</div>
+			<div class="user-lastname">{lastName}</div>
+		{:else if $isConfigSet}
+			<div class="skeleton skeleton-text-lg"></div>
+			<div class="skeleton skeleton-text-sm mt-2"></div>
+		{/if}
+
+		<!-- Quick Actions -->
+		{#if $isConfigSet}
+			<div class="user-actions mt-4">
+				<button onclick={copyLogin} class="action-link" title="Copier le login">
+					{#if copied}
+						<Check strokeWidth={2} size={18} />
+					{:else}
+						<Copy strokeWidth={2} size={18} />
+					{/if}
+				</button>
+				<button
+					onclick={() => showHistoryModal.set(true)}
+					class="action-link"
+					title="Historique"
+				>
+					<History strokeWidth={2} size={18} />
+				</button>
+			</div>
+		{/if}
+	</div>
+
+	<!-- Main Action Buttons -->
+	{#if $isConfigSet}
+		<div class="action-buttons">
 			<button
-				onclick={copyLogin}
-				onmouseenter={() => (showCopyMessage = $globalConfig.user_login)}
-				onmouseleave={() => (showCopyMessage = '')}
-				onmousemove={(e) => {
-					tooltipX = e.clientX;
-					tooltipY = e.clientY;
-				}}
-				hidden={!$isConfigSet}
+				onclick={() => showSendModal.set(true)}
+				class="btn-primary"
 			>
-				<Copy strokeWidth={2.6} size={24} class="bouton-action" />
+				<SendHorizontal strokeWidth={2.5} size={20} />
+				Envoyer
 			</button>
 
-			<button hidden={!$isConfigSet} onclick={() => showHistoryModal.set(true)}>
-				<History strokeWidth={2.6} size={24} class="bouton-action" />
+			<button
+				onclick={() => showReceiveModal.set(true)}
+				class="btn-secondary"
+			>
+				<HandCoins strokeWidth={2.5} size={20} />
+				Recevoir
 			</button>
 		</div>
-	</div>
-
-	<div class="flex flex-col gap-2">
-		<button onclick={() => showSendModal.set(true)} disabled={!$isConfigSet}>
-			<Bouton label="Envoyer" Icon={SendHorizontal} disabled={!$isConfigSet} />
-		</button>
-
-		<button onclick={() => showReceiveModal.set(true)} disabled={!$isConfigSet}>
-			<Bouton label="Recevoir" type="secondaire" Icon={HandCoins} disabled={!$isConfigSet} />
-		</button>
-	</div>
+	{/if}
 </div>
-
-{#if showCopyMessage}
-	<div class="copy-tooltip" style="top: {tooltipY}px; left: {tooltipX}px;">
-		<span
-			class="absolute transition-all duration-500 ease-in-out"
-			class:translate-y-0={!copied}
-			class:-translate-y-3={copied}
-			class:opacity-100={!copied}
-			class:opacity-0={copied}
-		>
-			{showCopyMessage}
-		</span>
-		<span
-			class="absolute transition-all duration-500 ease-in-out"
-			class:translate-y-3={!copied}
-			class:translate-y-0={copied}
-			class:opacity-0={!copied}
-			class:opacity-100={copied}
-		>
-			<Check size={20} strokeWidth={4} class="green-icon" />
-		</span>
-	</div>
-{/if}

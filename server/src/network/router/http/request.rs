@@ -13,6 +13,7 @@ const READ_SIZE: usize = 32768;
 
 pub struct Request {
     pub method: String,
+    #[allow(dead_code)]
     pub path_query: String,
     pub path: String,
     pub query: HashMap<String, String>,

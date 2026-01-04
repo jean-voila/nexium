@@ -1,18 +1,17 @@
 <script>
-	import { HelpCircle, Weight } from 'lucide-svelte';
+	import { HelpCircle } from 'lucide-svelte';
+	
 	export let label = '';
 	export let disabled = false;
-	export let type = 'principal';
+	export let type = 'primary';
 	export let Icon = HelpCircle;
-
-	$: buttonClass = type === 'principal' ? 'pillule-bouton-principal' : 'pillule-bouton-secondaire';
-	$: boutonsMenuClass = disabled ? 'boutons-menu-disabled' : 'boutons-menu';
 </script>
 
-<div
-	class="w-47 flex h-11 items-center justify-center gap-2 rounded-full transition {buttonClass} {boutonsMenuClass}"
->
-	<Icon strokeWidth={2.3} class="icone-bouton" />
-
-	<span class="texte-bouton">{label}</span>
+<div class="flex items-center justify-center gap-3 transition-all" 
+	 class:btn-primary={type === 'primary'}
+	 class:btn-secondary={type === 'secondary'}
+	 class:opacity-50={disabled}
+	 class:cursor-not-allowed={disabled}>
+	<Icon strokeWidth={2.5} size={20} />
+	<span class="font-display font-bold">{label}</span>
 </div>

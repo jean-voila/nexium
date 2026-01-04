@@ -147,8 +147,7 @@ impl core::fmt::Debug for TransactionData {
                 write!(f, "amount: {},\n", amount)?;
                 write!(f, "has_description: {},\n", has_description)?;
                 if *has_description {
-                    write!(
-                        f,
+                    write!(                        f,
                         "description: {},\n",
                         String::from_utf8_lossy(description)
                             .trim_end_matches('\0')

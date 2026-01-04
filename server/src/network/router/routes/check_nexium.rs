@@ -17,8 +17,7 @@ pub async fn handler(
 ) {
     let sig = match key.sign(SIG_SAMPLE) {
         Ok(s) => s,
-        Err(e) => {
-            dbg!(e);
+        Err(_) => {
             let res = Response::new(Status::InternalError, "");
             let _ = req.send(&res).await;
             return;
@@ -26,7 +25,7 @@ pub async fn handler(
     };
 
     let json = json::object! {
-        login: login,
+        login: login.clone(),
         sigSample: sig.to_string(),
         // version: 0,
     };
@@ -40,11 +39,12 @@ pub async fn handler(
         }
     };
 
+    println!("User connected: {}", login);
+
     let data = json.dump();
     let crypted = match key.crypt_split(&data) {
         Ok(res) => res,
-        Err(e) => {
-            dbg!(e);
+        Err(_) => {
             let res = Response::new(Status::InternalError, "");
             let _ = req.send(&res).await;
             return;

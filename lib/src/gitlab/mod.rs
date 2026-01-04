@@ -218,68 +218,102 @@ impl GitlabClient {
         &self,
         user_id: u64,
     ) -> Result<Vec<String>, GitlabError> {
-        let url = format!("{}/users/{}/gpg_keys", self.api_url, user_id);
-        let client = Client::new();
-        let request = client.get(&url);
+        let mut gpg_keys: Vec<String> = Vec::new();
+        let mut page = 1;
+        let per_page = 100; // Max allowed by GitLab API
 
-        let request = self.build_headers(request);
+        loop {
+            let url = format!(
+                "{}/users/{}/gpg_keys?page={}&per_page={}",
+                self.api_url, user_id, page, per_page
+            );
+            let client = Client::new();
+            let request = client.get(&url);
+            let request = self.build_headers(request);
 
-        let response = request.send();
+            let response = match request.send() {
+                Ok(resp) => resp,
+                Err(_) => return Err(GitlabError::NetworkError),
+            };
 
-        match response {
-            Ok(resp) => {
-                if resp.status().is_success() {
-                    let keys: Vec<serde_json::Value> =
-                        resp.json().unwrap_or(Vec::new());
-                    let mut gpg_keys: Vec<String> = Vec::new();
-                    for key in keys {
-                        if let Some(key) = key.get("key") {
-                            if let Some(key) = key.as_str() {
-                                gpg_keys.push(key.to_string());
-                            }
-                        }
+            if !response.status().is_success() {
+                return Err(GitlabError::InvalidToken);
+            }
+
+            let keys: Vec<serde_json::Value> =
+                response.json().unwrap_or(Vec::new());
+            
+            if keys.is_empty() {
+                break;
+            }
+
+            for key in &keys {
+                if let Some(key) = key.get("key") {
+                    if let Some(key) = key.as_str() {
+                        gpg_keys.push(key.to_string());
                     }
-                    Ok(gpg_keys)
-                } else {
-                    Err(GitlabError::InvalidToken)
                 }
             }
-            Err(_) => Err(GitlabError::NetworkError),
+
+            // If we got fewer than per_page, we're done
+            if keys.len() < per_page {
+                break;
+            }
+            page += 1;
         }
+
+        Ok(gpg_keys)
     }
 
     async fn get_user_gpg_keys_by_id_async(
         &self,
         user_id: u64,
     ) -> Result<Vec<String>, GitlabError> {
-        let url = format!("{}/users/{}/gpg_keys", self.api_url, user_id);
-        let client = ClientAsync::new();
-        let request = client.get(&url);
+        let mut gpg_keys: Vec<String> = Vec::new();
+        let mut page = 1;
+        let per_page = 100; // Max allowed by GitLab API
 
-        let request = self.build_headers_async(request);
+        loop {
+            let url = format!(
+                "{}/users/{}/gpg_keys?page={}&per_page={}",
+                self.api_url, user_id, page, per_page
+            );
+            let client = ClientAsync::new();
+            let request = client.get(&url);
+            let request = self.build_headers_async(request);
 
-        let response = request.send().await;
+            let response = match request.send().await {
+                Ok(resp) => resp,
+                Err(_) => return Err(GitlabError::NetworkError),
+            };
 
-        match response {
-            Ok(resp) => {
-                if resp.status().is_success() {
-                    let keys: Vec<serde_json::Value> =
-                        resp.json().await.unwrap_or(Vec::new());
-                    let mut gpg_keys: Vec<String> = Vec::new();
-                    for key in keys {
-                        if let Some(key) = key.get("key") {
-                            if let Some(key) = key.as_str() {
-                                gpg_keys.push(key.to_string());
-                            }
-                        }
+            if !response.status().is_success() {
+                return Err(GitlabError::InvalidToken);
+            }
+
+            let keys: Vec<serde_json::Value> =
+                response.json().await.unwrap_or(Vec::new());
+            
+            if keys.is_empty() {
+                break;
+            }
+
+            for key in &keys {
+                if let Some(key) = key.get("key") {
+                    if let Some(key) = key.as_str() {
+                        gpg_keys.push(key.to_string());
                     }
-                    Ok(gpg_keys)
-                } else {
-                    Err(GitlabError::InvalidToken)
                 }
             }
-            Err(_) => Err(GitlabError::NetworkError),
+
+            // If we got fewer than per_page, we're done
+            if keys.len() < per_page {
+                break;
+            }
+            page += 1;
         }
+
+        Ok(gpg_keys)
     }
 
     pub fn add_gpg_key(&self, gpg_key: &str) -> Result<(), GitlabError> {
