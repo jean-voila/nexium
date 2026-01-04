@@ -5,10 +5,6 @@
 <h1 align="center">Nexium</h1>
 
 <p align="center">
-  <img src="https://komarev.com/ghpvc/?username=nexium-blockchain&label=Views&color=blue&style=flat" alt="Views"/>
-</p>
-
-<p align="center">
   <em>A decentralized, blockchain-based cryptocurrency for Epita.</em>
 </p>
 
