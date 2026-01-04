@@ -9,6 +9,24 @@
 </p>
 
 ---
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/main_page.png" alt="Main Page" width="80%"/>
+</p>
+<p align="center"><em>Main Page</em></p>
+
+<p align="center">
+  <img src="screenshots/servers_page.png" alt="Servers Page" width="80%"/>
+</p>
+<p align="center"><em>Servers Page</em></p>
+
+<p align="center">
+  <img src="screenshots/transaction_page.png" alt="Transaction Page" width="80%"/>
+</p>
+<p align="center"><em>Transaction Page</em></p>
+
+---
 
 ## ✨ Features
 
@@ -63,22 +81,7 @@
 | Antonin Bessières | antonin.bessieres@epita.fr               |
 | Milo Delbos       | milo.delbos@epita.fr                     |
 
-## 📸 Screenshots
 
-<p align="center">
-  <img src="screenshots/main_page.png" alt="Main Page" width="80%"/>
-</p>
-<p align="center"><em>Main Page</em></p>
-
-<p align="center">
-  <img src="screenshots/servers_page.png" alt="Servers Page" width="80%"/>
-</p>
-<p align="center"><em>Servers Page</em></p>
-
-<p align="center">
-  <img src="screenshots/transaction_page.png" alt="Transaction Page" width="80%"/>
-</p>
-<p align="center"><em>Transaction Page</em></p>
 
 ---
 
