@@ -7,6 +7,10 @@
 <p align="center">
   <em>A decentralized, blockchain-based cryptocurrency for Epita.</em>
 </p>
+<p align="center">
+  <img src="https://komarev.com/ghpvc/?username=Nexium&label=Views&color=blue&style=flat" alt="View Counter"/>
+</p>
+
 
 ---
 ## 📸 Screenshots
