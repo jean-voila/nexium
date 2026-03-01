@@ -11,10 +11,7 @@ use crate::core::peer_cache::save_peers_cache;
 use commands::*;
 use config::{Config, ConfigError};
 use invoice::*;
-use nexium::{
-    blockchain::consts::estimate_classic_transaction_fee, defaults::*,
-    gitlab::*, login::*, rsa::*,
-};
+use nexium::{defaults::*, gitlab::*, rsa::*};
 use nexium_api::*;
 use std::path::Path;
 
@@ -59,31 +56,6 @@ async fn save_config_to_file(
     match result {
         Ok(r) => r,
         Err(_) => Err(ConfigError::FileWriteError.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn load_invoice_from_file(
-    path_string: String,
-) -> Result<Invoice, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        if Path::new(&path_string).exists() == false {
-            return Err(InvoiceError::FileNotFound.to_string());
-        }
-        let path = Path::new(&path_string);
-        match Invoice::from_file(path) {
-            Ok(invoice) => Ok(invoice),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
-
-    match result {
-        Ok(r) => match r {
-            Ok(config) => Ok(config),
-            Err(e) => Err(e.to_string()),
-        },
-        Err(_) => Err(ConfigError::FileReadError.to_string()),
     }
 }
 
@@ -205,114 +177,6 @@ async fn get_login(
         },
         Err(_) => Err(GitlabError::UserNotFound.to_string()),
     }
-}
-
-#[tauri::command]
-async fn send_transaction(
-    server_pubkey: String,
-    config: Config,
-    transaction: nexium_api::ClassicTransactionSent,
-) -> Result<String, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::send_transaction(server_pubkey, transaction, config) {
-            Ok(_) => Ok("".to_string()),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
-    match result {
-        Ok(r) => r,
-        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn check_send_transaction(
-    transaction: nexium_api::ClassicTransactionSent,
-    config: Config,
-) -> Result<(), String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        let amount = match transaction.amount.parse::<f64>() {
-            Ok(amount) => {
-                if amount <= 0.0 {
-                    return Err(NexiumAPIError::InvalidAmount.to_string());
-                }
-                amount
-            }
-            Err(_) => return Err(NexiumAPIError::InvalidAmount.to_string()),
-        };
-
-        // Parse and validate fees
-        let fees = match transaction.fees.parse::<u16>() {
-            Ok(n) => n,
-            Err(_) => return Err(NexiumAPIError::InvalidFees.to_string()),
-        };
-
-        // Calculate the estimated fee cost based on transaction type
-        let has_description = !transaction.description.is_empty();
-        let fee_cost = estimate_classic_transaction_fee(fees, has_description);
-
-        // Total cost = amount + fees
-        let total_cost = amount + fee_cost;
-
-        let available_balance = match nexium_api::get_balance(
-            config.user_login.clone(),
-            config.clone(),
-        ) {
-            Ok((int, dec)) => {
-                format!("{}.{}", int, dec).parse::<f64>().unwrap_or(0.0)
-            }
-            Err(_) => return Err(NexiumAPIError::BalanceFetchError.to_string()),
-        };
-
-        if total_cost > available_balance {
-            return Err(NexiumAPIError::InsufficientFunds.to_string());
-        }
-
-        // check if the receiver and the sender are not the same
-        if transaction.receiver == config.user_login {
-            return Err(NexiumAPIError::SenderAndReceiverSame.to_string());
-        }
-
-        let rec_login = match Login::new(transaction.receiver.clone()) {
-            Ok(rec) => rec,
-            Err(_) => return Err(NexiumAPIError::InvalidReceiver.to_string()),
-        };
-
-        match rec_login.get_names() {
-            Ok((first_name, last_name)) => {
-                if first_name.chars().count() < 2
-                    || last_name.chars().count() < 2
-                {
-                    return Err(NexiumAPIError::InvalidReceiver.to_string());
-                }
-            }
-            Err(_) => return Err(NexiumAPIError::InvalidReceiver.to_string()),
-        };
-
-        let gitlab_client =
-            GitlabClient::new(config.gitlab_token, config.gitlab_token_type);
-
-        match gitlab_client.check_user_existence(&transaction.receiver) {
-            Ok(exists) => {
-                if !exists {
-                    return Err(NexiumAPIError::ReceiverNotFound.to_string());
-                }
-                return Ok(());
-            }
-            Err(_) => return Err(NexiumAPIError::ReceiverNotFound.to_string()),
-        }
-    })
-    .await;
-    match result {
-        Ok(r) => r,
-        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn is_testnet() -> bool {
-    return IS_TESTNET;
 }
 
 #[tauri::command]
@@ -450,23 +314,21 @@ fn main() {
             save_facture_to_file,
             check_invoice_values,
             get_names_from_login::get_names_from_login,
-            load_invoice_from_file,
-            calculate_transaction_fee,
+            load_invoice_from_file::load_invoice_from_file,
+            calculate_transaction_fee::calculate_transaction_fee,
             get_balance::get_balance,
-            send_transaction,
+            send_transaction::send_transaction,
             get_transactions::get_transactions,
-            is_testnet,
             get_server_infos::get_server_infos,
             write_key_to_file,
             read_key_from_file,
-            check_send_transaction,
+            check_send_transaction::check_send_transaction,
             search_first_users::search_first_users,
             contact_get::contact_get,
             contact_add::contact_add,
             contact_update::contact_update,
             contact_remove::contact_remove,
             contact_search::contact_search,
-            contacts::get_favorite_contacts,
             contacts::get_recent_contacts,
             contact_mark_used::contact_mark_used,
             get_user_stats,

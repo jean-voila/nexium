@@ -8,7 +8,7 @@ export function getTransactions(
     n: number
 ): ResultAsync<ClassicTransactionReceived[], string> {
     return ResultAsync.fromPromise(
-        invoke("get_server_infos", { config, login, n }),
-        (error) => `Failed to get server infos: ${error}`
+        invoke("get_transactions", { config, login, n }),
+        (error) => `Failed to get transactions: ${error}`
     );
 }

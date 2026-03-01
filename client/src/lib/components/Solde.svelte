@@ -25,6 +25,7 @@
         const login = config.user_login;
         await getTransactions(config, login, 2).match(
             (transactions) => {
+                console.log("Fetched transactions:", transactions);
                 recentTransactions = transactions.map((t) => ({
                     receiver: t.receiver,
                     emitter: t.emitter,
@@ -80,7 +81,7 @@
                     {#each recentTransactions as t}
                         <div class="recent-tx-item">
                             <div class="recent-tx-icon">
-                                {#if t.inorout === "IN"}
+                                {#if t.inorout === "received"}
                                     <span class="tx-icon-in"
                                         ><Plus size={14} strokeWidth={3} /></span
                                     >
@@ -92,16 +93,16 @@
                             </div>
                             <div class="recent-tx-details">
                                 <span class="recent-tx-party"
-                                    >{t.inorout === "IN" ? t.emitter : t.receiver}</span
+                                    >{t.inorout === "received" ? t.emitter : t.receiver}</span
                                 >
                                 <span class="recent-tx-date">{t.date}</span>
                             </div>
                             <div
-                                class="recent-tx-amount {t.inorout === 'IN'
+                                class="recent-tx-amount {t.inorout === 'received'
                                     ? 'amount-in'
                                     : 'amount-out'}"
                             >
-                                {t.inorout === "IN" ? "+" : "-"}{t.amount}
+                                {t.inorout === "received" ? "+" : "-"}{t.amount}
                             </div>
                         </div>
                     {/each}

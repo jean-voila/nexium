@@ -1,5 +1,6 @@
 export * from "./calculateTransactionFee";
 export * from "./checkConfigValues";
+export * from "./checkSendTransaction";
 export * from "./contactAdd";
 export * from "./contactGet";
 export * from "./contactMarkUsed";
@@ -11,5 +12,7 @@ export * from "./getNamesFromLogin";
 export * from "./getServerInfos";
 export * from "./getTransactions";
 export * from "./loadConfig";
+export * from "./loadInvoiceFromFile";
 export * from "./saveConfig";
 export * from "./searchFirstUsers";
+export * from "./sendTransaction";

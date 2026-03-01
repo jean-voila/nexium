@@ -1,7 +1,6 @@
 <script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { open } from "@tauri-apps/plugin-dialog";
-    import { invoke } from "@tauri-apps/api/core";
     import { X, Star, Upload, Send } from "lucide-svelte";
     import { globalConfig, serverPublicKey } from "@stores/settings.js";
     import { selectedContact } from "@stores/contacts.js";
@@ -9,13 +8,29 @@
     import { onMount } from "svelte";
     import Spinner from "@components/Spinner.svelte";
     import { constants } from "@stores/constants";
-    import { calculateTransactionFee } from "@invoke";
+    import {
+        calculateTransactionFee,
+        checkSendTransaction,
+        contactGet,
+        contactMarkUsed,
+        contactSearch,
+        loadInvoiceFromFile,
+        searchFirstUsers,
+        sendTransaction
+    } from "@invoke";
+    import type { ClassicTransactionSent } from "@bindings";
 
     let { oncancel } = $props();
 
+    type ContactDisplay = {
+        login: string;
+        nickname: string;
+        favorite: boolean;
+    };
+
     let receiver = $state("");
-    let searchResults = $state([]);
-    let favoriteContacts = $state([]);
+    let searchResults = $state<string[]>([]);
+    let favoriteContacts = $state<ContactDisplay[]>([]);
     let showSuggestions = $state(false);
     let amount = $state("");
     let description = $state("");
@@ -56,61 +71,61 @@
         );
     }
 
-    function handleMontantChange() {
+    function handleMontantChange(): void {
         amount = amount.trim();
         checkTransaction();
         updateFeeCost();
     }
 
-    function handleFeesChange() {
+    function handleFeesChange(): void {
         updateFeeCost();
         checkTransaction();
     }
 
-    function handleDescriptionChange() {
+    function handleDescriptionChange(): void {
         updateFeeCost();
         checkTransaction();
     }
 
-    async function loadFavoriteContacts() {
-        try {
-            const contacts = await invoke("get_favorite_contacts");
-            favoriteContacts = contacts.map((c) => ({
-                login: c.login,
-                nickname: c.nickname,
-                favorite: c.favorite
-            }));
-        } catch (e) {
-            favoriteContacts = [];
-        }
+    async function loadFavoriteContacts(): Promise<void> {
+        const contacts = await contactGet(true);
+        favoriteContacts = contacts.map((c) => ({
+            login: c.login,
+            nickname: c.nickname,
+            favorite: c.favorite
+        }));
     }
 
-    async function handleReceiverChange() {
+    async function handleReceiverChange(): Promise<void> {
         receiver = receiver.trim();
         checkTransaction();
 
         if (receiver.length > 0) {
-            try {
-                const results = await invoke("search_first_users", {
-                    config: $globalConfig,
-                    search: receiver
-                });
-                const contactResults = await invoke("search_contacts", { query: receiver });
-                const contactLogins = contactResults.map((c) => c.login);
-                const allResults = [...new Set([...contactLogins, ...results])];
-                searchResults = allResults;
-                showSuggestions = allResults.length > 0;
-            } catch (e) {
-                searchResults = [];
-                showSuggestions = false;
-            }
+            const [firstUsers, contactSrch] = await Promise.all([
+                searchFirstUsers($globalConfig, receiver),
+                contactSearch(receiver)
+            ]);
+
+            firstUsers.match(
+                (results) => {
+                    const contactLogins = contactSrch.map((c) => c.login);
+                    const allResults = [...new Set([...contactLogins, ...results])];
+                    searchResults = allResults;
+                    showSuggestions = allResults.length > 0;
+                },
+                (err) => {
+                    console.error(err);
+                    searchResults = [];
+                    showSuggestions = false;
+                }
+            );
         } else {
             searchResults = [];
             showSuggestions = false;
         }
     }
 
-    async function handleLoadFile() {
+    async function handleLoadFile(): Promise<void> {
         const path = await open({
             title: "Choisir le fichier de la facture",
             multiple: false,
@@ -120,16 +135,20 @@
         });
         if (!path) return;
 
-        try {
-            const result = await invoke("load_invoice_from_file", { pathString: path });
-            receiver = result.sender_login;
-            amount = result.amount;
-            description = result.description;
-            checkTransaction();
-        } catch (e) {}
+        await loadInvoiceFromFile(path).match(
+            (invoice) => {
+                receiver = invoice.sender_login;
+                amount = invoice.amount;
+                description = invoice.description;
+                checkTransaction();
+            },
+            (err) => {
+                console.error("Erreur lors du chargement de la facture:", err);
+            }
+        );
     }
 
-    async function checkTransaction() {
+    async function checkTransaction(): Promise<void> {
         const classic_transaction_sent = {
             receiver: receiver,
             amount: amount,
@@ -137,19 +156,19 @@
             fees: fees
         };
 
-        try {
-            await invoke("check_send_transaction", {
-                config: $globalConfig,
-                transaction: classic_transaction_sent
-            });
-            validationError.set(false);
-        } catch (e) {
-            validationError.set(true);
-        }
+        const hasErr = await checkSendTransaction(classic_transaction_sent, $globalConfig).match(
+            () => false,
+            (err) => {
+                console.error("Erreur de validation de la transaction:", err);
+                return true;
+            }
+        );
+
+        validationError.set(hasErr);
     }
 
-    async function handleSend() {
-        const classic_transaction_sent = {
+    async function handleSend(): Promise<void> {
+        const classic_transaction_sent: ClassicTransactionSent = {
             receiver: receiver,
             amount: amount,
             description: description,
@@ -157,23 +176,29 @@
         };
 
         isSending = true;
-        try {
-            await invoke("mark_contact_used", { login: receiver }).catch(() => {});
-            await invoke("send_transaction", {
-                serverPubkey: $serverPublicKey,
-                config: $globalConfig,
-                transaction: classic_transaction_sent
-            });
+
+        const [markUsed, sendTr] = await Promise.all([
+            contactMarkUsed(receiver),
+            sendTransaction($serverPublicKey, $globalConfig, classic_transaction_sent)
+        ]);
+
+        if (markUsed.isOk() && sendTr.isOk()) {
             handleClose();
-        } catch (e) {
-            console.error("Erreur lors de l'envoi de la transaction:", e);
-        } finally {
-            isSending = false;
+        } else {
+            if (markUsed.isErr()) {
+                console.error("Erreur lors de la mise à jour du contact:", markUsed.error);
+            }
+            if (sendTr.isErr()) {
+                console.error("Erreur lors de l'envoi de la transaction:", sendTr.error);
+            }
         }
+
+        isSending = false;
     }
 
     onMount(() => {
         loadFavoriteContacts();
+
         const preselected = get(selectedContact);
         if (preselected) {
             receiver = preselected;

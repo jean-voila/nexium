@@ -114,8 +114,12 @@ impl ContactBook {
             .collect()
     }
 
-    pub fn get_favorites(&self) -> Vec<&Contact> {
-        self.contacts.iter().filter(|c| c.favorite).collect()
+    pub fn get_favorites(&self) -> Vec<Contact> {
+        self.contacts
+            .iter()
+            .filter(|c| c.favorite)
+            .cloned()
+            .collect()
     }
 
     pub fn get_recent(&self, limit: usize) -> Vec<&Contact> {
@@ -123,12 +127,6 @@ impl ContactBook {
         sorted.sort_by(|a, b| b.last_used.cmp(&a.last_used));
         sorted.into_iter().take(limit).collect()
     }
-}
-
-#[tauri::command]
-pub fn get_favorite_contacts() -> Result<Vec<Contact>, String> {
-    let book = ContactBook::load();
-    Ok(book.get_favorites().into_iter().cloned().collect())
 }
 
 #[tauri::command]

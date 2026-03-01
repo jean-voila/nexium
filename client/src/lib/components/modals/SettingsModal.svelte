@@ -24,6 +24,7 @@
     import Spinner from "@components/Spinner.svelte";
     import PasswordModal from "./PasswordModal.svelte";
     import AskPasswordModal from "./AskPasswordModal.svelte";
+    import { constants } from "@stores/constants";
 
     let config = get(globalConfig);
     let errorMessage = "";
@@ -40,9 +41,7 @@
     let resolveNewPassword: (value: string) => void | undefined;
     let resolveAskPassword: (value: string) => void | undefined;
 
-    invoke("is_testnet").then((result) => {
-        config.is_testnet = result;
-    });
+    config.is_testnet = constants.is_testnet;
 
     function promptNewPassword() {
         showNewPasswordModal = true;

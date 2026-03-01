@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
 use std::path::Path;
+use ts_rs::TS;
 
 pub enum InvoiceError {
     InvalidAmount,
@@ -28,7 +29,8 @@ impl fmt::Display for InvoiceError {
 
 const MAX_DESCRIPTION_LENGTH: usize = 256;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Invoice {
     pub sender_login: String,
     pub amount: String,
@@ -56,7 +58,7 @@ impl Invoice {
         Ok(())
     }
 
-    pub fn from_file(path: &Path) -> Result<Invoice, String> {
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Invoice, String> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => {
@@ -78,7 +80,7 @@ impl Invoice {
         return Ok(invoice);
     }
 
-    pub fn to_file(&self, path: &Path) -> Result<(), InvoiceError> {
+    pub fn to_file(&self, path: impl AsRef<Path>) -> Result<(), InvoiceError> {
         let content = match serde_json::to_string_pretty(self) {
             Ok(c) => c,
             Err(_) => {

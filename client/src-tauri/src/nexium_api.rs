@@ -14,6 +14,7 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+use ts_rs::TS;
 
 #[derive(Debug)]
 pub enum NexiumAPIError {
@@ -96,7 +97,8 @@ impl fmt::Display for NexiumAPIError {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ClassicTransactionSent {
     pub receiver: String,
     pub amount: String,

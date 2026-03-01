@@ -1,5 +1,6 @@
 pub mod calculate_transaction_fee;
 pub mod check_config_values;
+pub mod check_send_transaction;
 pub mod contact_add;
 pub mod contact_get;
 pub mod contact_mark_used;
@@ -13,5 +14,7 @@ pub mod get_names_from_login;
 pub mod get_server_infos;
 pub mod get_transactions;
 pub mod load_config;
+pub mod load_invoice_from_file;
 pub mod save_config;
 pub mod search_first_users;
+pub mod send_transaction;

@@ -1,7 +1,11 @@
 use crate::contacts::{Contact, ContactBook};
 
-// Tauri commands for contacts
 #[tauri::command]
-pub fn contact_get() -> Vec<Contact> {
-    ContactBook::load().contacts
+pub fn contact_get(favorite: bool) -> Vec<Contact> {
+    let book = ContactBook::load();
+    if favorite {
+        book.get_favorites()
+    } else {
+        book.contacts
+    }
 }
