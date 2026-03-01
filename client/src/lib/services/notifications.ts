@@ -1,11 +1,12 @@
 import { writable, get } from "svelte/store";
-import { invoke } from "@tauri-apps/api/core";
 import {
     isPermissionGranted,
     requestPermission,
     sendNotification
 } from "@tauri-apps/plugin-notification";
 import { globalConfig, isConfigSet } from "@stores/settings.js";
+import { getTransactions } from "@invoke";
+import type { ClassicTransactionReceived } from "@bindings";
 
 // Store for notification settings
 export const notificationsEnabled = writable(true);
@@ -13,7 +14,7 @@ export const lastKnownTransactionCount = writable(0);
 
 let checkInterval: ReturnType<typeof setInterval> | null = null;
 
-export async function initNotifications() {
+export async function initNotifications(): Promise<boolean> {
     // Check/request permission
     let permissionGranted = await isPermissionGranted();
     if (!permissionGranted) {
@@ -23,7 +24,7 @@ export async function initNotifications() {
     return permissionGranted;
 }
 
-export async function checkForNewTransactions() {
+export async function checkForNewTransactions(): Promise<void> {
     const config = get(globalConfig);
     const configSet = get(isConfigSet);
     const enabled = get(notificationsEnabled);
@@ -32,14 +33,12 @@ export async function checkForNewTransactions() {
         return;
     }
 
-    try {
-        const transactions = await invoke("get_transactions", {
-            config: config,
-            login: config.user_login,
-            n: "5"
-        });
+    const transactionsRes = await getTransactions(config, config.user_login, 5);
 
-        if (Array.isArray(transactions) && transactions.length > 0) {
+    if (transactionsRes.isOk()) {
+        const transactions = transactionsRes.value;
+
+        if (transactions.length > 0) {
             const lastCount = get(lastKnownTransactionCount);
 
             // If this is the first check, just store the count
@@ -58,12 +57,12 @@ export async function checkForNewTransactions() {
 
             lastKnownTransactionCount.set(transactions.length);
         }
-    } catch (e) {
-        console.error("Error checking for new transactions:", e);
+    } else {
+        console.error("Error fetching transactions:", transactionsRes.error);
     }
 }
 
-async function sendTransactionNotification(transaction: any) {
+async function sendTransactionNotification(transaction: ClassicTransactionReceived): Promise<void> {
     const permissionGranted = await isPermissionGranted();
     if (!permissionGranted) return;
 
@@ -77,18 +76,18 @@ async function sendTransactionNotification(transaction: any) {
     });
 }
 
-export function startTransactionWatcher() {
-    if (checkInterval) return;
+export function startTransactionWatcher(): void {
+    if (checkInterval != null) return;
 
     // Check every 30 seconds
-    checkInterval = setInterval(checkForNewTransactions, 30000);
+    checkInterval = setInterval(checkForNewTransactions, 30_000);
 
     // Also check immediately
     checkForNewTransactions();
 }
 
-export function stopTransactionWatcher() {
-    if (checkInterval) {
+export function stopTransactionWatcher(): void {
+    if (checkInterval != null) {
         clearInterval(checkInterval);
         checkInterval = null;
     }

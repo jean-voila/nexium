@@ -10,11 +10,13 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::io::{BufRead, Write};
 use std::net::TcpListener;
+use ts_rs::TS;
 use url::Url;
 use webbrowser;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "PascalCase")]
+#[ts(export)]
 pub enum TokenType {
     #[default]
     Classic,
@@ -242,7 +244,7 @@ impl GitlabClient {
 
             let keys: Vec<serde_json::Value> =
                 response.json().unwrap_or(Vec::new());
-            
+
             if keys.is_empty() {
                 break;
             }
@@ -293,7 +295,7 @@ impl GitlabClient {
 
             let keys: Vec<serde_json::Value> =
                 response.json().await.unwrap_or(Vec::new());
-            
+
             if keys.is_empty() {
                 break;
             }

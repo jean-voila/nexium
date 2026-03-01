@@ -1,7 +1,5 @@
 use super::config::*;
-
 use chrono::DateTime;
-
 use json;
 use nexium::blockchain::transaction::*;
 use nexium::blockchain::transaction_data::*;
@@ -13,6 +11,7 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+use ts_rs::TS;
 
 #[derive(Debug)]
 pub enum NexiumAPIError {
@@ -103,7 +102,8 @@ pub struct ClassicTransactionSent {
     pub fees: String,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, TS)]
+#[ts(export)]
 pub struct ClassicTransactionReceived {
     pub receiver: String,
     pub emitter: String,
@@ -182,6 +182,7 @@ fn build_url(config: &Config, endpoint: &str) -> String {
     )
 }
 
+#[deprecated(note = "Update return type to struct ServerInfos")]
 pub fn get_server_key_login(
     config: Config,
 ) -> Result<(String, String), String> {
@@ -474,7 +475,7 @@ pub fn get_balance(
 pub fn get_transactions(
     config: Config,
     login: String,
-    n: String,
+    n: u32,
 ) -> Result<Vec<ClassicTransactionReceived>, String> {
     let headers = match build_headers(&config) {
         Ok(h) => h,
@@ -706,7 +707,7 @@ pub fn get_peers(config: Config) -> Result<Vec<PeerInfo>, String> {
 /// We use /peers because it's a simple endpoint that doesn't require authentication
 pub fn check_peer_status(address: String, port: u16) -> bool {
     let url = format!("http://{}:{}/peers", address, port);
-    
+
     let client = match Client::builder()
         .timeout(std::time::Duration::from_secs(5))
         .build()

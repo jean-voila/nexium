@@ -1,37 +1,23 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod commands;
 mod config;
 mod contacts;
+mod core;
 mod invoice;
 mod nexium_api;
-
-use config::Config;
-use config::ConfigError;
+mod types;
+use crate::core::peer_cache::save_peers_cache;
+use commands::*;
+use config::{Config, ConfigError};
 use invoice::*;
-
-use nexium_api::*;
-
 use nexium::{
     blockchain::consts::estimate_classic_transaction_fee, defaults::*,
     gitlab::*, login::*, rsa::*,
 };
-// use sleep
+use nexium_api::*;
 use std::path::Path;
 
-#[tauri::command]
-async fn check_config_values(config: Config) -> Result<String, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        Config::check_values(&config)
-            .map(|_| "".to_string())
-            .map_err(|e| e.to_string())
-    })
-    .await;
-
-    match result {
-        Ok(r) => r,
-        Err(_) => Err("Thread panicked during config validation".to_string()),
-    }
-}
 #[tauri::command]
 async fn load_config_from_file(path_string: String) -> Result<Config, String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -72,32 +58,6 @@ async fn save_config_to_file(
 
     match result {
         Ok(r) => r,
-        Err(_) => Err(ConfigError::FileWriteError.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn load_config() -> Result<Option<Config>, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        Config::load()
-    })
-    .await;
-
-    match result {
-        Ok(config) => Ok(config),
-        Err(_) => Err(ConfigError::FileReadError.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn save_config(config: Config) -> Result<(), String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        config.save()
-    })
-    .await;
-
-    match result {
-        Ok(r) => r.map_err(|e| e.to_string()),
         Err(_) => Err(ConfigError::FileWriteError.to_string()),
     }
 }
@@ -284,7 +244,8 @@ async fn calculate_transaction_fee(
         Err(_) => return Ok("0".to_string()),
     };
 
-    let fee_cost = estimate_classic_transaction_fee(fees_per_byte, has_description);
+    let fee_cost =
+        estimate_classic_transaction_fee(fees_per_byte, has_description);
     Ok(format!("{:.6}", fee_cost))
 }
 
@@ -413,45 +374,8 @@ async fn check_send_transaction(
 }
 
 #[tauri::command]
-async fn get_transactions(
-    config: Config,
-    login: String,
-    n: String,
-) -> Result<Vec<nexium_api::ClassicTransactionReceived>, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_transactions(config, login, n) {
-            Ok(transactions) => Ok(transactions),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
-    match result {
-        Ok(r) => r,
-        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-    }
-}
-
-#[tauri::command]
 async fn is_testnet() -> bool {
     return IS_TESTNET;
-}
-
-#[tauri::command]
-async fn get_server_infos(config: Config) -> Result<(String, String), String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_server_key_login(config) {
-            Ok(resp) => Ok(resp),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
-    match result {
-        Ok(r) => match r {
-            Ok(resp) => Ok(resp),
-            Err(e) => Err(e),
-        },
-        Err(_) => Err(GitlabError::UserNotFound.to_string()),
-    }
 }
 
 #[tauri::command]
@@ -530,14 +454,17 @@ async fn get_user_stats(
 }
 
 #[tauri::command]
-async fn get_peers(config: Config) -> Result<Vec<nexium_api::PeerInfo>, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_peers(config) {
-            Ok(peers) => Ok(peers),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
+async fn get_peers(
+    config: Config,
+) -> Result<Vec<nexium_api::PeerInfo>, String> {
+    let result =
+        tauri::async_runtime::spawn_blocking(
+            move || match nexium_api::get_peers(config) {
+                Ok(peers) => Ok(peers),
+                Err(e) => Err(e),
+            },
+        )
+        .await;
     match result {
         Ok(Ok(peers)) => {
             // Cache peers for failover
@@ -571,13 +498,13 @@ async fn try_connect_to_server(
     // Update config with new server
     config.server_address = address;
     config.port = port.to_string();
-    
+
     let config_clone = config.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         nexium_api::get_server_key_login(config_clone)
     })
     .await;
-    
+
     match result {
         Ok(Ok((pub_key, login))) => {
             config.server_login = login.clone();
@@ -588,93 +515,18 @@ async fn try_connect_to_server(
     }
 }
 
-/// Try to find a working server from the cached peer list
-#[tauri::command]
-async fn find_working_server(config: Config) -> Result<(String, String, Config), String> {
-    // First try the current server
-    let config_clone = config.clone();
-    let current_result = tauri::async_runtime::spawn_blocking(move || {
-        nexium_api::get_server_key_login(config_clone)
-    })
-    .await;
-    
-    if let Ok(Ok((pub_key, login))) = current_result {
-        let mut updated_config = config.clone();
-        updated_config.server_login = login.clone();
-        return Ok((pub_key, login, updated_config));
-    }
-    
-    // Current server failed, try to get cached peers
-    // We need to try each peer until one works
-    let peers = get_cached_peers();
-    
-    for peer in peers {
-        // Skip current server
-        if peer.address == config.server_address && peer.port.to_string() == config.port {
-            continue;
-        }
-        
-        let mut test_config = config.clone();
-        test_config.server_address = peer.address.clone();
-        test_config.port = peer.port.to_string();
-        
-        let test_config_clone = test_config.clone();
-        let result = tauri::async_runtime::spawn_blocking(move || {
-            nexium_api::get_server_key_login(test_config_clone)
-        })
-        .await;
-        
-        if let Ok(Ok((pub_key, login))) = result {
-            test_config.server_login = login.clone();
-            println!("Failover: switched to server {}:{}", peer.address, peer.port);
-            return Ok((pub_key, login, test_config));
-        }
-    }
-    
-    Err("No available servers found".to_string())
-}
-
-/// Get cached peers from local storage
-fn get_cached_peers() -> Vec<nexium_api::PeerInfo> {
-    let path = get_peers_cache_path();
-    if !path.exists() {
-        return vec![];
-    }
-    
-    match std::fs::read_to_string(&path) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => vec![],
-    }
-}
-
-/// Save peers to local cache
-fn save_peers_cache(peers: &[nexium_api::PeerInfo]) {
-    let path = get_peers_cache_path();
-    if let Ok(content) = serde_json::to_string(peers) {
-        let _ = std::fs::write(&path, content);
-    }
-}
-
-fn get_peers_cache_path() -> std::path::PathBuf {
-    let mut path = dirs::data_local_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    path.push("nexium");
-    let _ = std::fs::create_dir_all(&path);
-    path.push("peers_cache.json");
-    path
-}
-
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
-            check_config_values,
+            check_config_values::check_config_values,
             get_gitlab_oauth_token,
             load_config_from_file,
             save_config_to_file,
-            load_config,
-            save_config,
+            load_config::load_config,
+            save_config::save_config,
             keypair_generation,
             send_gpg_key,
             get_login,
@@ -686,9 +538,9 @@ fn main() {
             calculate_transaction_fee,
             get_balance,
             send_transaction,
-            get_transactions,
+            get_transactions::get_transactions,
             is_testnet,
-            get_server_infos,
+            get_server_infos::get_server_infos,
             write_key_to_file,
             read_key_from_file,
             check_send_transaction,
@@ -705,7 +557,7 @@ fn main() {
             get_peers,
             check_peer_status,
             try_connect_to_server,
-            find_working_server,
+            find_working_server::find_working_server,
         ])
         .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())

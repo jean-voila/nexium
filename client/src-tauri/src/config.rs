@@ -1,23 +1,23 @@
 use nexium::gitlab;
 use nexium::gitlab::*;
-
 use nexium::login::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
+use ts_rs::TS;
 
 fn get_config_path() -> PathBuf {
-    let mut path = dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."));
+    let mut path = dirs::data_local_dir().unwrap_or_else(|| PathBuf::from("."));
     path.push("nexium");
     fs::create_dir_all(&path).ok();
     path.push("config.json");
     path
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Config {
     pub server_address: String,
     pub port: String,
@@ -195,8 +195,7 @@ impl Config {
         let path = get_config_path();
         let content = serde_json::to_string_pretty(self)
             .map_err(|_| ConfigError::FileFormatError)?;
-        fs::write(&path, content)
-            .map_err(|_| ConfigError::FileWriteError)?;
+        fs::write(&path, content).map_err(|_| ConfigError::FileWriteError)?;
         Ok(())
     }
 }

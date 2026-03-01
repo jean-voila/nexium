@@ -1,64 +1,80 @@
 <script lang="ts">
-	import '../app.css';
-	import { onMount } from 'svelte';
-	import { invoke } from '@tauri-apps/api/core';
-	import { initNotifications, startTransactionWatcher } from '$lib/services/notifications';
-	import { theme, globalConfig, isConfigSet, serverPublicKey } from '$lib/stores/settings.js';
+    import "../app.css";
+    import { onMount } from "svelte";
+    import { invoke } from "@tauri-apps/api/core";
+    import { initNotifications, startTransactionWatcher } from "@services/notifications.js";
+    import { theme, globalConfig, isConfigSet, serverPublicKey } from "@stores/settings.js";
+    import {
+        getServerInfos,
+        loadConfig,
+        checkConfigValues,
+        findWorkingServer,
+        saveConfig
+    } from "@invoke";
 
-	let { children } = $props();
+    let { children } = $props();
 
-	onMount(async () => {
-		// Try to load saved config
-		try {
-			const savedConfig = await invoke('load_config');
-			if (savedConfig) {
-				// Validate the config silently
-				try {
-					await invoke('check_config_values', { config: savedConfig });
-					const server_pub_key_login = await invoke('get_server_infos', { config: savedConfig });
-					if (server_pub_key_login) {
-						serverPublicKey.set(server_pub_key_login[0]);
-						savedConfig.server_login = server_pub_key_login[1];
-					}
-					globalConfig.set(savedConfig);
-					isConfigSet.set(true);
-				} catch (e) {
-					// Main server unreachable, try failover
-					console.log('Main server unreachable, trying failover...', e);
-					try {
-						const result: [string, string, any] = await invoke('find_working_server', { config: savedConfig });
-						if (result) {
-							const [pubKey, login, updatedConfig] = result;
-							serverPublicKey.set(pubKey);
-							globalConfig.set(updatedConfig);
-							isConfigSet.set(true);
-							// Save the updated config with new server
-							await invoke('save_config', { config: updatedConfig });
-							console.log(`Failover successful: switched to ${updatedConfig.server_address}:${updatedConfig.port}`);
-						}
-					} catch (failoverError) {
-						console.log('Failover failed, no available servers:', failoverError);
-					}
-				}
-			}
-		} catch (e) {
-			console.log('No saved config found');
-		}
+    onMount(async () => {
+        // Try to load saved config
+        try {
+            const savedConfigRes = await loadConfig();
+            if (savedConfigRes.isOk()) {
+                // Validate the config silently
+                const savedConfig = savedConfigRes.value;
+                try {
+                    await checkConfigValues(savedConfig);
+                    const server_pub_key_login = await getServerInfos(savedConfig);
 
-		// Initialize notifications
-		await initNotifications();
-		startTransactionWatcher();
+                    if (server_pub_key_login.isOk()) {
+                        serverPublicKey.set(server_pub_key_login.value.pub_key);
+                        savedConfig.server_login = server_pub_key_login.value.login;
+                    }
+                    globalConfig.set(savedConfig);
+                    isConfigSet.set(true);
+                } catch (e) {
+                    // Main server unreachable, try failover
+                    console.log("Main server unreachable, trying failover...", e);
+                    const workingServerRes = await findWorkingServer(savedConfig);
 
-		// Apply theme on load
-		const savedTheme = localStorage.getItem('nexium-theme') || 'dark';
-		document.documentElement.setAttribute('data-theme', savedTheme);
-	});
+                    if (workingServerRes.isOk()) {
+                        const { pub_key, config: updatedConfig } = workingServerRes.value;
+                        serverPublicKey.set(pub_key);
+                        globalConfig.set(updatedConfig);
+                        isConfigSet.set(true);
+                        // Save the updated config with new server
 
-	// React to theme changes
-	$effect(() => {
-		document.documentElement.setAttribute('data-theme', $theme);
-	});
+                        if (await saveConfig(updatedConfig)) {
+                            console.log(
+                                `Failover successful: switched to ${updatedConfig.server_address}:${updatedConfig.port}`
+                            );
+                        } else {
+                            console.log("Failed to save config after failover");
+                        }
+                    } else {
+                        console.log(
+                            "No working servers found during failover:",
+                            workingServerRes.error
+                        );
+                    }
+                }
+            }
+        } catch (e) {
+            console.log("No saved config found");
+        }
+
+        // Initialize notifications
+        await initNotifications();
+        startTransactionWatcher();
+
+        // Apply theme on load
+        const savedTheme = localStorage.getItem("nexium-theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+    });
+
+    // React to theme changes
+    $effect(() => {
+        document.documentElement.setAttribute("data-theme", $theme);
+    });
 </script>
 
 {@render children()}
-

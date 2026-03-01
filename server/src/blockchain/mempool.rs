@@ -31,8 +31,10 @@ impl Mempool {
         });
     }
 
-    /// Clear all transactions from mempool
-    pub fn clear(&mut self) {
-        self.data.clear();
-    }
+    // Commented because unused for now
+    //
+    // /// Clear all transactions from mempool
+    // pub fn clear(&mut self) {
+    //     self.data.clear();
+    // }
 }
