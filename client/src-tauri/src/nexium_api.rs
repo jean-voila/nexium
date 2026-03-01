@@ -387,6 +387,7 @@ pub fn send_transaction(
     return Ok(());
 }
 
+#[deprecated(note = "Update return type to struct BalanceInfo")]
 pub fn get_balance(
     login: String,
     config: Config,

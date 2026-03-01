@@ -2,8 +2,8 @@
     import { SendHorizontal, HandCoins, History, Copy, Check } from "lucide-svelte";
     import { onMount } from "svelte";
     import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-    import { invoke } from "@tauri-apps/api/core";
     import { get } from "svelte/store";
+    import { wait } from "@darco2903/web-common";
     import {
         globalConfig,
         isConfigSet,
@@ -14,50 +14,54 @@
         showHistoryModal,
         globalErrorMessage
     } from "@stores/settings.js";
+    import { getNamesFromLogin } from "@invoke";
+    import { getBalance } from "@invoke/getBalance";
 
-    let firstName = "";
-    let lastName = "";
-    let copied = false;
+    let firstName = ""; // TODO: verify type (string or null)
+    let lastName = ""; // TODO: verify type (string or null)
+    let copied: boolean = false;
 
-    async function copyLogin() {
+    async function copyLogin(): Promise<void> {
         if (!$globalConfig?.user_login) return;
+
         await writeText($globalConfig.user_login);
+
         copied = true;
-        setTimeout(() => {
-            copied = false;
-        }, 2000);
+        await wait(2000);
+        copied = false;
     }
 
     // React to user login changes
     $: if ($globalConfig?.user_login) {
         balanceUpdate();
-        invoke("get_names_from_login", { login: $globalConfig.user_login })
-            .then(([first, last]) => {
-                firstName = first;
-                lastName = last;
-            })
-            .catch(() => {
+        getNamesFromLogin($globalConfig.user_login).match(
+            (names) => {
+                firstName = names.first_name;
+                lastName = names.last_name;
+            },
+            (err) => {
+                console.error("Error fetching names from login:", err);
                 firstName = "";
                 lastName = "";
-            });
+            }
+        );
     }
 
-    async function balanceUpdate() {
+    async function balanceUpdate(): Promise<void> {
         if (get(showHistoryModal) || get(showSendModal) || get(showReceiveModal)) return;
         if ($isConfigSet === false) return;
-        try {
-            const balance = await invoke("get_balance", {
-                login: $globalConfig.user_login,
-                config: $globalConfig
-            });
-            if (balance) {
-                userBalanceInt.set(balance[0]);
-                userBalanceDec.set(balance[1]);
+
+        await getBalance($globalConfig.user_login, $globalConfig).match(
+            (balance) => {
+                userBalanceInt.set(balance.integer_part);
+                userBalanceDec.set(balance.decimal_part);
+                globalErrorMessage.set("");
+            },
+            (err) => {
+                globalErrorMessage.set("Erreur lors de la récupération du solde.");
+                console.error("Error fetching balance:", err);
             }
-            globalErrorMessage.set("");
-        } catch (error) {
-            globalErrorMessage.set("Erreur lors de la récupération du solde.");
-        }
+        );
     }
 
     onMount(() => {

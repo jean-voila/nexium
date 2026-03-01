@@ -208,26 +208,6 @@ async fn get_login(
 }
 
 #[tauri::command]
-async fn get_names_from_login(
-    login: String,
-) -> Result<(String, String), String> {
-    // Utilise login::new(login) et login::get_names() pour obtenir le nom et le prénom
-    let login = Login::new(login);
-    match login {
-        Ok(login) => {
-            let names = login.get_names();
-            match names {
-                Ok((first_name, last_name)) => {
-                    return Ok((first_name, last_name))
-                }
-                Err(e) => Err(e.to_string()),
-            }
-        }
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
 async fn get_invoice_extension() -> String {
     return NEXIUM_INVOICE_EXTENSION.to_string();
 }
@@ -247,27 +227,6 @@ async fn calculate_transaction_fee(
     let fee_cost =
         estimate_classic_transaction_fee(fees_per_byte, has_description);
     Ok(format!("{:.6}", fee_cost))
-}
-
-#[tauri::command]
-async fn get_balance(
-    login: String,
-    config: Config,
-) -> Result<(String, String), String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        match nexium_api::get_balance(login, config) {
-            Ok((int, dec)) => Ok((int, dec)),
-            Err(e) => Err(e),
-        }
-    })
-    .await;
-    match result {
-        Ok(r) => match r {
-            Ok(soldes) => Ok(soldes),
-            Err(e) => Err(e),
-        },
-        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-    }
 }
 
 #[tauri::command]
@@ -532,11 +491,11 @@ fn main() {
             get_login,
             save_facture_to_file,
             check_invoice_values,
-            get_names_from_login,
+            get_names_from_login::get_names_from_login,
             load_invoice_from_file,
             get_invoice_extension,
             calculate_transaction_fee,
-            get_balance,
+            get_balance::get_balance,
             send_transaction,
             get_transactions::get_transactions,
             is_testnet,

@@ -8,11 +8,11 @@
         showSendModal,
         showReceiveModal
     } from "@stores/settings.js";
-    import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
     import { Plus, Minus } from "lucide-svelte";
     import NumberFlow from "@number-flow/svelte";
+    import { getTransactions } from "@invoke";
 
     type Transaction = {
         receiver: string;
@@ -28,25 +28,25 @@
     async function fetchRecentTransactions() {
         if (get(showHistoryModal) || get(showSendModal) || get(showReceiveModal)) return;
         if (get(isConfigSet) === false) return;
-        try {
-            const result = await invoke("get_transactions", {
-                config: get(globalConfig),
-                login: get(globalConfig).user_login,
-                n: "2"
-            });
-            if (Array.isArray(result)) {
-                recentTransactions = result.map((t: any) => ({
-                    receiver: t.receiver || "",
-                    emitter: t.emitter || "",
-                    description: t.description || "",
-                    amount: t.amount || "",
-                    date: t.date || "",
+
+        const config = get(globalConfig);
+        const login = config.user_login;
+        await getTransactions(config, login, 2).match(
+            (transactions) => {
+                recentTransactions = transactions.map((t) => ({
+                    receiver: t.receiver,
+                    emitter: t.emitter,
+                    description: t.description,
+                    amount: t.amount,
+                    date: t.date,
+                    // TODO: verify that this field is always present and correctly formatted to avoid defaulting to "IN" erroneously
                     inorout: t.inorout || "IN"
                 }));
+            },
+            (err) => {
+                console.error("Error fetching transactions:", err);
             }
-        } catch (e) {
-            console.log(e);
-        }
+        );
     }
 
     onMount(() => {

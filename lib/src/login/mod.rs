@@ -108,6 +108,7 @@ impl Login {
         return Ok(Self { login });
     }
 
+    #[deprecated(note = "Update return type to struct LoginNames")]
     pub fn get_names(&self) -> Result<(String, String), LoginError> {
         let parts = self.login.split('.');
         let first_part = match parts.clone().nth(0) {
