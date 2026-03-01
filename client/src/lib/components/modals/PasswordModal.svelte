@@ -2,21 +2,21 @@
     import { fly, fade } from "svelte/transition";
     import { X } from "lucide-svelte";
 
-    let password = $state("");
-    let confirmPassword = $state("");
-    let showPassword = $state(false);
+    let password = $state<string>("");
+    let confirmPassword = $state<string>("");
+    let showPassword = $state<boolean>(false);
 
     let { onsubmit, oncancel } = $props();
 
-    function submit() {
+    function submit(): void {
         onsubmit?.(password);
     }
 
-    function cancel() {
+    function cancel(): void {
         oncancel?.();
     }
 
-    function handleKeydown(event: KeyboardEvent) {
+    function handleKeydown(event: KeyboardEvent): void {
         if (event.key === "Enter" && password === confirmPassword) {
             submit();
         }

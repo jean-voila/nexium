@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Contact {
     pub login: String,
     pub nickname: String,
@@ -21,8 +23,7 @@ pub struct ContactBook {
 }
 
 fn get_contacts_path() -> PathBuf {
-    let mut path = dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."));
+    let mut path = dirs::data_local_dir().unwrap_or_else(|| PathBuf::from("."));
     path.push("nexium");
     fs::create_dir_all(&path).ok();
     path.push("contacts.json");
@@ -42,11 +43,9 @@ impl ContactBook {
 
     pub fn save(&self) -> Result<(), String> {
         let path = get_contacts_path();
-        let content = serde_json::to_string_pretty(self)
-            .map_err(|e| e.to_string())?;
-        fs::write(&path, content)
-            .map_err(|e| e.to_string())?;
-        Ok(())
+        let content =
+            serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
+        fs::write(&path, content).map_err(|e| e.to_string())
     }
 
     pub fn add_contact(&mut self, contact: Contact) -> Result<(), String> {
@@ -65,8 +64,8 @@ impl ContactBook {
         notes: Option<String>,
         favorite: Option<bool>,
     ) -> Result<(), String> {
-        if let Some(contact) = self.contacts.iter_mut()
-            .find(|c| c.login == login) 
+        if let Some(contact) =
+            self.contacts.iter_mut().find(|c| c.login == login)
         {
             if let Some(n) = nickname {
                 contact.nickname = n;
@@ -92,8 +91,8 @@ impl ContactBook {
     }
 
     pub fn mark_used(&mut self, login: &str) -> Result<(), String> {
-        if let Some(contact) = self.contacts.iter_mut()
-            .find(|c| c.login == login) 
+        if let Some(contact) =
+            self.contacts.iter_mut().find(|c| c.login == login)
         {
             contact.last_used = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -106,18 +105,17 @@ impl ContactBook {
 
     pub fn search(&self, query: &str) -> Vec<&Contact> {
         let query_lower = query.to_lowercase();
-        self.contacts.iter()
+        self.contacts
+            .iter()
             .filter(|c| {
-                c.login.to_lowercase().contains(&query_lower) ||
-                c.nickname.to_lowercase().contains(&query_lower)
+                c.login.to_lowercase().contains(&query_lower)
+                    || c.nickname.to_lowercase().contains(&query_lower)
             })
             .collect()
     }
 
     pub fn get_favorites(&self) -> Vec<&Contact> {
-        self.contacts.iter()
-            .filter(|c| c.favorite)
-            .collect()
+        self.contacts.iter().filter(|c| c.favorite).collect()
     }
 
     pub fn get_recent(&self, limit: usize) -> Vec<&Contact> {
@@ -125,58 +123,6 @@ impl ContactBook {
         sorted.sort_by(|a, b| b.last_used.cmp(&a.last_used));
         sorted.into_iter().take(limit).collect()
     }
-}
-
-// Tauri commands for contacts
-#[tauri::command]
-pub fn get_contacts() -> Result<Vec<Contact>, String> {
-    let book = ContactBook::load();
-    Ok(book.contacts)
-}
-
-#[tauri::command]
-pub fn add_contact(
-    login: String,
-    nickname: String,
-    notes: String,
-    favorite: bool,
-) -> Result<(), String> {
-    let mut book = ContactBook::load();
-    let contact = Contact {
-        login,
-        nickname,
-        notes,
-        favorite,
-        created_at: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0),
-        last_used: 0,
-    };
-    book.add_contact(contact)
-}
-
-#[tauri::command]
-pub fn update_contact(
-    login: String,
-    nickname: Option<String>,
-    notes: Option<String>,
-    favorite: Option<bool>,
-) -> Result<(), String> {
-    let mut book = ContactBook::load();
-    book.update_contact(&login, nickname, notes, favorite)
-}
-
-#[tauri::command]
-pub fn remove_contact(login: String) -> Result<(), String> {
-    let mut book = ContactBook::load();
-    book.remove_contact(&login)
-}
-
-#[tauri::command]
-pub fn search_contacts(query: String) -> Result<Vec<Contact>, String> {
-    let book = ContactBook::load();
-    Ok(book.search(&query).into_iter().cloned().collect())
 }
 
 #[tauri::command]
@@ -189,10 +135,4 @@ pub fn get_favorite_contacts() -> Result<Vec<Contact>, String> {
 pub fn get_recent_contacts(limit: usize) -> Result<Vec<Contact>, String> {
     let book = ContactBook::load();
     Ok(book.get_recent(limit).into_iter().cloned().collect())
-}
-
-#[tauri::command]
-pub fn mark_contact_used(login: String) -> Result<(), String> {
-    let mut book = ContactBook::load();
-    book.mark_used(&login)
 }

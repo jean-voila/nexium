@@ -1,8 +1,8 @@
 use crate::config::Config;
 use crate::nexium_api::{
-    get_transactions as get_transactions_api, ClassicTransactionReceived,
-    NexiumAPIError,
+    get_transactions as get_transactions_api, NexiumAPIError,
 };
+use crate::types::classic_tr_received::ClassicTransactionReceived;
 
 #[tauri::command]
 pub async fn get_transactions(

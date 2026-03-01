@@ -5,6 +5,7 @@
     import { X, Download } from "lucide-svelte";
     import { globalConfig } from "@stores/settings";
     import { writable } from "svelte/store";
+    import { constants } from "@stores/constants";
 
     let { oncancel } = $props();
 
@@ -12,10 +13,7 @@
     let description = $state("");
     let validationError = writable(true);
 
-    let invoice_file_extension = "";
-    invoke("get_invoice_extension").then((ext) => {
-        invoice_file_extension = ext;
-    });
+    const invoice_file_extension = constants.nexium_invoice_extension;
 
     function handleClose() {
         oncancel?.();

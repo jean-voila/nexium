@@ -1,8 +1,17 @@
+pub mod calculate_transaction_fee;
 pub mod check_config_values;
+pub mod contact_add;
+pub mod contact_get;
+pub mod contact_mark_used;
+pub mod contact_remove;
+pub mod contact_search;
+pub mod contact_update;
 pub mod find_working_server;
 pub mod get_balance;
+pub mod get_constants;
 pub mod get_names_from_login;
 pub mod get_server_infos;
 pub mod get_transactions;
 pub mod load_config;
 pub mod save_config;
+pub mod search_first_users;

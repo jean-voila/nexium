@@ -208,28 +208,6 @@ async fn get_login(
 }
 
 #[tauri::command]
-async fn get_invoice_extension() -> String {
-    return NEXIUM_INVOICE_EXTENSION.to_string();
-}
-
-/// Calculate the estimated fee cost for a transaction
-/// Returns the fee cost in NEX as a formatted string
-#[tauri::command]
-async fn calculate_transaction_fee(
-    fees: String,
-    has_description: bool,
-) -> Result<String, String> {
-    let fees_per_byte = match fees.parse::<u16>() {
-        Ok(n) => n,
-        Err(_) => return Ok("0".to_string()),
-    };
-
-    let fee_cost =
-        estimate_classic_transaction_fee(fees_per_byte, has_description);
-    Ok(format!("{:.6}", fee_cost))
-}
-
-#[tauri::command]
 async fn send_transaction(
     server_pubkey: String,
     config: Config,
@@ -374,27 +352,6 @@ async fn read_key_from_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn search_first_users(
-    config: Config,
-    search: String,
-) -> Result<Vec<String>, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        let gitlab_client =
-            GitlabClient::new(config.gitlab_token, config.gitlab_token_type);
-        match gitlab_client.search_users(&search) {
-            Ok(users) => Ok(users),
-            Err(e) => Err(e.to_string()),
-        }
-    })
-    .await;
-
-    match result {
-        Ok(r) => r,
-        Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-    }
-}
-
-#[tauri::command]
 async fn get_user_stats(
     login: String,
     config: Config,
@@ -480,6 +437,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
+            get_constants::get_constants,
             check_config_values::check_config_values,
             get_gitlab_oauth_token,
             load_config_from_file,
@@ -493,7 +451,6 @@ fn main() {
             check_invoice_values,
             get_names_from_login::get_names_from_login,
             load_invoice_from_file,
-            get_invoice_extension,
             calculate_transaction_fee,
             get_balance::get_balance,
             send_transaction,
@@ -503,15 +460,15 @@ fn main() {
             write_key_to_file,
             read_key_from_file,
             check_send_transaction,
-            search_first_users,
-            contacts::get_contacts,
-            contacts::add_contact,
-            contacts::update_contact,
-            contacts::remove_contact,
-            contacts::search_contacts,
+            search_first_users::search_first_users,
+            contact_get::contact_get,
+            contact_add::contact_add,
+            contact_update::contact_update,
+            contact_remove::contact_remove,
+            contact_search::contact_search,
             contacts::get_favorite_contacts,
             contacts::get_recent_contacts,
-            contacts::mark_contact_used,
+            contact_mark_used::contact_mark_used,
             get_user_stats,
             get_peers,
             check_peer_status,

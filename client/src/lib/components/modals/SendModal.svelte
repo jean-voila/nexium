@@ -8,6 +8,8 @@
     import { writable, get } from "svelte/store";
     import { onMount } from "svelte";
     import Spinner from "@components/Spinner.svelte";
+    import { constants } from "@stores/constants";
+    import { calculateTransactionFee } from "@invoke";
 
     let { oncancel } = $props();
 
@@ -25,10 +27,7 @@
     let tooltipY = $state(0);
     let showTooltip = $state("");
 
-    let invoice_file_extension = "";
-    invoke("get_invoice_extension").then((ext) => {
-        invoice_file_extension = ext;
-    });
+    let invoice_file_extension = constants.nexium_invoice_extension;
 
     function handleClose() {
         selectedContact.set("");
@@ -38,22 +37,23 @@
     let validationError = writable(true);
     let isSending = $state(false);
 
-    async function updateFeeCost() {
-        try {
-            const hasDescription = description.trim().length > 0;
-            const feeResult = await invoke("calculate_transaction_fee", {
-                fees: fees,
-                hasDescription: hasDescription
-            });
-            estimatedFee = feeResult;
+    async function updateFeeCost(): Promise<void> {
+        const hasDescription = description.trim().length > 0;
 
-            const amountNum = parseFloat(amount) || 0;
-            const feeNum = parseFloat(feeResult) || 0;
-            totalCost = (amountNum + feeNum).toFixed(6);
-        } catch (e) {
-            estimatedFee = "0";
-            totalCost = amount || "0";
-        }
+        await calculateTransactionFee(parseInt(fees), hasDescription).match(
+            (fee) => {
+                estimatedFee = fee;
+
+                const amountNum = parseFloat(amount) || 0;
+                const feeNum = parseFloat(fee) || 0;
+                totalCost = (amountNum + feeNum).toFixed(6);
+            },
+            (err) => {
+                console.error(err);
+                estimatedFee = "0";
+                totalCost = amount || "0";
+            }
+        );
     }
 
     function handleMontantChange() {

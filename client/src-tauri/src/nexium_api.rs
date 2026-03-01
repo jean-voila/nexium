@@ -1,3 +1,6 @@
+use crate::types::classic_tr_received::ClassicTransactionReceived;
+use crate::types::classic_tr_received::ClassicTransactionReceivedType;
+
 use super::config::*;
 use chrono::DateTime;
 use json;
@@ -11,7 +14,6 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-use ts_rs::TS;
 
 #[derive(Debug)]
 pub enum NexiumAPIError {
@@ -100,17 +102,6 @@ pub struct ClassicTransactionSent {
     pub amount: String,
     pub description: String,
     pub fees: String,
-}
-
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, TS)]
-#[ts(export)]
-pub struct ClassicTransactionReceived {
-    pub receiver: String,
-    pub emitter: String,
-    pub description: String,
-    pub amount: String,
-    pub date: String,
-    pub inorout: String,
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -568,9 +559,9 @@ pub fn get_transactions(
                 };
 
                 let in_or_out = if receiver == login {
-                    "IN".to_string()
+                    ClassicTransactionReceivedType::Received
                 } else {
-                    "OUT".to_string()
+                    ClassicTransactionReceivedType::Sent
                 };
 
                 let datetime: Option<DateTime<chrono::Utc>> =

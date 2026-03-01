@@ -13,19 +13,11 @@
     import { Plus, Minus } from "lucide-svelte";
     import NumberFlow from "@number-flow/svelte";
     import { getTransactions } from "@invoke";
+    import type { ClassicTransactionReceived } from "@bindings";
 
-    type Transaction = {
-        receiver: string;
-        emitter: string;
-        description: string;
-        amount: string;
-        date: string;
-        inorout: string;
-    };
+    let recentTransactions = $state<ClassicTransactionReceived[]>([]);
 
-    let recentTransactions = $state<Transaction[]>([]);
-
-    async function fetchRecentTransactions() {
+    async function fetchRecentTransactions(): Promise<void> {
         if (get(showHistoryModal) || get(showSendModal) || get(showReceiveModal)) return;
         if (get(isConfigSet) === false) return;
 

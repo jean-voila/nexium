@@ -12,21 +12,13 @@
         Wallet
     } from "lucide-svelte";
     import { globalConfig } from "@stores/settings.js";
+    import type { ClassicTransactionReceived } from "@bindings";
 
     import Spinner from "@components/Spinner.svelte";
 
     let { oncancel } = $props();
 
-    type Transaction = {
-        receiver: string;
-        emitter: string;
-        description: string;
-        amount: string;
-        date: string;
-        inorout: string;
-    };
-
-    let transactions = $state<Transaction[]>([]);
+    let transactions = $state<ClassicTransactionReceived[]>([]);
     let loading = $state(true);
 
     // Stats
@@ -81,7 +73,7 @@
         for (const tx of transactions) {
             const amount = parseFloat(tx.amount) || 0;
 
-            if (tx.inorout === "OUT") {
+            if (tx.inorout === "sent") {
                 sent += amount;
                 sCount++;
                 const existing = recipientMap.get(tx.receiver) || { total: 0, count: 0 };

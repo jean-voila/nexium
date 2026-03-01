@@ -2,8 +2,8 @@
     import { fly, fade } from "svelte/transition";
     import { X } from "lucide-svelte";
 
-    let password = $state("");
-    let showPassword = $state(false);
+    let password: string = $state("");
+    let showPassword: boolean = $state(false);
 
     let { onsubmit, oncancel } = $props();
 

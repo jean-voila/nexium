@@ -1,21 +1,21 @@
 <script lang="ts">
     import { fade, fly } from "svelte/transition";
-    import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { Star, Trash2, Edit2, Plus, Search, X, User } from "lucide-svelte";
     import { showSendModal, globalConfig } from "$lib/stores/settings.js";
     import { selectedContact } from "$lib/stores/contacts.js";
+    import type { Contact } from "@bindings";
+    import {
+        contactAdd,
+        contactGet,
+        contactMarkUsed,
+        contactSearch,
+        contactUpdate,
+        searchFirstUsers
+    } from "@invoke";
+    import { contactRemove } from "@invoke/contactRemove";
 
     let { oncancel } = $props();
-
-    type Contact = {
-        login: string;
-        nickname: string;
-        notes: string;
-        favorite: boolean;
-        created_at: number;
-        last_used: number;
-    };
 
     let contacts = $state<Contact[]>([]);
     let searchQuery = $state("");
@@ -34,39 +34,17 @@
     let loginSearchResults = $state<string[]>([]);
     let showLoginSuggestions = $state(false);
 
-    // Track if a load is in progress to prevent race conditions
-    let loadingToken: object | null = null;
-
     function handleClose() {
         oncancel?.();
     }
 
-    async function loadContacts() {
+    async function loadContacts(): Promise<void> {
         loading = true;
-        // Create a unique token for this load operation
-        const currentToken = {};
-        loadingToken = currentToken;
 
-        try {
-            let result: Contact[];
-            if (searchQuery) {
-                result = await invoke("search_contacts", { query: searchQuery });
-            } else {
-                result = await invoke("get_contacts");
-            }
-            // Only update if this is still the most recent load
-            if (loadingToken === currentToken) {
-                contacts = result;
-                loading = false;
-            }
-        } catch (e) {
-            console.error(e);
-            // Only update if this is still the most recent load
-            if (loadingToken === currentToken) {
-                contacts = [];
-                loading = false;
-            }
-        }
+        const query = searchQuery.trim();
+        contacts = query ? await contactSearch(query) : await contactGet();
+
+        loading = false;
     }
 
     function getFirstNameFromLogin(login: string): string {
@@ -74,105 +52,108 @@
         return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
 
-    function updateNicknameFromLogin(login: string) {
+    function updateNicknameFromLogin(login: string): void {
         const firstName = getFirstNameFromLogin(login);
         if (firstName) {
             formNickname = firstName;
         }
     }
 
-    async function handleLoginInput() {
+    async function handleLoginInput(): Promise<void> {
         const searchValue = formLogin.trim();
 
         // Pre-fill nickname with first name
         updateNicknameFromLogin(searchValue);
 
         if (searchValue.length > 0) {
-            try {
-                const results = await invoke("search_first_users", {
-                    config: $globalConfig,
-                    search: searchValue
-                });
-                loginSearchResults = results as string[];
-                showLoginSuggestions = loginSearchResults.length > 0;
-            } catch (e) {
-                loginSearchResults = [];
-                showLoginSuggestions = false;
-            }
+            await searchFirstUsers($globalConfig, searchValue).match(
+                (results) => {
+                    loginSearchResults = results;
+                    showLoginSuggestions = loginSearchResults.length > 0;
+                },
+                (e) => {
+                    console.error("Error searching users:", e);
+                    loginSearchResults = [];
+                    showLoginSuggestions = false;
+                }
+            );
         } else {
             loginSearchResults = [];
             showLoginSuggestions = false;
         }
     }
 
-    async function handleAddContact() {
+    async function handleAddContact(): Promise<void> {
         formError = "";
         if (!formLogin.trim()) {
             formError = "Le login est requis";
             return;
         }
 
-        try {
-            await invoke("add_contact", {
-                login: formLogin.trim(),
-                nickname: formNickname.trim(),
-                notes: formNotes.trim(),
-                favorite: formFavorite
-            });
-            showAddModal = false;
-            resetForm();
-        } catch (e) {
-            formError = String(e);
-            return;
-        }
+        await contactAdd(
+            formLogin.trim(),
+            formNickname.trim(),
+            formNotes.trim(),
+            formFavorite
+        ).match(
+            () => {
+                showAddModal = false;
+                resetForm();
+            },
+            (error) => {
+                console.error("Error adding contact:", error);
+                formError = error;
+            }
+        );
+
         // Load contacts outside try/catch to avoid error interference
         await loadContacts();
     }
 
-    async function handleUpdateContact() {
+    async function handleUpdateContact(): Promise<void> {
         if (!editingContact) return;
         formError = "";
 
-        try {
-            await invoke("update_contact", {
-                login: editingContact.login,
-                nickname: formNickname.trim() || null,
-                notes: formNotes.trim() || null,
-                favorite: formFavorite
-            });
-            editingContact = null;
-            resetForm();
-            await loadContacts();
-        } catch (e) {
-            formError = String(e);
-        }
+        await contactUpdate(
+            editingContact.login,
+            formNickname?.trim(),
+            formNotes.trim(),
+            formFavorite
+        ).match(
+            () => {
+                editingContact = null;
+                resetForm();
+            },
+            (error) => {
+                console.error("Error updating contact:", error);
+                formError = error;
+            }
+        );
     }
 
-    async function handleDeleteContact(login: string) {
+    async function handleDeleteContact(login: string): Promise<void> {
         if (!confirm("Supprimer ce contact ?")) return;
-        try {
-            await invoke("remove_contact", { login });
-            await loadContacts();
-        } catch (e) {
-            console.error(e);
-        }
+
+        await contactRemove(login).match(
+            () => loadContacts(),
+            (error) => {
+                console.error("Error removing contact:", error);
+            }
+        );
     }
 
-    async function toggleFavorite(contact: Contact) {
-        try {
-            await invoke("update_contact", {
-                login: contact.login,
-                nickname: null,
-                notes: null,
-                favorite: !contact.favorite
-            });
-            await loadContacts();
-        } catch (e) {
-            console.error(e);
-        }
+    async function toggleFavorite(contact: Contact): Promise<void> {
+        await contactUpdate(contact.login, null, null, !contact.favorite).match(
+            () => {
+                loadContacts();
+            },
+            (error) => {
+                console.error("Error toggling favorite:", error);
+            }
+        );
     }
 
-    function startEdit(contact: Contact) {
+    function startEdit(contact: Contact): void {
         editingContact = contact;
         formLogin = contact.login;
         formNickname = contact.nickname;
@@ -181,7 +162,7 @@
         formError = "";
     }
 
-    function resetForm() {
+    function resetForm(): void {
         formLogin = "";
         formNickname = "";
         formNotes = "";
@@ -191,14 +172,21 @@
         showLoginSuggestions = false;
     }
 
-    function openAddModal() {
+    function openAddModal(): void {
         resetForm();
         showAddModal = true;
     }
 
-    async function sendToContact(contact: Contact) {
+    async function sendToContact(contact: Contact): Promise<void> {
         selectedContact.set(contact.login);
-        await invoke("mark_contact_used", { login: contact.login });
+
+        await contactMarkUsed(contact.login).match(
+            () => {},
+            (error) => {
+                console.error("Error marking contact as used:", error);
+            }
+        );
+
         handleClose();
         showSendModal.set(true);
     }

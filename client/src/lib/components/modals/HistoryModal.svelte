@@ -3,11 +3,12 @@
     import { onMount } from "svelte";
     import { fade, fly } from "svelte/transition";
     import { writable, type Writable } from "svelte/store";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Spinner from "@components/Spinner.svelte";
     import { save } from "@tauri-apps/plugin-dialog";
     import { writeTextFile } from "@tauri-apps/plugin-fs";
-    import { globalConfig, showHistoryModal } from "$lib/stores/settings.js";
-    import { invoke } from "@tauri-apps/api/core";
+    import { globalConfig, showHistoryModal } from "@stores/settings.js";
+    import type { ClassicTransactionReceived } from "@bindings";
+    import { getTransactions } from "@invoke";
 
     let tooltipX = $state(0);
     let tooltipY = $state(0);
@@ -21,19 +22,10 @@
         oncancel?.();
     }
 
-    type Transaction = {
-        receiver: string;
-        emitter: string;
-        description: string;
-        amount: string;
-        date: string;
-        inorout: string;
-    };
-
-    let n = "10";
-    const transactions: Writable<Transaction[]> = writable([]);
-    let lastRefresh = $state(0);
-    let loading = $state(false);
+    const N: number = 10;
+    const transactions = writable<ClassicTransactionReceived[]>([]);
+    let lastRefresh = $state<number>(0);
+    let loading = $state<boolean>(false);
 
     async function refreshList() {
         const now = Date.now();
@@ -41,31 +33,17 @@
         lastRefresh = now;
         loading = true;
 
-        try {
-            const result = await invoke("get_transactions", {
-                config: $globalConfig,
-                login: $globalConfig.user_login,
-                n: n
-            });
-            if (Array.isArray(result)) {
-                transactions.set(
-                    result.map((t: any) => ({
-                        receiver: t.receiver || "",
-                        emitter: t.emitter || "",
-                        description: t.description || "",
-                        amount: t.amount || "",
-                        date: t.date || "",
-                        inorout: t.inorout || "IN"
-                    }))
-                );
-            } else {
+        await getTransactions($globalConfig, $globalConfig.user_login, N).match(
+            (tr) => {
+                transactions.set(tr);
+            },
+            (err) => {
+                console.error("Failed to fetch transactions:", err);
                 transactions.set([]);
             }
-        } catch (e) {
-            console.log(e);
-        } finally {
-            loading = false;
-        }
+        );
+
+        loading = false;
     }
 
     onMount(() => {
@@ -81,7 +59,7 @@
 
         const headers = ["Type", "Émetteur", "Récepteur", "Description", "Date", "Montant"];
         const rows = txList.map((t) => [
-            t.inorout === "IN" ? "Reçu" : "Envoyé",
+            t.inorout === "received" ? "Reçu" : "Envoyé",
             t.emitter,
             t.receiver,
             `"${t.description.replace(/"/g, '""')}"`,
@@ -96,12 +74,10 @@
             defaultPath: `nexium_transactions_${new Date().toISOString().slice(0, 10)}.csv`
         });
 
-        if (path) {
-            try {
-                await writeTextFile(path, csvContent);
-            } catch (e) {
-                console.error("Error exporting CSV:", e);
-            }
+        if (path !== null) {
+            await writeTextFile(path, csvContent).catch((e) => {
+                console.error("Error writing CSV file:", e);
+            });
         }
     }
 </script>
@@ -154,7 +130,7 @@
                             {#each $transactions as t}
                                 <tr>
                                     <td style="text-align: center;">
-                                        {#if t.inorout === "IN"}
+                                        {#if t.inorout === "received"}
                                             <span class="tx-icon-in"
                                                 ><Plus size={16} strokeWidth={3} /></span
                                             >
