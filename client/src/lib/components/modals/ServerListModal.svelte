@@ -3,7 +3,7 @@
     import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { X, RefreshCw, Server, Globe, Crown, ArrowRightLeft } from "lucide-svelte";
-    import { globalConfig, serverPublicKey } from "$lib/stores/settings.js";
+    import { globalConfig, serverPublicKey } from "@stores/settings.js";
 
     let { oncancel } = $props();
 

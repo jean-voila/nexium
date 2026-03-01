@@ -1,10 +1,9 @@
-<script>
+<script lang="ts">
     import { SendHorizontal, HandCoins, History, Copy, Check } from "lucide-svelte";
     import { onMount } from "svelte";
     import { writeText } from "@tauri-apps/plugin-clipboard-manager";
     import { invoke } from "@tauri-apps/api/core";
     import { get } from "svelte/store";
-
     import {
         globalConfig,
         isConfigSet,
@@ -14,7 +13,7 @@
         userBalanceDec,
         showHistoryModal,
         globalErrorMessage
-    } from "$lib/stores/settings.js";
+    } from "@stores/settings.js";
 
     let firstName = "";
     let lastName = "";

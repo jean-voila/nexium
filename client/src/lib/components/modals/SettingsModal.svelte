@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     export let showSettingsModal = false;
 
     import { fly, fade } from "svelte/transition";
@@ -19,13 +19,11 @@
         BellOff,
         Unplug
     } from "lucide-svelte";
+    import { globalConfig, isConfigSet, serverPublicKey } from "@stores/settings.js";
 
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Spinner from "@components/Spinner.svelte";
     import PasswordModal from "./PasswordModal.svelte";
     import AskPasswordModal from "./AskPasswordModal.svelte";
-
-    import { globalConfig, isConfigSet, serverPublicKey } from "$lib/stores/settings.js";
-    import { notificationsEnabled } from "$lib/services/notifications";
 
     let config = get(globalConfig);
     let errorMessage = "";
@@ -39,8 +37,8 @@
     let showNewPasswordModal = false;
     let showAskPasswordModal = false;
     let rejectPassword;
-    let resolveNewPassword;
-    let resolveAskPassword;
+    let resolveNewPassword: (value: string) => void | undefined;
+    let resolveAskPassword: (value: string) => void | undefined;
 
     invoke("is_testnet").then((result) => {
         config.is_testnet = result;

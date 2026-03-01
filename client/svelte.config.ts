@@ -1,8 +1,9 @@
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import adapter from "@sveltejs/adapter-static";
+import type { Config } from "@sveltejs/kit";
 
 /** @type {import('@sveltejs/kit').Config} */
-const config = {
+const config: Config = {
     // Consult https://svelte.dev/docs/kit/integrations
     // for more information about preprocessors
     preprocess: vitePreprocess(),
@@ -17,7 +18,15 @@ const config = {
             precompress: false,
             strict: true,
             fallback: "index.html"
-        })
+        }),
+        alias: {
+            "@bindings": "./src/types/bindings",
+            "@components": "./src/lib/components",
+            "@modals": "./src/lib/components/modals",
+            "@invoke": "./src/lib/invoke",
+            "@services": "./src/lib/services",
+            "@stores": "./src/lib/stores"
+        }
     }
 };
 

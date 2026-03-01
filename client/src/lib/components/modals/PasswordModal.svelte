@@ -1,6 +1,6 @@
-<script>
+<script lang="ts">
     import { fly, fade } from "svelte/transition";
-    import { X, Eye, EyeOff } from "lucide-svelte";
+    import { X } from "lucide-svelte";
 
     let password = $state("");
     let confirmPassword = $state("");
@@ -16,7 +16,7 @@
         oncancel?.();
     }
 
-    function handleKeydown(event) {
+    function handleKeydown(event: KeyboardEvent) {
         if (event.key === "Enter" && password === confirmPassword) {
             submit();
         }

@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { save } from "@tauri-apps/plugin-dialog";
     import { invoke } from "@tauri-apps/api/core";
     import { X, Download } from "lucide-svelte";
-    import { globalConfig } from "$lib/stores/settings";
+    import { globalConfig } from "@stores/settings";
     import { writable } from "svelte/store";
 
     let { oncancel } = $props();

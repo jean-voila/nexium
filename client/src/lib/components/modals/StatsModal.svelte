@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { fade, fly } from "svelte/transition";
     import { invoke } from "@tauri-apps/api/core";
     import {
@@ -10,9 +11,9 @@
         ArrowDownLeft,
         Wallet
     } from "lucide-svelte";
-    import { globalConfig } from "$lib/stores/settings.js";
-    import { onMount } from "svelte";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import { globalConfig } from "@stores/settings.js";
+
+    import Spinner from "@components/Spinner.svelte";
 
     let { oncancel } = $props();
 

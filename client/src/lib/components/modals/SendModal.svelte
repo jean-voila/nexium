@@ -1,13 +1,13 @@
-<script>
+<script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { open } from "@tauri-apps/plugin-dialog";
     import { invoke } from "@tauri-apps/api/core";
     import { X, Star, Upload, Send } from "lucide-svelte";
-    import { globalConfig, serverPublicKey } from "$lib/stores/settings.js";
-    import { selectedContact } from "$lib/stores/contacts.js";
+    import { globalConfig, serverPublicKey } from "@stores/settings.js";
+    import { selectedContact } from "@stores/contacts.js";
     import { writable, get } from "svelte/store";
     import { onMount } from "svelte";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import Spinner from "@components/Spinner.svelte";
 
     let { oncancel } = $props();
 

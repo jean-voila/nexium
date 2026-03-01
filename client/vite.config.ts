@@ -16,9 +16,11 @@ export default defineConfig({
     resolve: {
         alias: {
             "@bindings": fileURLToPath(new URL("./src/types/bindings", import.meta.url)),
+            "@components": fileURLToPath(new URL("./src/lib/components", import.meta.url)),
+            "@modals": fileURLToPath(new URL("./src/lib/components/modals", import.meta.url)),
+            "@invoke": fileURLToPath(new URL("./src/lib/invoke", import.meta.url)),
             "@services": fileURLToPath(new URL("./src/lib/services", import.meta.url)),
-            "@stores": fileURLToPath(new URL("./src/lib/stores", import.meta.url)),
-            "@invoke": fileURLToPath(new URL("./src/lib/invoke", import.meta.url))
+            "@stores": fileURLToPath(new URL("./src/lib/stores", import.meta.url))
         }
     }
 });

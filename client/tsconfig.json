@@ -10,20 +10,6 @@
         "sourceMap": true,
         "strict": true,
         "moduleResolution": "bundler",
-        "paths": {
-            "@bindings": [
-                "./src/types/bindings/"
-            ],
-            "@services/*": [
-                "./src/lib/services/*"
-            ],
-            "@stores/*": [
-                "./src/lib/stores/*"
-            ],
-            "@invoke": [
-                "./src/lib/invoke/index.ts"
-            ]
-        }
     },
     "include": [
         "src/**/*.ts",

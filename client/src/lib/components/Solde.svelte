@@ -7,7 +7,7 @@
         showHistoryModal,
         showSendModal,
         showReceiveModal
-    } from "$lib/stores/settings.js";
+    } from "@stores/settings.js";
     import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
