@@ -1,39 +1,48 @@
 [package]
-name = "nexium-client"
-version = "0.1.0"
-description = "Nexium Client App"
-authors = ["Nexium Team"]
-license = ""
-repository = ""
-edition = "2021"
-rust-version = "1.77.2"
+    name = "nexium-client"
+    version = "0.1.0"
+    description = "Nexium Client App"
+    authors = [
+        "Nexium Team"
+    ]
+    license = ""
+    repository = ""
+    edition = "2021"
+    rust-version = "1.77.2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+    # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "app_lib"
-path = "src/lib.rs"
-crate-type = ["staticlib", "cdylib", "rlib"]
+    name = "app_lib"
+    path = "src/lib.rs"
+    crate-type = [
+        "staticlib",
+        "cdylib",
+        "rlib"
+    ]
 
 [build-dependencies]
-tauri-build = { version = "2.2.0", features = [] }
+    tauri-build = {version = "2.2.0", features = [] }
+    ts-rs = "11.1.0"
 
 [dependencies]
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-log = "0.4"
-tauri = { version = "2.5.0", features = ["macos-private-api"] }
-tauri-plugin-log = "2.0.0-rc"
-nexium = { workspace = true }
-tauri-plugin-fs = "2.2.1"
-json = "0.12.4"
-tauri-plugin-dialog = "2"
-tauri-plugin-clipboard-manager = "2"
-tauri-plugin-notification = "2"
-dirs = "5.0"
-url = "2.5.4"
-reqwest = "0.12.15"
-num-bigint = "0.4.6"
-chrono = "0.4.41"
+    serde_json = "1.0"
+    serde = {version = "1.0", features = ["derive"] }
+    log = "0.4"
+    tauri = {version = "2.5.0", features = ["macos-private-api"] }
+    tauri-plugin-log = "2.0.0-rc"
+    nexium = {workspace = true}
+    tauri-plugin-fs = "2.2.1"
+    json = "0.12.4"
+    tauri-plugin-dialog = "2"
+    tauri-plugin-clipboard-manager = "2.3.2"
+    tauri-plugin-notification = "2"
+    dirs = "5.0"
+    url = "2.5.4"
+    reqwest = "0.12.15"
+    num-bigint = "0.4.6"
+    chrono = "0.4.41"
+    ts-rs = "11.1.0"
+
 [target.'cfg(target_os = "android")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
+    openssl = {version = "0.10", features = ["vendored"] }

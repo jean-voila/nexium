@@ -1,7 +1,11 @@
-import { writable, get } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/core';
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
-import { globalConfig, isConfigSet } from '$lib/stores/settings.js';
+import { writable, get } from "svelte/store";
+import { invoke } from "@tauri-apps/api/core";
+import {
+    isPermissionGranted,
+    requestPermission,
+    sendNotification
+} from "@tauri-apps/plugin-notification";
+import { globalConfig, isConfigSet } from "@stores/settings.js";
 
 // Store for notification settings
 export const notificationsEnabled = writable(true);
@@ -14,7 +18,7 @@ export async function initNotifications() {
     let permissionGranted = await isPermissionGranted();
     if (!permissionGranted) {
         const permission = await requestPermission();
-        permissionGranted = permission === 'granted';
+        permissionGranted = permission === "granted";
     }
     return permissionGranted;
 }
@@ -29,15 +33,15 @@ export async function checkForNewTransactions() {
     }
 
     try {
-        const transactions = await invoke('get_transactions', {
+        const transactions = await invoke("get_transactions", {
             config: config,
             login: config.user_login,
-            n: '5'
+            n: "5"
         });
 
         if (Array.isArray(transactions) && transactions.length > 0) {
             const lastCount = get(lastKnownTransactionCount);
-            
+
             // If this is the first check, just store the count
             if (lastCount === 0) {
                 lastKnownTransactionCount.set(transactions.length);
@@ -45,9 +49,7 @@ export async function checkForNewTransactions() {
             }
 
             // Check for new incoming transactions
-            const newIncoming = transactions.filter(
-                (t: any) => t.inorout === 'IN'
-            );
+            const newIncoming = transactions.filter((t: any) => t.inorout === "IN");
 
             if (transactions.length > lastCount && newIncoming.length > 0) {
                 const latestIncoming = newIncoming[0];
@@ -57,7 +59,7 @@ export async function checkForNewTransactions() {
             lastKnownTransactionCount.set(transactions.length);
         }
     } catch (e) {
-        console.error('Error checking for new transactions:', e);
+        console.error("Error checking for new transactions:", e);
     }
 }
 
@@ -65,22 +67,22 @@ async function sendTransactionNotification(transaction: any) {
     const permissionGranted = await isPermissionGranted();
     if (!permissionGranted) return;
 
-    const amount = transaction.amount || '0';
-    const sender = transaction.emitter || 'Inconnu';
+    const amount = transaction.amount || "0";
+    const sender = transaction.emitter || "Inconnu";
 
     sendNotification({
-        title: 'Nouvelle transaction reçue!',
+        title: "Nouvelle transaction reçue!",
         body: `Vous avez reçu ${amount} NXM de ${sender}`,
-        icon: 'icons/icon.png'
+        icon: "icons/icon.png"
     });
 }
 
 export function startTransactionWatcher() {
     if (checkInterval) return;
-    
+
     // Check every 30 seconds
     checkInterval = setInterval(checkForNewTransactions, 30000);
-    
+
     // Also check immediately
     checkForNewTransactions();
 }
