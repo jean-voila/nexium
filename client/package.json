@@ -5,7 +5,7 @@
     "type": "module",
     "packageManager": "pnpm@10.30.3",
     "scripts": {
-        "generate:bindings": "cargo test export_bindings --manifest-path src-tauri/Cargo.toml",
+        "generate:bindings": "cargo test export_bindings --manifest-path ../Cargo.toml",
         "dev": "vite dev",
         "preview": "vite preview",
         "build": "run-p type-check build-only",
