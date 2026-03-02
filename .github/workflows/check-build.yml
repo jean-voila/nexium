@@ -65,7 +65,7 @@ jobs:
                   cache-dependency-path: client/pnpm-lock.yaml
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: pnpm -C client install --frozen-lockfile
 
             - name: Install Rust stable
               uses: dtolnay/rust-toolchain@stable
