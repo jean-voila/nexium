@@ -25,7 +25,8 @@ const config: Config = {
             "@modals": "./src/lib/components/modals",
             "@invoke": "./src/lib/invoke",
             "@services": "./src/lib/services",
-            "@stores": "./src/lib/stores"
+            "@stores": "./src/lib/stores",
+            "@consts": "./src/lib/consts"
         }
     }
 };

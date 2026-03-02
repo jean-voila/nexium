@@ -20,7 +20,8 @@ export default defineConfig({
             "@modals": fileURLToPath(new URL("./src/lib/components/modals", import.meta.url)),
             "@invoke": fileURLToPath(new URL("./src/lib/invoke", import.meta.url)),
             "@services": fileURLToPath(new URL("./src/lib/services", import.meta.url)),
-            "@stores": fileURLToPath(new URL("./src/lib/stores", import.meta.url))
+            "@stores": fileURLToPath(new URL("./src/lib/stores", import.meta.url)),
+            "@consts": fileURLToPath(new URL("./src/lib/consts", import.meta.url))
         }
     }
 });

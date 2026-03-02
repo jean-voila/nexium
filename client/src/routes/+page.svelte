@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Settings, Sun, Moon, BarChart3, Users, CircleAlert, X, Globe } from "lucide-svelte";
+    import { fade } from "svelte/transition";
     import { getCurrentWindow } from "@tauri-apps/api/window";
     import { showContactsModal } from "@stores/contacts.js";
     import {
@@ -12,6 +13,7 @@
         globalErrorMessage,
         theme
     } from "@stores/settings.js";
+    import { TRANSITION_FAST } from "@consts";
 
     import MenuGauche from "@components/MenuGauche.svelte";
     import Solde from "@components/Solde.svelte";
@@ -68,11 +70,28 @@
             </button>
         </div>
         <div class="titlebar-actions">
-            <button onclick={toggleTheme} class="icon-btn" title="Changer le thème">
+            <button
+                onclick={toggleTheme}
+                class="icon-btn"
+                title="Changer le thème"
+                style="position: relative;"
+            >
                 {#if $theme === "dark"}
-                    <Sun strokeWidth={2} size={20} />
+                    <div
+                        style="position: absolute;"
+                        in:fade={{ duration: TRANSITION_FAST }}
+                        out:fade={{ duration: TRANSITION_FAST }}
+                    >
+                        <Sun strokeWidth={2} size={20} />
+                    </div>
                 {:else}
-                    <Moon strokeWidth={2} size={20} />
+                    <div
+                        style="position: absolute;"
+                        in:fade={{ duration: TRANSITION_FAST }}
+                        out:fade={{ duration: TRANSITION_FAST }}
+                    >
+                        <Moon strokeWidth={2} size={20} />
+                    </div>
                 {/if}
             </button>
             <button
