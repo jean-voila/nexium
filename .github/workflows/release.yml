@@ -3,7 +3,7 @@ name: Release
 on:
     push:
         tags:
-            - "v-test*"
+            - "v*"
 
 permissions:
     contents: write
@@ -22,18 +22,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v5
-
-            # - name: Install pnpm
-            #   uses: pnpm/action-setup@v4
-            #   with:
-            #       version: "${{ env.PNPM_VERSION }}"
-
-            # - name: Use Node.js ${{ env.NODE_VERSION }}
-            #   uses: actions/setup-node@v4
-            #   with:
-            #       node-version: ${{ env.NODE_VERSION }}
-            #       cache: "pnpm"
-            #       cache-dependency-path: client/pnpm-lock.yaml
 
             - name: Echo version
               run: echo "Releasing version ${{ env.TAG_VERSION }}"
