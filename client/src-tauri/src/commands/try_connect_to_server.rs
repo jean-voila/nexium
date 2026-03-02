@@ -1,7 +1,4 @@
-use crate::{
-    config::{self, Config},
-    nexium_api::get_server_key_login,
-};
+use crate::{config::Config, nexium_api::get_server_key_login};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -28,11 +25,12 @@ pub async fn try_connect_to_server(
     tauri::async_runtime::spawn_blocking(|| get_server_key_login(config_clone))
         .await
         .map_err(|err| format!("Failed to connect to server: {}", err))?
-        .map(|(pub_key, login)| {
+        .map(|server_infos| {
+            let login = server_infos.login;
             config.server_login = login.clone();
 
             TryConnectResult {
-                pub_key,
+                pub_key: server_infos.pub_key,
                 login,
                 config,
             }

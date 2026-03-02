@@ -24,11 +24,12 @@ pub async fn find_working_server(
     })
     .await;
 
-    if let Ok(Ok((pub_key, login))) = current_result {
+    if let Ok(Ok(server_infos)) = current_result {
+        let login = server_infos.login.clone();
         let mut updated_config = config.clone();
         updated_config.server_login = login.clone();
         return Ok(WorkingServerInfo {
-            pub_key,
+            pub_key: server_infos.pub_key,
             login,
             config: updated_config,
         });
@@ -56,15 +57,16 @@ pub async fn find_working_server(
         })
         .await;
 
-        if let Ok(Ok((pub_key, login))) = result {
+        if let Ok(Ok(server_infos)) = result {
+            let login = server_infos.login;
             test_config.server_login = login.clone();
             println!(
                 "Failover: switched to server {}:{}",
                 peer.address, peer.port
             );
             return Ok(WorkingServerInfo {
-                pub_key,
-                login,
+                pub_key: server_infos.pub_key,
+                login: login,
                 config: test_config,
             });
         }

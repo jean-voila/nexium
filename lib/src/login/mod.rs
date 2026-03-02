@@ -1,4 +1,6 @@
 use std::fmt;
+
+use crate::types::login_names::LoginNames;
 pub enum LoginError {
     EmptyLogin,
     TooMuchPoints,
@@ -108,8 +110,7 @@ impl Login {
         return Ok(Self { login });
     }
 
-    #[deprecated(note = "Update return type to struct LoginNames")]
-    pub fn get_names(&self) -> Result<(String, String), LoginError> {
+    pub fn get_names(&self) -> Result<LoginNames, LoginError> {
         let parts = self.login.split('.');
         let first_part = match parts.clone().nth(0) {
             Some(first_part) => first_part,
@@ -120,10 +121,10 @@ impl Login {
             None => return Err(LoginError::UnknownError),
         };
 
-        Ok((
-            capitalize(first_part.to_string()),
-            capitalize(last_part.to_string()),
-        ))
+        Ok(LoginNames {
+            first_name: capitalize(first_part.to_string()),
+            last_name: capitalize(last_part.to_string()),
+        })
     }
 }
 

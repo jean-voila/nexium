@@ -18,6 +18,7 @@ pub mod get_names_from_login;
 pub mod get_peers;
 pub mod get_server_infos;
 pub mod get_transactions;
+pub mod get_user_stats;
 pub mod keypair_generation;
 pub mod load_config;
 pub mod load_config_from_file;

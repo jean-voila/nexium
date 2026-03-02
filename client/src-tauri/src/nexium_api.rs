@@ -1,5 +1,7 @@
+use crate::types::balance::BalanceInfo;
 use crate::types::classic_tr_received::ClassicTransactionReceived;
 use crate::types::classic_tr_received::ClassicTransactionReceivedType;
+use crate::types::server_infos::ServerInfos;
 
 use super::config::*;
 use chrono::DateTime;
@@ -106,7 +108,8 @@ pub struct ClassicTransactionSent {
     pub fees: String,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, TS)]
+#[ts(export)]
 pub struct UserStats {
     pub balance: f64,
     pub sent_count: u64,
@@ -175,10 +178,7 @@ fn build_url(config: &Config, endpoint: &str) -> String {
     )
 }
 
-#[deprecated(note = "Update return type to struct ServerInfos")]
-pub fn get_server_key_login(
-    config: Config,
-) -> Result<(String, String), String> {
+pub fn get_server_key_login(config: Config) -> Result<ServerInfos, String> {
     let headers = match build_headers(&config) {
         Ok(h) => h,
         Err(e) => return Err(e.to_string()),
@@ -261,7 +261,10 @@ pub fn get_server_key_login(
         ) {
             Ok(res) => {
                 if res {
-                    return Ok((key, server_login));
+                    return Ok(ServerInfos {
+                        pub_key: key,
+                        login: server_login,
+                    });
                 }
             }
             Err(e) => {
@@ -380,11 +383,10 @@ pub fn send_transaction(
     return Ok(());
 }
 
-#[deprecated(note = "Update return type to struct BalanceInfo")]
 pub fn get_balance(
     login: String,
     config: Config,
-) -> Result<(String, String), String> {
+) -> Result<BalanceInfo, String> {
     let headers = match build_headers(&config) {
         Ok(h) => h,
         Err(e) => return Err(e),
@@ -463,7 +465,10 @@ pub fn get_balance(
         part1
     };
 
-    Ok((part0, part1))
+    Ok(BalanceInfo {
+        integer_part: part0,
+        decimal_part: part1,
+    })
 }
 
 pub fn get_transactions(

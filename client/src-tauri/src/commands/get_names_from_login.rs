@@ -1,5 +1,4 @@
-use crate::types::login_names::LoginNames;
-use nexium::login::Login;
+use nexium::{login::Login, types::login_names::LoginNames};
 
 #[tauri::command]
 pub async fn get_names_from_login(login: String) -> Result<LoginNames, String> {
@@ -8,8 +7,4 @@ pub async fn get_names_from_login(login: String) -> Result<LoginNames, String> {
         .map_err(|e| format!("Failed to create login: {}", e))?
         .get_names()
         .map_err(|e| format!("Failed to get names from login: {}", e))
-        .map(|(first_name, last_name)| LoginNames {
-            first_name,
-            last_name,
-        })
 }

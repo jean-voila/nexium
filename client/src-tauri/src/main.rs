@@ -8,27 +8,6 @@ mod invoice;
 mod nexium_api;
 mod types;
 use commands::*;
-use config::Config;
-use nexium_api::*;
-
-// Currently unused
-// #[tauri::command]
-// async fn get_user_stats(
-//     login: String,
-//     config: Config,
-// ) -> Result<nexium_api::UserStats, String> {
-//     let result = tauri::async_runtime::spawn_blocking(move || {
-//         match nexium_api::get_user_stats(login, config) {
-//             Ok(stats) => Ok(stats),
-//             Err(e) => Err(e),
-//         }
-//     })
-//     .await;
-//     match result {
-//         Ok(r) => r,
-//         Err(_) => Err(NexiumAPIError::UnknownError.to_string()),
-//     }
-// }
 
 fn main() {
     tauri::Builder::default()
@@ -66,7 +45,7 @@ fn main() {
             contact_search::contact_search,
             contacts::get_recent_contacts,
             contact_mark_used::contact_mark_used,
-            // get_user_stats,
+            get_user_stats::get_user_stats,
             get_peers::get_peers,
             check_peer_status::check_peer_status,
             try_connect_to_server::try_connect_to_server,

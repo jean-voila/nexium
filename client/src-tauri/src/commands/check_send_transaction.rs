@@ -39,9 +39,12 @@ pub async fn check_send_transaction(
 
         let available_balance =
             match get_balance(config.user_login.clone(), config.clone()) {
-                Ok((int, dec)) => {
-                    format!("{}.{}", int, dec).parse::<f64>().unwrap_or(0.0)
-                }
+                Ok(balance_info) => format!(
+                    "{}.{}",
+                    balance_info.integer_part, balance_info.decimal_part
+                )
+                .parse::<f64>()
+                .unwrap_or(0.0),
                 Err(_) => {
                     return Err(NexiumAPIError::BalanceFetchError.to_string())
                 }
@@ -62,9 +65,9 @@ pub async fn check_send_transaction(
         };
 
         match rec_login.get_names() {
-            Ok((first_name, last_name)) => {
-                if first_name.chars().count() < 2
-                    || last_name.chars().count() < 2
+            Ok(names) => {
+                if names.first_name.chars().count() < 2
+                    || names.last_name.chars().count() < 2
                 {
                     return Err(NexiumAPIError::InvalidReceiver.to_string());
                 }

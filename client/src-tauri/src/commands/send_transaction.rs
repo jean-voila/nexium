@@ -1,6 +1,6 @@
 use crate::{
-    config::Config, nexium_api::ClassicTransactionSent,
-    send_transaction as send_transaction_api,
+    config::Config, nexium_api::send_transaction as send_transaction_api,
+    nexium_api::ClassicTransactionSent,
 };
 
 #[tauri::command]
