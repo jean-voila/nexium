@@ -1,6 +1,4 @@
 <script lang="ts">
-    export let showSettingsModal = false;
-
     import { fly, fade } from "svelte/transition";
     import { open, save } from "@tauri-apps/plugin-dialog";
     import { invoke } from "@tauri-apps/api/core";
@@ -15,8 +13,6 @@
         Upload,
         Download,
         Loader2,
-        Bell,
-        BellOff,
         Unplug
     } from "lucide-svelte";
     import { globalConfig, isConfigSet, serverPublicKey } from "@stores/settings.js";
@@ -25,6 +21,9 @@
     import PasswordModal from "./PasswordModal.svelte";
     import AskPasswordModal from "./AskPasswordModal.svelte";
     import { constants } from "@stores/constants";
+    import { getGitlabOauthToken, loadConfigFromFile, saveConfigToFile } from "@invoke";
+
+    export let showSettingsModal = false;
 
     let config = get(globalConfig);
     let errorMessage = "";
@@ -59,8 +58,9 @@
         });
     }
 
-    async function handleGitlabOAuth() {
+    async function handleGitlabOAuth(): Promise<void> {
         if (config.gitlab_token_type === "OAuth") {
+            // TODO: nullify instead of just emptying
             config.gitlab_token = "";
             config.gitlab_token_type = "Classic";
             config.user_login = "";
@@ -71,56 +71,65 @@
             return;
         }
 
-        try {
-            isValidating = true;
-            const response = await invoke("get_gitlab_oauth_token");
-            config.gitlab_token = response.token;
-            config.gitlab_token_type = "OAuth";
-            setLoginFromToken();
-        } catch (error) {
-            errorMessage = String(error);
-        } finally {
-            isValidating = false;
-        }
+        await getGitlabOauthToken().match(
+            (token) => {
+                config.gitlab_token = token;
+                config.gitlab_token_type = "OAuth";
+                setLoginFromToken();
+            },
+            (err) => {
+                console.error(err);
+                errorMessage = err;
+            }
+        );
+
+        isValidating = false;
     }
 
-    async function handleLoadFile() {
+    async function handleLoadFile(): Promise<void> {
         const path = await open({
             multiple: false,
             directory: false,
             title: "Charger la configuration",
             filters: [{ name: "JSON", extensions: ["json"] }]
         });
+
         if (path) {
-            try {
-                const response = await invoke("load_config_from_file", { pathString: path });
-                config = response;
-                isValidating = false;
-            } catch (error) {
-                errorMessage = String(error);
-            }
+            await loadConfigFromFile(path).match(
+                (cfg) => {
+                    config = cfg;
+                    isValidating = false;
+                },
+                (err) => {
+                    console.error(err);
+                    errorMessage = err;
+                }
+            );
         }
     }
 
-    async function handleSaveFile() {
+    async function handleSaveFile(): Promise<void> {
         isValidating = true;
+
         const path = await save({
             filters: [{ name: "config", extensions: ["json"] }]
         });
+
         if (path) {
-            try {
-                const parsedPort = Number(config.port);
-                if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
-                    throw new Error("Invalid port number.");
-                }
-                config.port = parsedPort.toString();
-                await invoke("save_config_to_file", { pathString: path, config: config });
-            } catch (error) {
-                errorMessage = String(error);
-            } finally {
-                isValidating = false;
+            const parsedPort = Number(config.port);
+            if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
+                console.error("Invalid port number.");
+                errorMessage = "Numéro de port invalide.";
             }
+
+            config.port = parsedPort.toString();
+
+            await saveConfigToFile(config, path).orTee((err) => {
+                console.error(err);
+                errorMessage = err;
+            });
         }
+
         isValidating = false;
     }
 

@@ -77,7 +77,7 @@ impl fmt::Display for ConfigError {
 }
 
 impl Config {
-    pub fn from_file(path: &Path) -> Result<Config, String> {
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Config, String> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => {
@@ -100,7 +100,7 @@ impl Config {
         return Ok(config);
     }
 
-    pub fn to_file(&self, path: &Path) -> Result<(), ConfigError> {
+    pub fn to_file(&self, path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let content = match serde_json::to_string_pretty(self) {
             Ok(c) => c,
             Err(_) => {

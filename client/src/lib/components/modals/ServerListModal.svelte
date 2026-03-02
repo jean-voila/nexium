@@ -1,19 +1,22 @@
 <script lang="ts">
     import { fade, fly } from "svelte/transition";
-    import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { X, RefreshCw, Server, Globe, Crown, ArrowRightLeft } from "lucide-svelte";
     import { globalConfig, serverPublicKey } from "@stores/settings.js";
+    import {
+        checkPeerStatus as checkPeerStatusInvoke,
+        getPeers,
+        saveConfig,
+        tryConnectToServer
+    } from "@invoke";
+    import type { PeerInfo } from "@bindings";
 
     let { oncancel } = $props();
 
-    type PeerInfo = {
-        address: string;
-        port: number;
-    };
+    type PeerStatus = "waiting" | "online" | "offline";
 
     type PeerWithStatus = PeerInfo & {
-        status: "waiting" | "online" | "offline";
+        status: PeerStatus;
         isCurrent?: boolean;
     };
 
@@ -42,36 +45,36 @@
         };
 
         // Check current server status
-        checkCurrentServerStatus();
+        const p1 = checkCurrentServerStatus();
 
-        try {
-            const result: PeerInfo[] = await invoke("get_peers", { config: $globalConfig });
-            // Filter out the current server from peers list
-            peers = result
-                .filter((p) => !(p.address === serverAddress && p.port === serverPort))
-                .map((p) => ({ ...p, status: "waiting" as const }));
-            // Check status of each peer
-            await checkAllPeerStatus();
-        } catch (e) {
-            console.error("Error loading peers:", e);
-            peers = [];
-        } finally {
-            loading = false;
-        }
+        const p2 = getPeers($globalConfig).match(
+            async (result) => {
+                peers = result
+                    .filter((p) => p.address !== serverAddress || p.port !== serverPort)
+                    .map((p) => ({ ...p, status: "waiting" as const }));
+
+                // Check status of each peer
+                await checkAllPeerStatus();
+            },
+            (err) => {
+                console.error(err);
+                peers = [];
+            }
+        );
+
+        await Promise.all([p1, p2]);
+
+        loading = false;
     }
 
     async function checkCurrentServerStatus() {
-        if (!currentServer) return;
+        if (currentServer === null) return;
 
-        try {
-            const isOnline: boolean = await invoke("check_peer_status", {
-                address: currentServer.address,
-                port: currentServer.port
-            });
-            currentServer.status = isOnline ? "online" : "offline";
-        } catch (e) {
-            currentServer.status = "offline";
-        }
+        const isOnline = await checkPeerStatusInvoke(currentServer.address, currentServer.port)
+            .orTee((err) => console.error(err))
+            .unwrapOr(false);
+
+        currentServer.status = isOnline ? "online" : "offline";
     }
 
     async function checkPeerStatus(index: number) {
@@ -79,15 +82,12 @@
         if (!peer) return;
 
         peers[index].status = "waiting";
-        try {
-            const isOnline: boolean = await invoke("check_peer_status", {
-                address: peer.address,
-                port: peer.port
-            });
-            peers[index].status = isOnline ? "online" : "offline";
-        } catch (e) {
-            peers[index].status = "offline";
-        }
+
+        const isOnline = await checkPeerStatusInvoke(peer.address, peer.port)
+            .orTee((err) => console.error(err))
+            .unwrapOr(false);
+
+        peers[index].status = isOnline ? "online" : "offline";
     }
 
     async function checkAllPeerStatus() {
@@ -107,50 +107,53 @@
         switching = true;
         switchingIndex = index;
 
-        try {
-            const result: [string, string, any] = await invoke("try_connect_to_server", {
-                config: $globalConfig,
-                address: peer.address,
-                port: peer.port
-            });
-
-            if (result) {
-                const [pubKey, login, updatedConfig] = result;
-                serverPublicKey.set(pubKey);
+        await tryConnectToServer($globalConfig, peer.address, peer.port).match(
+            async (result) => {
+                const { pub_key: pub_key, config: updatedConfig } = result;
+                serverPublicKey.set(pub_key);
                 globalConfig.set(updatedConfig);
+
                 // Save the updated config
-                await invoke("save_config", { config: updatedConfig });
+                if (!(await saveConfig(updatedConfig))) {
+                    console.error("Failed to save config after switching server");
+                }
+
                 // Reload the page to apply changes
                 handleClose();
                 window.location.reload();
+            },
+            (err) => {
+                console.error("Failed to switch server:", err);
+                peers[index].status = "offline";
             }
-        } catch (e) {
-            console.error("Failed to switch server:", e);
-            peers[index].status = "offline";
-        } finally {
-            switching = false;
-            switchingIndex = null;
-        }
+        );
+
+        switching = false;
+        switchingIndex = null;
     }
 
-    function getStatusColor(status: "waiting" | "online" | "offline"): string {
+    function getStatusColor(status: PeerStatus): string {
         switch (status) {
             case "online":
                 return "var(--accent-green)";
+
             case "offline":
                 return "var(--accent-red)";
+
             case "waiting":
             default:
                 return "var(--accent-orange)";
         }
     }
 
-    function getStatusLabel(status: "waiting" | "online" | "offline"): string {
+    function getStatusLabel(status: PeerStatus): string {
         switch (status) {
             case "online":
                 return "En ligne";
+
             case "offline":
                 return "Hors ligne";
+
             case "waiting":
             default:
                 return "Vérification...";

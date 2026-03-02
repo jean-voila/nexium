@@ -655,7 +655,8 @@ pub fn get_user_stats(
     Ok(stats)
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, TS)]
+#[ts(export)]
 pub struct PeerInfo {
     pub address: String,
     pub port: u16,

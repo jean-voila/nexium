@@ -48,7 +48,7 @@ export async function checkForNewTransactions(): Promise<void> {
             }
 
             // Check for new incoming transactions
-            const newIncoming = transactions.filter((t: any) => t.inorout === "IN");
+            const newIncoming = transactions.filter((t) => t.inorout === "received");
 
             if (transactions.length > lastCount && newIncoming.length > 0) {
                 const latestIncoming = newIncoming[0];

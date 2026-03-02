@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fade, fly } from "svelte/transition";
-    import { invoke } from "@tauri-apps/api/core";
     import {
         X,
         TrendingUp,
@@ -15,6 +14,7 @@
     import type { ClassicTransactionReceived } from "@bindings";
 
     import Spinner from "@components/Spinner.svelte";
+    import { getTransactions } from "@invoke";
 
     let { oncancel } = $props();
 
@@ -35,34 +35,28 @@
         oncancel?.();
     }
 
-    async function loadStats() {
+    async function loadStats(): Promise<void> {
         loading = true;
-        try {
-            const result = await invoke("get_transactions", {
-                config: $globalConfig,
-                login: $globalConfig.user_login,
-                n: "100"
-            });
 
-            if (Array.isArray(result)) {
-                transactions = result.map((t: any) => ({
-                    receiver: t.receiver || "",
-                    emitter: t.emitter || "",
-                    description: t.description || "",
-                    amount: t.amount || "0",
-                    date: t.date || "",
-                    inorout: t.inorout || "IN"
+        await getTransactions($globalConfig, $globalConfig.user_login, 100).match(
+            (tr) => {
+                transactions = tr.map((t) => ({
+                    receiver: t.receiver,
+                    emitter: t.emitter,
+                    description: t.description,
+                    amount: t.amount,
+                    date: t.date,
+                    inorout: t.inorout
                 }));
                 calculateStats();
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            loading = false;
-        }
+            },
+            (err) => console.error(err)
+        );
+
+        loading = false;
     }
 
-    function calculateStats() {
+    function calculateStats(): void {
         let sent = 0;
         let received = 0;
         let sCount = 0;

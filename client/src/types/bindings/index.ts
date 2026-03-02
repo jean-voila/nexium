@@ -7,6 +7,8 @@ export * from "./Constants";
 export * from "./Contact";
 export * from "./Invoice";
 export * from "./LoginNames";
+export * from "./PeerInfo";
 export * from "./ServerInfos";
 export * from "./TokenType";
+export * from "./TryConnectResult";
 export * from "./WorkingServerInfo";

@@ -32,8 +32,7 @@
                     description: t.description,
                     amount: t.amount,
                     date: t.date,
-                    // TODO: verify that this field is always present and correctly formatted to avoid defaulting to "IN" erroneously
-                    inorout: t.inorout || "IN"
+                    inorout: t.inorout
                 }));
             },
             (err) => {
