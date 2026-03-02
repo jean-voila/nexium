@@ -76,19 +76,33 @@ jobs:
             - name: Build Server
               run: cargo build --bin nexium-server --release
 
+            - name: Prepare server binary (Linux/macOS)
+              if: runner.os != 'Windows'
+              shell: bash
+              run: |
+                  mkdir -p dist
+                  mv target/release/nexium-server "dist/nexium-server-${{ matrix.platform }}"
+
+            - name: Prepare server binary (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  New-Item -ItemType Directory -Force -Path dist | Out-Null
+                  Move-Item -Force target/release/nexium-server.exe "dist/nexium-server-${{ matrix.platform }}.exe"
+
             - name: Upload server binary (artifact)
               if: runner.os != 'Windows'
               uses: actions/upload-artifact@v4
               with:
                   name: nexium-server-${{ matrix.platform }}
-                  path: target/release/nexium-server
+                  path: dist/nexium-server-${{ matrix.platform }}
 
             - name: Upload server binary (artifact, Windows)
               if: runner.os == 'Windows'
               uses: actions/upload-artifact@v4
               with:
                   name: nexium-server-${{ matrix.platform }}
-                  path: target/release/nexium-server.exe
+                  path: dist/nexium-server-${{ matrix.platform }}.exe
 
     # -----------------------------------------------------------------------------------------------------
 
