@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.css linguist-vendored
+*.html linguist-vendored
+
+client/src-tauri/gen/** linguist-generated
