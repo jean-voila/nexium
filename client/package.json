@@ -23,8 +23,8 @@
     "dependencies": {
         "@darco2903/web-common": "^0.6.4",
         "@number-flow/svelte": "^0.3.7",
-        "@tauri-apps/api": "~2.5.0",
-        "@tauri-apps/plugin-clipboard-manager": "~2.2.0",
+        "@tauri-apps/api": "~2.10.1",
+        "@tauri-apps/plugin-clipboard-manager": "~2.3.2",
         "@tauri-apps/plugin-dialog": "~2.2.0",
         "@tauri-apps/plugin-fs": "~2.2.0",
         "@tauri-apps/plugin-notification": "~2.2.0",
