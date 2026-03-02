@@ -140,11 +140,24 @@ jobs:
             - name: Build and bundle (Tauri)
               uses: tauri-apps/tauri-action@v0
 
-            - name: Upload bundles (artifact)
+            - name: Upload client bundles (artifact)
+              if: runner.os != 'Windows'
               uses: actions/upload-artifact@v4
               with:
-                  name: bundles-${{ matrix.platform }}
-                  path: ${{ env.BUNDLE_PATH }}
+                  name: nexium-client-${{ matrix.platform }}
+                  path: |
+                      ${{ env.BUNDLE_PATH }}/*.deb
+                      ${{ env.BUNDLE_PATH }}/*.rpm
+                      ${{ env.BUNDLE_PATH }}/*.AppImage
+                      ${{ env.BUNDLE_PATH }}/*.dmg
+                  if-no-files-found: error
+
+            - name: Upload client bundles (artifact)
+              if: runner.os == 'Windows'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nexium-client-${{ matrix.platform }}
+                  path: ${{ env.BUNDLE_PATH }}/*.exe
                   if-no-files-found: error
 
     # -----------------------------------------------------------------------------------------------------
