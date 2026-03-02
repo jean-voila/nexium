@@ -12,4 +12,5 @@ export * from "./PeerInfo";
 export * from "./ServerInfos";
 export * from "./TokenType";
 export * from "./TryConnectResult";
+export * from "./UserStats";
 export * from "./WorkingServerInfo";

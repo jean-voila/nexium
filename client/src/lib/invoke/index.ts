@@ -16,6 +16,7 @@ export * from "./getNamesFromLogin";
 export * from "./getPeers";
 export * from "./getServerInfos";
 export * from "./getTransactions";
+export * from "./getUserStats";
 export * from "./keypairGeneration";
 export * from "./loadConfig";
 export * from "./loadConfigFromFile";

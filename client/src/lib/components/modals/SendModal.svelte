@@ -7,7 +7,7 @@
     import { writable, get } from "svelte/store";
     import { onMount } from "svelte";
     import Spinner from "@components/Spinner.svelte";
-    import { constants } from "@stores/constants";
+    import { getConstants } from "@stores/constants";
     import {
         calculateTransactionFee,
         checkSendTransaction,
@@ -41,8 +41,6 @@
     let tooltipX = $state(0);
     let tooltipY = $state(0);
     let showTooltip = $state("");
-
-    let invoice_file_extension = constants.nexium_invoice_extension;
 
     function handleClose() {
         selectedContact.set("");
@@ -126,12 +124,13 @@
     }
 
     async function handleLoadFile(): Promise<void> {
+        const { nexium_invoice_extension } = await getConstants();
         const path = await open({
             title: "Choisir le fichier de la facture",
             multiple: false,
             directory: false,
             save: false,
-            filters: [{ name: "Nexium Invoice", extensions: [invoice_file_extension] }]
+            filters: [{ name: "Nexium Invoice", extensions: [nexium_invoice_extension] }]
         });
         if (!path) return;
 

@@ -1,7 +1,6 @@
 import { writable } from "svelte/store";
 import type { Config } from "@bindings";
 import type { Theme } from "@tauri-apps/api/window";
-import { constants } from "./constants";
 
 export const isConfigSet = writable<boolean>(false);
 
@@ -48,7 +47,7 @@ export const globalConfig = writable<Config>({
     priv_key: "",
     gitlab_token: "",
     gitlab_token_type: "Classic",
-    is_testnet: constants.is_testnet,
+    is_testnet: false,
     password: "",
     server_login: ""
 });

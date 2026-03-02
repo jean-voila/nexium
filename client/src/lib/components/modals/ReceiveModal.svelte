@@ -4,7 +4,7 @@
     import { X, Download } from "lucide-svelte";
     import { globalConfig } from "@stores/settings";
     import { writable } from "svelte/store";
-    import { constants } from "@stores/constants";
+    import { getConstants } from "@stores/constants";
     import { checkInvoiceValues, saveFactureToFile } from "@invoke";
     import type { Invoice } from "@bindings";
 
@@ -13,8 +13,6 @@
     let montant = $state("");
     let description = $state("");
     let validationError = writable(true);
-
-    const invoice_file_extension = constants.nexium_invoice_extension;
 
     function handleClose(): void {
         oncancel?.();
@@ -49,8 +47,9 @@
             sender_login: $globalConfig.user_login
         };
 
+        const { nexium_invoice_extension } = await getConstants();
         const path = await save({
-            filters: [{ name: "Nexium Invoice", extensions: [invoice_file_extension] }]
+            filters: [{ name: "Nexium Invoice", extensions: [nexium_invoice_extension] }]
         });
 
         if (path) {

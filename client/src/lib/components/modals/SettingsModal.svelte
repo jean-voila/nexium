@@ -19,7 +19,7 @@
     import Spinner from "@components/Spinner.svelte";
     import PasswordModal from "./PasswordModal.svelte";
     import AskPasswordModal from "./AskPasswordModal.svelte";
-    import { constants } from "@stores/constants";
+    import { getConstants } from "@stores/constants";
     import {
         checkConfigValues,
         getGitlabOauthToken,
@@ -33,6 +33,7 @@
         sendGpgKey,
         writeKeyToFile
     } from "@invoke";
+    import { onMount } from "svelte";
 
     export let showSettingsModal = false;
 
@@ -49,8 +50,6 @@
     let showAskPasswordModal = false;
     let resolveNewPassword: ((value: string) => void) | null = null;
     let resolveAskPassword: ((value: string) => void) | null = null;
-
-    config.is_testnet = constants.is_testnet;
 
     async function promptNewPassword(): Promise<string> {
         showNewPasswordModal = true;
@@ -344,6 +343,10 @@
             }
         }
     }
+
+    onMount(async () => {
+        config.is_testnet = (await getConstants()).is_testnet;
+    });
 </script>
 
 {#if showSettingsModal}
