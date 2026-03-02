@@ -6,6 +6,7 @@ export * from "./Config";
 export * from "./Constants";
 export * from "./Contact";
 export * from "./Invoice";
+export * from "./KeyPairResult";
 export * from "./LoginNames";
 export * from "./PeerInfo";
 export * from "./ServerInfos";

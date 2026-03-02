@@ -1,11 +1,12 @@
 <script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { save } from "@tauri-apps/plugin-dialog";
-    import { invoke } from "@tauri-apps/api/core";
     import { X, Download } from "lucide-svelte";
     import { globalConfig } from "@stores/settings";
     import { writable } from "svelte/store";
     import { constants } from "@stores/constants";
+    import { checkInvoiceValues, saveFactureToFile } from "@invoke";
+    import type { Invoice } from "@bindings";
 
     let { oncancel } = $props();
 
@@ -15,38 +16,34 @@
 
     const invoice_file_extension = constants.nexium_invoice_extension;
 
-    function handleClose() {
+    function handleClose(): void {
         oncancel?.();
     }
 
-    function handleMontantChange() {
+    function handleMontantChange(): void {
         montant = montant.trim();
         validateInvoice();
     }
 
-    function handleDescriptionChange() {
+    function handleDescriptionChange(): void {
         validateInvoice();
     }
 
-    async function validateInvoice() {
-        const invoice = {
+    async function validateInvoice(): Promise<void> {
+        const invoice: Invoice = {
             amount: montant,
             description: description,
             sender_login: $globalConfig.user_login
         };
 
-        try {
-            await invoke("check_invoice_values", { invoice });
-            validationError.set(false);
-        } catch (e) {
-            validationError.set(true);
-        }
+        const isErr = (await checkInvoiceValues(invoice)).isErr();
+        validationError.set(isErr);
     }
 
-    async function handleExport() {
+    async function handleExport(): Promise<void> {
         if ($validationError !== false) return;
 
-        const invoice = {
+        const invoice: Invoice = {
             amount: montant,
             description: description,
             sender_login: $globalConfig.user_login
@@ -57,10 +54,10 @@
         });
 
         if (path) {
-            try {
-                await invoke("save_facture_to_file", { pathString: path, invoice });
-                handleClose();
-            } catch (e) {}
+            await saveFactureToFile(invoice, path).match(
+                () => handleClose(),
+                (err) => console.error(err)
+            );
         }
     }
 </script>

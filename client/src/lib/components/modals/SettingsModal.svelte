@@ -1,7 +1,6 @@
 <script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { open, save } from "@tauri-apps/plugin-dialog";
-    import { invoke } from "@tauri-apps/api/core";
     import { get } from "svelte/store";
     import {
         X,
@@ -21,7 +20,19 @@
     import PasswordModal from "./PasswordModal.svelte";
     import AskPasswordModal from "./AskPasswordModal.svelte";
     import { constants } from "@stores/constants";
-    import { getGitlabOauthToken, loadConfigFromFile, saveConfigToFile } from "@invoke";
+    import {
+        checkConfigValues,
+        getGitlabOauthToken,
+        getLogin,
+        getServerInfos,
+        keypairGeneration,
+        loadConfigFromFile,
+        readKeyFromFile,
+        saveConfig,
+        saveConfigToFile,
+        sendGpgKey,
+        writeKeyToFile
+    } from "@invoke";
 
     export let showSettingsModal = false;
 
@@ -36,25 +47,24 @@
 
     let showNewPasswordModal = false;
     let showAskPasswordModal = false;
-    let rejectPassword;
-    let resolveNewPassword: (value: string) => void | undefined;
-    let resolveAskPassword: (value: string) => void | undefined;
+    let resolveNewPassword: ((value: string) => void) | null = null;
+    let resolveAskPassword: ((value: string) => void) | null = null;
 
     config.is_testnet = constants.is_testnet;
 
-    function promptNewPassword() {
+    async function promptNewPassword(): Promise<string> {
         showNewPasswordModal = true;
-        return new Promise((resolve, reject) => {
+
+        return new Promise<string>((resolve) => {
             resolveNewPassword = resolve;
-            rejectPassword = reject;
         });
     }
 
-    function askPassword() {
+    async function askPassword(): Promise<string> {
         showAskPasswordModal = true;
-        return new Promise((resolve, reject) => {
+
+        return new Promise<string>((resolve) => {
             resolveAskPassword = resolve;
-            rejectPassword = reject;
         });
     }
 
@@ -133,7 +143,7 @@
         isValidating = false;
     }
 
-    async function handleKeyGeneration() {
+    async function handleKeyGeneration(): Promise<void> {
         isValidating = true;
         password = await promptNewPassword();
         config.password = password;
@@ -141,167 +151,197 @@
         isGenerating = true;
         generationMessage = "Génération de vos clés...";
 
-        try {
-            const [pubKey, privKey] = await invoke("keypair_generation", {
-                login: config.user_login,
-                password
-            });
-            config.pub_key = pubKey;
-            config.priv_key = privKey;
+        const keyPairRes = await keypairGeneration(config.user_login, password);
+        if (keyPairRes.isOk()) {
+            const keyPair = keyPairRes.value;
+            config.pub_key = keyPair.pub_key;
+            config.priv_key = keyPair.priv_key;
 
             generationMessage = "Envoi des clés sur GitLab...";
-            await invoke("send_gpg_key", {
-                gitlabTokenType: config.gitlab_token_type,
-                gitlabToken: config.gitlab_token,
-                pubKey: config.pub_key
-            });
-            generationMessage = "";
-            sentKeys = true;
-        } catch (e) {
-            errorMessage = String(e);
-            generationMessage = "";
-        } finally {
-            isGenerating = false;
-            isValidating = false;
+
+            await sendGpgKey(config.gitlab_token_type, config.gitlab_token, config.pub_key).match(
+                () => {
+                    sentKeys = true;
+                },
+                (err) => {
+                    console.error(err);
+                    errorMessage = err;
+                }
+            );
+        } else {
+            console.error(keyPairRes.error);
+            errorMessage = keyPairRes.error;
         }
+
+        generationMessage = "";
+
+        isGenerating = false;
+        isValidating = false;
     }
 
-    function handleNewPasswordSubmit(pw) {
+    function handleNewPasswordSubmit(pw: string): void {
         showNewPasswordModal = false;
-        resolveNewPassword(pw);
+        resolveNewPassword?.(pw);
     }
 
-    function handleAskedPasswordSubmit(pw) {
+    function handleAskedPasswordSubmit(pw: string): void {
         showAskPasswordModal = false;
-        resolveAskPassword(pw);
+        resolveAskPassword?.(pw);
     }
 
-    function handleNewPasswordCancel() {
+    function handleNewPasswordCancel(): void {
         showNewPasswordModal = false;
     }
 
-    function handleAskedPasswordCancel() {
+    function handleAskedPasswordCancel(): void {
         showAskPasswordModal = false;
     }
 
-    async function handleDone() {
+    async function handleDone(): Promise<void> {
         isValidatingAndDone = true;
-        try {
-            errorMessage = "";
-            isValidating = true;
-            const parsedPort = Number(config.port);
-            if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
-                throw new Error("Invalid port number.");
-            }
+        errorMessage = "";
+        isValidating = true;
 
+        const parsedPort = Number(config.port);
+        if (Number.isInteger(parsedPort) && parsedPort >= 0 && parsedPort <= 65535) {
             config.port = parsedPort.toString();
-            await invoke("check_config_values", { config });
 
-            const server_pub_key_login = await invoke("get_server_infos", { config });
-            if (server_pub_key_login) {
-                serverPublicKey.set(server_pub_key_login[0]);
-                config.server_login = server_pub_key_login[1];
+            if (await checkConfigValues(config)) {
+                await getServerInfos(config).match(
+                    async (serverInfos) => {
+                        serverPublicKey.set(serverInfos.pub_key);
+                        config.server_login = serverInfos.login;
+
+                        // Save config to default path
+                        if (!(await saveConfig(config))) {
+                            console.error("Failed to save config.");
+                            errorMessage = "Erreur lors de la sauvegarde de la configuration.";
+                            return;
+                        }
+
+                        globalConfig.set(config);
+                        isConfigSet.set(true);
+                        showSettingsModal = false;
+                    },
+                    (err) => {
+                        console.error(err);
+                        errorMessage = "Erreur de récupération des informations du serveur.";
+                    }
+                );
             } else {
-                throw new Error("Erreur de récupération des informations du serveur.");
+                errorMessage = "Configuration invalide.";
             }
-
-            // Save config to default path
-            await invoke("save_config", { config });
-
-            globalConfig.set(config);
-            isConfigSet.set(true);
-            showSettingsModal = false;
-        } catch (error) {
-            errorMessage = String(error);
-        } finally {
-            isValidating = false;
-            isValidatingAndDone = false;
+        } else {
+            errorMessage = "Numéro de port invalide.";
         }
+
+        isValidating = false;
+        isValidatingAndDone = false;
     }
 
-    function closeAndCancel() {
+    function closeAndCancel(): void {
         config = get(globalConfig);
         showSettingsModal = false;
     }
 
-    async function setLoginFromToken() {
-        try {
-            config.pub_key = "";
-            config.priv_key = "";
-            sentKeys = false;
-            const response = await invoke("get_login", {
-                gitlabToken: config.gitlab_token,
-                gitlabTokenType: config.gitlab_token_type
-            });
-            config.user_login = response;
-            if (errorMessage !== "") {
+    async function setLoginFromToken(): Promise<void> {
+        config.pub_key = "";
+        config.priv_key = "";
+        sentKeys = false;
+
+        await getLogin(config.gitlab_token_type, config.gitlab_token).match(
+            (login) => {
+                config.user_login = login;
                 errorMessage = "";
+            },
+            (err) => {
+                console.error(err);
+                config.user_login = "";
+                errorMessage = err;
             }
-        } catch (error) {
-            config.user_login = "";
-            errorMessage = String(error);
-        }
+        );
     }
 
-    async function handleKeyImport() {
-        try {
-            const pubKeyPath = await open({
-                multiple: false,
-                directory: false,
-                title: "Sélectionner la clé publique",
-                filters: [{ name: "Clé publique", extensions: ["pub"] }]
-            });
+    async function handleKeyImport(): Promise<void> {
+        const pubKeyPath = await open({
+            multiple: false,
+            directory: false,
+            title: "Sélectionner la clé publique",
+            filters: [{ name: "Clé publique", extensions: ["pub"] }]
+        });
 
-            if (pubKeyPath) {
-                const pubKey = await invoke("read_key_from_file", { path: pubKeyPath });
-                config.pub_key = pubKey;
-            }
-
-            const privKeyPath = await open({
-                multiple: false,
-                directory: false,
-                title: "Sélectionner la clé privée",
-                filters: [{ name: "Clé privée", extensions: ["priv"] }]
-            });
-
-            if (privKeyPath) {
-                const privKey = await invoke("read_key_from_file", { path: privKeyPath });
-                config.priv_key = privKey;
-            } else {
-                errorMessage = "Les clés n'ont pas été importées correctement.";
-            }
-
-            if (config.pub_key && config.priv_key) {
-                config.password = await askPassword();
-            }
-        } catch (error) {
-            errorMessage = String(error);
+        if (pubKeyPath === null) {
+            errorMessage = "Les clés n'ont pas été importées correctement.";
+            return;
         }
+
+        const pubKeyRes = await readKeyFromFile(pubKeyPath);
+        if (pubKeyRes.isOk()) {
+            config.pub_key = pubKeyRes.value;
+        } else {
+            console.error(pubKeyRes.error);
+            errorMessage = pubKeyRes.error;
+            return;
+        }
+
+        const privKeyPath = await open({
+            multiple: false,
+            directory: false,
+            title: "Sélectionner la clé privée",
+            filters: [{ name: "Clé privée", extensions: ["priv"] }]
+        });
+
+        if (privKeyPath === null) {
+            errorMessage = "Les clés n'ont pas été importées correctement.";
+            return;
+        }
+
+        const privKeyRes = await readKeyFromFile(privKeyPath);
+        if (privKeyRes.isErr()) {
+            console.error(privKeyRes.error);
+            errorMessage = privKeyRes.error;
+            return;
+        }
+
+        config.priv_key = privKeyRes.value;
+
+        if (!config.pub_key || !config.priv_key) {
+            errorMessage = "Les clés n'ont pas été importées correctement.";
+            return;
+        }
+
+        config.password = await askPassword();
     }
 
-    async function handleKeyExport() {
-        try {
-            const pubPath = await save({
-                title: "Exporter la clé publique",
-                defaultPath: "public_key.pub",
-                filters: [{ name: "Clé publique", extensions: ["pub"] }]
-            });
+    async function handleKeyExport(): Promise<void> {
+        const pubPath = await save({
+            title: "Exporter la clé publique",
+            defaultPath: "public_key.pub",
+            filters: [{ name: "Clé publique", extensions: ["pub"] }]
+        });
 
-            if (pubPath) {
-                await invoke("write_key_to_file", { path: pubPath, key: config.pub_key });
+        if (pubPath !== null) {
+            const writePubRes = await writeKeyToFile(pubPath, config.pub_key);
+            if (writePubRes.isErr()) {
+                console.error(writePubRes.error);
+                errorMessage = "Erreur lors de l'export de la clé publique.";
+                return;
             }
+        }
 
-            const privPath = await save({
-                title: "Exporter la clé privée",
-                defaultPath: "private_key.priv",
-                filters: [{ name: "Clé privée", extensions: ["priv"] }]
-            });
+        const privPath = await save({
+            title: "Exporter la clé privée",
+            defaultPath: "private_key.priv",
+            filters: [{ name: "Clé privée", extensions: ["priv"] }]
+        });
 
-            if (privPath) {
-                await invoke("write_key_to_file", { path: privPath, key: config.priv_key });
+        if (privPath !== null) {
+            const writePrivRes = await writeKeyToFile(privPath, config.priv_key);
+            if (writePrivRes.isErr()) {
+                console.error(writePrivRes.error);
+                errorMessage = "Erreur lors de l'export de la clé privée.";
+                return;
             }
-        } catch (error) {
-            errorMessage = String(error);
         }
     }
 </script>
