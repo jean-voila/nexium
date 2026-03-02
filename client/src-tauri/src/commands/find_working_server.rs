@@ -1,6 +1,6 @@
 use crate::core::config::Config;
-use crate::core::peer_cache::get_cached_peers;
 use crate::core::nexium_api::get_server_key_login;
+use crate::core::peer_cache::get_cached_peers;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 

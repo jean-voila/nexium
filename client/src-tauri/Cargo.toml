@@ -22,14 +22,14 @@
     ]
 
 [build-dependencies]
-    tauri-build = {version = "2.2.0", features = [] }
+    tauri-build = {version = "2.2.0", features = []}
     ts-rs = "11.1.0"
 
 [dependencies]
     serde_json = "1.0"
-    serde = {version = "1.0", features = ["derive"] }
+    serde = {version = "1.0", features = ["derive"]}
     log = "0.4"
-    tauri = {version = "2.5.0", features = ["macos-private-api"] }
+    tauri = {version = "2.5.0", features = ["macos-private-api"]}
     tauri-plugin-log = "2.0.0-rc"
     nexium = {workspace = true}
     tauri-plugin-fs = "2.2.1"
@@ -45,4 +45,4 @@
     ts-rs = "11.1.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
-    openssl = {version = "0.10", features = ["vendored"] }
+    openssl = {version = "0.10", features = ["vendored"]}
