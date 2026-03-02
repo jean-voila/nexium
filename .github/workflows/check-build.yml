@@ -1,0 +1,88 @@
+name: Check Build
+
+on:
+    push:
+        branches:
+            - main
+            - "release/*"
+            - actions-test
+    pull_request:
+        branches:
+            - main
+
+env:
+    TAG_VERSION: "${GITHUB_REF_NAME#v}"
+    PNPM_VERSION: "10.30.3"
+    NODE_VERSION: 24
+    BUNDLE_PATH: "src-tauri/target/release/bundle/*"
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: "${{ env.PNPM_VERSION }}"
+
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  registry-url: https://npm.pkg.github.com
+
+            - name: Echo version
+              run: echo "Releasing version ${{ env.TAG_VERSION }}"
+
+            - name: Echo bundle path
+              run: echo "Bundle path ${{ env.BUNDLE_PATH }}"
+
+    # -----------------------------------------------------------------------------------------------------
+
+    build-check:
+        needs: check
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: "${{ env.PNPM_VERSION }}"
+
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Install Rust stable
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+                  targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+            - name: Install dependencies (ubuntu only)
+              if: matrix.platform == 'ubuntu-latest' # This must match the platform value defined above.
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+            - name: Check Rust Server
+              run: cargo check --bin nexium-server
+
+            - name: Check Rust Client
+              run: cargo check --bin nexium-client
+
+            - name: Check Typescript Client
+              run: pnpm -C client type-check

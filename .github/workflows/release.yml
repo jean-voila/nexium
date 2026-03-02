@@ -1,0 +1,181 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*-test"
+
+permissions:
+    contents: write
+    packages: write
+
+env:
+    TAG_VERSION: "${GITHUB_REF_NAME#v}"
+    PNPM_VERSION: "10.30.3"
+    NODE_VERSION: 24
+    BUNDLE_PATH: "target/release/bundle/**"
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: "${{ env.PNPM_VERSION }}"
+
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  registry-url: https://npm.pkg.github.com
+
+            - name: Echo version
+              run: echo "Releasing version ${{ env.TAG_VERSION }}"
+
+            - name: Echo bundle path
+              run: echo "Bundle path ${{ env.BUNDLE_PATH }}"
+
+    # -----------------------------------------------------------------------------------------------------
+
+    build-check:
+        needs: check
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: "${{ env.PNPM_VERSION }}"
+
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm -C client install --frozen-lockfile
+
+            - name: Install Rust stable
+              uses: dtolnay/rust-toolchain@stable
+
+            - name: Install dependencies (ubuntu only)
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+            - name: Check Rust Server
+              run: cargo check --bin nexium-server
+
+            - name: Check Rust Client
+              run: cargo check --bin nexium-client
+
+            - name: Check Typescript Client
+              run: pnpm -C client type-check
+
+    # -----------------------------------------------------------------------------------------------------
+
+    build:
+        needs: build-check
+        runs-on: ${{ matrix.platform }}
+
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: "ubuntu-latest"
+                    - platform: "windows-latest"
+                    - platform: "macos-latest"
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: "${{ env.PNPM_VERSION }}"
+
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm -C client install --frozen-lockfile
+
+            - name: Install Rust stable
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+                  targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+            - name: Install dependencies (ubuntu only)
+              if: matrix.platform == 'ubuntu-latest' # This must match the platform value defined above.
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+            - name: Build Server
+              run: cargo build --bin nexium-server --release
+
+            - name: Build and bundle (Tauri)
+              uses: tauri-apps/tauri-action@v0
+
+            - name: Upload bundles (artifact)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: bundles-${{ matrix.platform }}
+                  path: ${{ env.BUNDLE_PATH }}
+                  if-no-files-found: error
+
+            - name: Upload server binary (artifact)
+              if: runner.os != 'Windows'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nexium-server-${{ matrix.platform }}
+                  path: target/release/nexium-server
+
+            - name: Upload server binary (artifact, Windows)
+              if: runner.os == 'Windows'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nexium-server-${{ matrix.platform }}
+                  path: target/release/nexium-server.exe
+
+    # -----------------------------------------------------------------------------------------------------
+
+    release:
+        name: Publish GitHub Release
+        needs: build
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+
+        steps:
+            - name: Download bundles (all platforms)
+              uses: actions/download-artifact@v4
+              with:
+                  path: dist
+                  merge-multiple: true
+
+            - name: Create GitHub Release (attach all assets)
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: dist/**
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
