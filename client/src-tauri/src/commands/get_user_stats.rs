@@ -1,4 +1,4 @@
-use crate::{
+use crate::core::{
     config::Config,
     nexium_api::{get_user_stats as get_user_stats_api, UserStats},
 };

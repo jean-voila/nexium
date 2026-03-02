@@ -1,5 +1,5 @@
-use crate::config::Config;
-use crate::nexium_api::{
+use crate::core::config::Config;
+use crate::core::nexium_api::{
     get_transactions as get_transactions_api, NexiumAPIError,
 };
 use crate::types::classic_tr_received::ClassicTransactionReceived;

@@ -1,4 +1,4 @@
-use crate::nexium_api::check_peer_status as check_peer_status_api;
+use crate::core::nexium_api::check_peer_status as check_peer_status_api;
 
 #[tauri::command]
 pub async fn check_peer_status(address: String, port: u16) -> bool {

@@ -1,4 +1,4 @@
-use crate::invoice::{Invoice, InvoiceError};
+use crate::core::invoice::{Invoice, InvoiceError};
 use std::path::Path;
 
 #[tauri::command]

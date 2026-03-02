@@ -1,9 +1,9 @@
 use crate::core::contacts::{Contact, ContactBook};
 
 #[tauri::command]
-pub fn contact_search(query: String) -> Vec<Contact> {
+pub fn contact_get_recent(limit: usize) -> Vec<Contact> {
     ContactBook::load()
-        .search(&query)
+        .get_recent(limit)
         .into_iter()
         .cloned()
         .collect()

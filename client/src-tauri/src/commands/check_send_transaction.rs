@@ -3,7 +3,7 @@ use nexium::{
     login::Login,
 };
 
-use crate::{
+use crate::core::{
     config::Config,
     nexium_api::{get_balance, ClassicTransactionSent, NexiumAPIError},
 };

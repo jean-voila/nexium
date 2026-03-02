@@ -1,11 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod commands;
-mod config;
-mod contacts;
 mod core;
-mod invoice;
-mod nexium_api;
 mod types;
 use commands::*;
 
@@ -43,7 +39,7 @@ fn main() {
             contact_update::contact_update,
             contact_remove::contact_remove,
             contact_search::contact_search,
-            contacts::get_recent_contacts,
+            contact_get_recent::contact_get_recent,
             contact_mark_used::contact_mark_used,
             get_user_stats::get_user_stats,
             get_peers::get_peers,

@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::core::config::Config;
 use nexium::gitlab::GitlabClient;
 
 #[tauri::command]

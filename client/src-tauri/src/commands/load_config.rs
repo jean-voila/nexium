@@ -1,4 +1,4 @@
-use crate::config::{Config, ConfigError};
+use crate::core::config::{Config, ConfigError};
 
 #[tauri::command]
 pub async fn load_config() -> Result<Config, String> {

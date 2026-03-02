@@ -128,9 +128,3 @@ impl ContactBook {
         sorted.into_iter().take(limit).collect()
     }
 }
-
-#[tauri::command]
-pub fn get_recent_contacts(limit: usize) -> Result<Vec<Contact>, String> {
-    let book = ContactBook::load();
-    Ok(book.get_recent(limit).into_iter().cloned().collect())
-}

@@ -1,4 +1,4 @@
-use crate::invoice::Invoice;
+use crate::core::invoice::Invoice;
 
 #[tauri::command]
 pub async fn save_facture_to_file(

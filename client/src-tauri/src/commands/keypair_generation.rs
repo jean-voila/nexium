@@ -1,8 +1,7 @@
+use crate::core::config::ConfigError;
 use nexium::{defaults::KEYPAIR_BIT_SIZE, rsa::KeyPair};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-
-use crate::config::ConfigError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]

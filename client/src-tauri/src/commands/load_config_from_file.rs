@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::core::config::Config;
 
 #[tauri::command]
 pub async fn load_config_from_file(

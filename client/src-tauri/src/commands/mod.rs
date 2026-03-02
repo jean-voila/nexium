@@ -5,6 +5,7 @@ pub mod check_peer_status;
 pub mod check_send_transaction;
 pub mod contact_add;
 pub mod contact_get;
+pub mod contact_get_recent;
 pub mod contact_mark_used;
 pub mod contact_remove;
 pub mod contact_search;

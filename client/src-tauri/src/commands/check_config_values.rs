@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::core::config::Config;
 
 #[tauri::command]
 pub async fn check_config_values(config: Config) -> bool {

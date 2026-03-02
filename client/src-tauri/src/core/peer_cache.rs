@@ -1,4 +1,4 @@
-use crate::nexium_api::PeerInfo;
+use crate::core::nexium_api::PeerInfo;
 
 pub fn get_peers_cache_path() -> std::path::PathBuf {
     let mut path =

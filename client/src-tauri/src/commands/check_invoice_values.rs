@@ -1,4 +1,4 @@
-use crate::invoice::Invoice;
+use crate::core::invoice::Invoice;
 
 #[tauri::command]
 pub async fn check_invoice_values(invoice: Invoice) -> Result<(), String> {

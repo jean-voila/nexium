@@ -1,5 +1,5 @@
-use crate::config::Config;
-use crate::nexium_api::get_balance as get_balance_api;
+use crate::core::config::Config;
+use crate::core::nexium_api::get_balance as get_balance_api;
 use crate::types::balance::BalanceInfo;
 
 #[tauri::command]

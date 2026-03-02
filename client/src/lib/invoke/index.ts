@@ -5,6 +5,7 @@ export * from "./checkPeerStatus";
 export * from "./checkSendTransaction";
 export * from "./contactAdd";
 export * from "./contactGet";
+export * from "./contactGetRecent";
 export * from "./contactMarkUsed";
 export * from "./contactSearch";
 export * from "./contactUpdate";

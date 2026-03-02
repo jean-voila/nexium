@@ -1,5 +1,5 @@
-use crate::config::Config;
-use crate::nexium_api::get_server_key_login;
+use crate::core::config::Config;
+use crate::core::nexium_api::get_server_key_login;
 use crate::types::server_infos::ServerInfos;
 
 #[tauri::command]

@@ -6,7 +6,7 @@ use super::{
         consts::{HEADER_MERKLE_ROOT_SIZE, HEADER_PREVIOUS_BLOCK_HASH_SIZE},
     },
 };
-use crate::config::Config;
+use crate::core::config::Config;
 use colored::Colorize;
 use nexium::{
     blockchain::{

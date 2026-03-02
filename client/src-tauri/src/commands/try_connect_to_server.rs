@@ -1,4 +1,4 @@
-use crate::{config::Config, nexium_api::get_server_key_login};
+use crate::core::{config::Config, nexium_api::get_server_key_login};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 

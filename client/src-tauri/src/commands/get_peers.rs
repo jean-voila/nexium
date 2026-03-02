@@ -1,7 +1,7 @@
-use crate::{
+use crate::core::{
     config::Config,
-    core::peer_cache::save_peers_cache,
     nexium_api::{get_peers as get_peers_api, PeerInfo},
+    peer_cache::save_peers_cache,
 };
 
 #[tauri::command]

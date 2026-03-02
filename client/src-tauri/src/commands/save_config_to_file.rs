@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::core::config::Config;
 
 #[tauri::command]
 pub async fn save_config_to_file(
